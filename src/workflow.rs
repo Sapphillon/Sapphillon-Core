@@ -180,6 +180,7 @@ mod tests {
             "pid".to_string(),
             "pname".to_string(),
             vec![dummy_plugin_function()],
+            vec![]
         )
     }
 
