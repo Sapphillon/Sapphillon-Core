@@ -120,7 +120,7 @@ pub(crate) fn run_script(
             "op_print" => op_print_wrapper(),
             _ => op,
         })),
-        esm_files: esm_files.unwrap_or(vec![]).into(),
+        esm_files: esm_files.unwrap_or_default().into(),
         ..Default::default()
     };
     
@@ -174,7 +174,7 @@ mod tests {
         console.log("Sum of [1, 2, 3, 4, 5]", Deno.core.ops.test_op([1, 2, 3, 4, 5]));
         "#;
 
-        let result = run_script(script, vec![test_op()], vec![], None);
+        let result = run_script(script, vec![test_op()], vec![], None, None);
         println!("[test_extension] result: {result:?}");
     }
 
@@ -182,14 +182,14 @@ mod tests {
     fn test_run_script() {
         let script = "1 + 1;";
 
-        let result = run_script(script, vec![], vec![],None);
+        let result = run_script(script, vec![], vec![],None,None);
         assert!(result.is_ok(), "Script should run successfully");
     }
     #[test]
     fn test_run_script_hello() {
         let script = "a = 1 + 1; console.log('Hello, world!');console.log(a);";
 
-        let result = run_script(script, vec![], vec![], None);
+        let result = run_script(script, vec![], vec![], None, None);
         assert!(result.is_ok(), "Script should run successfully");
     }
 
@@ -224,7 +224,7 @@ mod tests {
             }
         "#;
 
-        let result = run_script(script, vec![get_workflow_id()], vec![], Some(workflow_data_arc));
+        let result = run_script(script, vec![get_workflow_id()], vec![], Some(workflow_data_arc), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -259,7 +259,7 @@ mod tests {
             Deno.core.ops.add_stdout();
         "#;
 
-    let result = run_script(script, vec![add_stdout()], vec![], Some(workflow_data_arc.clone()));
+    let result = run_script(script, vec![add_stdout()], vec![], Some(workflow_data_arc.clone()), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -297,7 +297,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-        let result = run_script(script, vec![], vec![], Some(workflow_data_arc.clone()));
+        let result = run_script(script, vec![], vec![], Some(workflow_data_arc.clone()), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -369,7 +369,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-    let result = run_script(script, vec![], vec![], Some(workflow_data_arc.clone()));
+    let result = run_script(script, vec![], vec![], Some(workflow_data_arc.clone()), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
