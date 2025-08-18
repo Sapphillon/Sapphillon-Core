@@ -23,6 +23,7 @@ use crate::runtime::{OpStateWorkflowData, run_script};
 use prost_types::Timestamp;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
+use deno_core::Extension;
 
 pub struct CoreWorkflowCode {
     /// Unique ID of the workflow code
@@ -98,11 +99,18 @@ impl CoreWorkflowCode {
             .last()
             .map(|r| r.workflow_result_revision + 1)
             .unwrap_or(1);
+        
+        let mut extensions: Vec<Extension> = Vec::new();
+        
+        for pkg in &mut self.plugin_packages {
+            extensions.append(pkg.extensions.drain(..));
+        }
 
         let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true);
         let result = run_script(
             &self.code,
             ops,
+            extensions,
             Some(Arc::new(Mutex::new(opstate_workflow_data))),
         );
 
