@@ -19,7 +19,7 @@
 #![warn(clippy::field_reassign_with_default)]
 
 use crate::core::op_print_wrapper;
-use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
+use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError, ExtensionFileSource};
 use std::boxed::Box;
 use std::sync::{Arc, Mutex};
 
@@ -110,6 +110,7 @@ pub(crate) fn run_script(
     ext_func: Vec<OpDecl>,
     exts: Vec<Extension>,
     workflow_data: Option<Arc<Mutex<OpStateWorkflowData>>>,
+    esm_files: Option<Vec<ExtensionFileSource>>,
 ) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<JsError>> {
     // Register the extension with the provided operations
     let extension = Extension {
@@ -119,6 +120,7 @@ pub(crate) fn run_script(
             "op_print" => op_print_wrapper(),
             _ => op,
         })),
+        esm_files: esm_files.unwrap_or(vec![]).into(),
         ..Default::default()
     };
     
