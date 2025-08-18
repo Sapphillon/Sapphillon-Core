@@ -100,17 +100,12 @@ impl CoreWorkflowCode {
             .map(|r| r.workflow_result_revision + 1)
             .unwrap_or(1);
         
-        let mut extensions: Vec<Extension> = Vec::new();
-        
-        for pkg in &mut self.plugin_packages {
-            extensions.append(pkg.extensions.drain(..));
-        }
 
         let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true);
         let result = run_script(
             &self.code,
             ops,
-            extensions,
+            Vec::new(),
             Some(Arc::new(Mutex::new(opstate_workflow_data))),
         );
 
@@ -188,7 +183,6 @@ mod tests {
             "pid".to_string(),
             "pname".to_string(),
             vec![dummy_plugin_function()],
-            vec![]
         )
     }
 

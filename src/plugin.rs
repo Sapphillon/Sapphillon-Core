@@ -73,10 +73,6 @@ pub struct CorePluginPackage {
     pub name: String,
     /// List of functions included in the package
     pub functions: Vec<CorePluginFunction>,
-    
-    /// List of Extensions include in the package
-    pub extensions: Vec<Extension>,
-        
 }
 
 impl CorePluginPackage {
@@ -86,13 +82,11 @@ impl CorePluginPackage {
     /// * `id` - Unique ID of the package
     /// * `name` - Package name
     /// * `functions` - List of functions included in the package
-    pub fn new(id: String, name: String, functions: Vec<CorePluginFunction>, extensions: Vec<Extension>) -> Self {
+    pub fn new(id: String, name: String, functions: Vec<CorePluginFunction>) -> Self {
         Self {
             id,
             name,
             functions,
-            extensions
-
         }
     }
 
@@ -104,13 +98,11 @@ impl CorePluginPackage {
     pub fn new_from_plugin_package(
         plugin_package: &PluginPackage,
         functions: Vec<CorePluginFunction>,
-        extensions: Vec<Extension>,
     ) -> Self {
         Self {
             id: plugin_package.package_id.clone(),
             name: plugin_package.package_name.clone(),
             functions,
-            extensions,
         }
     }
 }
@@ -178,7 +170,7 @@ mod tests {
             "desc".to_string(),
             dummy_op(),
         );
-        let pkg = CorePluginPackage::new("pid".to_string(), "pname".to_string(), vec![f], vec![]);
+        let pkg = CorePluginPackage::new("pid".to_string(), "pname".to_string(), vec![f]);
         assert_eq!(pkg.id, "pid");
         assert_eq!(pkg.name, "pname");
         assert_eq!(pkg.functions.len(), 1);
@@ -189,7 +181,7 @@ mod tests {
         let pf = dummy_plugin_function();
         let f = CorePluginFunction::new_from_plugin_function(&pf, dummy_op());
         let pp = dummy_plugin_package();
-        let pkg = CorePluginPackage::new_from_plugin_package(&pp, vec![f], vec![]);
+        let pkg = CorePluginPackage::new_from_plugin_package(&pp, vec![f]);
         assert_eq!(pkg.id, pp.package_id);
         assert_eq!(pkg.name, pp.package_name);
         assert_eq!(pkg.functions.len(), 1);
