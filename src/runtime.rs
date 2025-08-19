@@ -387,4 +387,51 @@ mod tests {
             "Results should match expected output"
         );
     }
+    
+    #[test]
+    fn test_run_script_esm() {
+        use std::sync::{Arc, Mutex};
+        
+        #[op2(fast)]
+        fn dummy_test_48() -> u32 {
+            38
+        }
+
+        // テスト用workflow_dataを生成
+        let workflow_data = OpStateWorkflowData {
+            workflow_id: "test_id_123".to_string(),
+            result: vec![],
+            capture_stdout: true,
+        };
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
+
+        // JSスクリプトでopを呼び出し
+        let script = r#"
+            console.log("Initial stdout");
+            console.log(dummy_test_38());
+        "#;
+        
+        let esm = ExtensionFileSource::new_computed(
+            "dummy_op.js",
+            Arc::from("console.log('a')".to_string()),
+        );
+
+    let result = run_script(script, vec![dummy_test_48()], vec![], Some(workflow_data_arc.clone()), Some(vec![esm.clone()]));
+        assert!(
+            result.is_ok(),
+            "workflow_id should be accessible from opstate"
+        );
+
+        let expected = vec![
+            WorkflowStdout::Stdout("Initial stdout\n".to_string()),
+            WorkflowStdout::Stdout("38\n".to_string()),
+        ];
+
+        // Check if the result was added to the workflow_data
+        assert_eq!(
+            result.unwrap().lock().unwrap().get_results(),
+            &expected,
+            "Results should match expected output"
+        );
+    }
 }
