@@ -99,11 +99,27 @@ impl CoreWorkflowCode {
             .map(|r| r.workflow_result_revision + 1)
             .unwrap_or(1);
 
+        // Create pre-run script state
+
+        let pre_run_js: Option<Vec<String>> = {
+            let v: Vec<String> = self
+                .plugin_packages
+                .iter()
+                .flat_map(|pkg| {
+                    pkg.functions
+                        .iter()
+                        .filter_map(|func| func.pre_run_js.clone())
+                })
+                .collect();
+            if v.is_empty() { None } else { Some(v) }
+        };
+
         let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true);
         let result = run_script(
             &self.code,
             ops,
             Some(Arc::new(Mutex::new(opstate_workflow_data))),
+            pre_run_js,
         );
 
         let (description, result, result_type, exit_code) = match result {
@@ -171,6 +187,7 @@ mod tests {
             "fname".to_string(),
             "desc".to_string(),
             dummy_op(),
+            None,
         )
     }
 
@@ -180,6 +197,30 @@ mod tests {
             "pid".to_string(),
             "pname".to_string(),
             vec![dummy_plugin_function()],
+        )
+    }
+
+    fn dummy_plugin_function_with_pre_script() -> CorePluginFunction {
+        // Use a dummy OpDecl that returns u32, same as in plugin.rs tests
+        use deno_core::op2;
+        #[op2(fast)]
+        fn dummy_op() -> u32 {
+            42
+        }
+        CorePluginFunction::new(
+            "fid".to_string(),
+            "fname".to_string(),
+            "desc".to_string(),
+            dummy_op(),
+            Some("console.log('pre-run script');".to_string()),
+        )
+    }
+
+    fn dummy_plugin_package_with_pre_script() -> CorePluginPackage {
+        CorePluginPackage::new(
+            "pid".to_string(),
+            "pname".to_string(),
+            vec![dummy_plugin_function_with_pre_script()],
         )
     }
 
@@ -201,6 +242,26 @@ mod tests {
             sapphillon::v1::WorkflowResultType::SuccessUnspecified as i32
         );
         assert_eq!(res.result, "2\n");
+    }
+
+    #[test]
+    fn test_core_workflow_code_run_with_pre_script() {
+        let pkg = dummy_plugin_package_with_pre_script();
+        let mut code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "console.log(1 + 1);".to_string(),
+            vec![pkg],
+            1,
+        );
+        code.run();
+        assert_eq!(code.result.len(), 1);
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 0);
+        assert_eq!(
+            res.result_type,
+            sapphillon::v1::WorkflowResultType::SuccessUnspecified as i32
+        );
+        assert_eq!(res.result, "pre-run script\n\n2\n");
     }
 
     #[test]
