@@ -31,10 +31,6 @@ pub struct CorePluginFunction {
     pub func: Cow<'static, OpDecl>,
     /// Description of the function
     pub description: String,
-    /// ESM code (optional)
-    pub esm_code: Option<String>,
-    /// ESM specifier
-    pub esm_specifier: Option<String>,
 }
 
 impl CorePluginFunction {
@@ -49,16 +45,12 @@ impl CorePluginFunction {
         name: String,
         description: String,
         func: OpDecl,
-        esm_code: Option<String>,
-        esm_specifier: Option<String>,
     ) -> Self {
         Self {
             id,
             name,
             func: Cow::Owned(func),
             description,
-            esm_code,
-            esm_specifier,
         }
     }
 
@@ -73,9 +65,6 @@ impl CorePluginFunction {
             name: plugin_function.function_name.clone(),
             func: Cow::Owned(function),
             description: plugin_function.description.clone(),
-            // Proto currently has no ESM fields; keep them None for now
-            esm_code: None,
-            esm_specifier: None,
         }
     }
 }
@@ -164,8 +153,6 @@ mod tests {
             "name".to_string(),
             "description".to_string(),
             dummy_op(),
-            None,
-            None,
         );
         assert_eq!(func.id, "id");
         assert_eq!(func.name, "name");
@@ -187,8 +174,6 @@ mod tests {
             "name".to_string(),
             "desc".to_string(),
             dummy_op(),
-            None,
-            None,
         );
         let pkg = CorePluginPackage::new("pid".to_string(), "pname".to_string(), vec![f]);
         assert_eq!(pkg.id, "pid");

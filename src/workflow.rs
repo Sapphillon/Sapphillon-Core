@@ -23,7 +23,6 @@ use crate::runtime::{OpStateWorkflowData, run_script};
 use prost_types::Timestamp;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
-use deno_core::ExtensionFileSource;
 
 pub struct CoreWorkflowCode {
     /// Unique ID of the workflow code
@@ -100,37 +99,11 @@ impl CoreWorkflowCode {
             .map(|r| r.workflow_result_revision + 1)
             .unwrap_or(1);
 
-        let mut esm_files_vec: Vec<ExtensionFileSource> = Vec::new();
-
-        for pkg in &self.plugin_packages {
-            for func in &pkg.functions {
-                if let Some(esm_code) = &func.esm_code {
-                    // Convert Option<String> -> Arc<str> as required by ExtensionFileSource::new_computed
-                    let code_arc = Arc::from(esm_code.as_str());
-                    // Clone the specifier to own it, then leak into a &'static str required by ExtensionFileSource
-                    let specifier_owned = func.esm_specifier.clone().unwrap_or_default();
-                    let specifier_static: &'static str = Box::leak(specifier_owned.into_boxed_str());
-                    esm_files_vec.push(ExtensionFileSource::new_computed(specifier_static, code_arc));
-                }
-            }
-        }
-
-        let esm_files: Option<Vec<ExtensionFileSource>> = if esm_files_vec.is_empty() {
-            None
-        } else {
-            Some(esm_files_vec)
-        };
 
         
 
         let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true);
-        let result = run_script(
-            &self.code,
-            ops,
-            Vec::new(),
-            Some(Arc::new(Mutex::new(opstate_workflow_data))),
-            esm_files,
-        );
+        let result = run_script(&self.code, ops, Some(Arc::new(Mutex::new(opstate_workflow_data))));
 
         let (description, result, result_type, exit_code) = match result {
             Ok(data) => (
@@ -197,8 +170,6 @@ mod tests {
             "fname".to_string(),
             "desc".to_string(),
             dummy_op(),
-            None,
-            None,
         )
     }
 

@@ -19,7 +19,7 @@
 #![warn(clippy::field_reassign_with_default)]
 
 use crate::core::op_print_wrapper;
-use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError, ExtensionFileSource};
+use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
 use std::sync::{Arc, Mutex};
 
@@ -108,9 +108,7 @@ impl OpStateWorkflowData {
 pub(crate) fn run_script(
     script: &str,
     ext_func: Vec<OpDecl>,
-    exts: Vec<Extension>,
     workflow_data: Option<Arc<Mutex<OpStateWorkflowData>>>,
-    esm_files: Option<Vec<ExtensionFileSource>>,
 ) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<JsError>> {
     // Register the extension with the provided operations
     let extension = Extension {
@@ -120,15 +118,10 @@ pub(crate) fn run_script(
             "op_print" => op_print_wrapper(),
             _ => op,
         })),
-        esm_files: esm_files.unwrap_or_default().into(),
         ..Default::default()
     };
     
     let mut extensions = vec![extension];
-    
-    exts.into_iter().for_each(|ext| {
-        extensions.push(ext);
-    });
 
 
     // Create a new JsRuntime with the extension
@@ -174,7 +167,7 @@ mod tests {
         console.log("Sum of [1, 2, 3, 4, 5]", Deno.core.ops.test_op([1, 2, 3, 4, 5]));
         "#;
 
-        let result = run_script(script, vec![test_op()], vec![], None, None);
+        let result = run_script(script, vec![test_op()], None);
         println!("[test_extension] result: {result:?}");
     }
 
@@ -182,14 +175,14 @@ mod tests {
     fn test_run_script() {
         let script = "1 + 1;";
 
-        let result = run_script(script, vec![], vec![],None,None);
+        let result = run_script(script, vec![], None);
         assert!(result.is_ok(), "Script should run successfully");
     }
     #[test]
     fn test_run_script_hello() {
         let script = "a = 1 + 1; console.log('Hello, world!');console.log(a);";
 
-        let result = run_script(script, vec![], vec![], None, None);
+        let result = run_script(script, vec![], None);
         assert!(result.is_ok(), "Script should run successfully");
     }
 
@@ -224,7 +217,7 @@ mod tests {
             }
         "#;
 
-        let result = run_script(script, vec![get_workflow_id()], vec![], Some(workflow_data_arc), None);
+        let result = run_script(script, vec![get_workflow_id()], Some(workflow_data_arc));
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -259,7 +252,7 @@ mod tests {
             Deno.core.ops.add_stdout();
         "#;
 
-    let result = run_script(script, vec![add_stdout()], vec![], Some(workflow_data_arc.clone()), None);
+    let result = run_script(script, vec![add_stdout()], Some(workflow_data_arc.clone()));
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -297,7 +290,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-        let result = run_script(script, vec![], vec![], Some(workflow_data_arc.clone()), None);
+        let result = run_script(script, vec![], Some(workflow_data_arc.clone()));
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -369,7 +362,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-    let result = run_script(script, vec![], vec![], Some(workflow_data_arc.clone()), None);
+    let result = run_script(script, vec![], Some(workflow_data_arc.clone()));
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -378,53 +371,6 @@ mod tests {
         let expected = vec![
             WorkflowStdout::Stdout("Initial stdout\n".to_string()),
             WorkflowStdout::Stdout("Test stdout\n".to_string()),
-        ];
-
-        // Check if the result was added to the workflow_data
-        assert_eq!(
-            result.unwrap().lock().unwrap().get_results(),
-            &expected,
-            "Results should match expected output"
-        );
-    }
-    
-    #[test]
-    fn test_run_script_esm() {
-        use std::sync::{Arc, Mutex};
-        
-        #[op2(fast)]
-        fn dummy_test_48() -> u32 {
-            38
-        }
-
-        // テスト用workflow_dataを生成
-        let workflow_data = OpStateWorkflowData {
-            workflow_id: "test_id_123".to_string(),
-            result: vec![],
-            capture_stdout: true,
-        };
-        let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
-
-        // JSスクリプトでopを呼び出し
-        let script = r#"
-            console.log("Initial stdout");
-            console.log(dummy_test_38());
-        "#;
-        
-        let esm = ExtensionFileSource::new_computed(
-            "dummy_op.js",
-            Arc::from("console.log('a')".to_string()),
-        );
-
-    let result = run_script(script, vec![dummy_test_48()], vec![], Some(workflow_data_arc.clone()), Some(vec![esm.clone()]));
-        assert!(
-            result.is_ok(),
-            "workflow_id should be accessible from opstate"
-        );
-
-        let expected = vec![
-            WorkflowStdout::Stdout("Initial stdout\n".to_string()),
-            WorkflowStdout::Stdout("38\n".to_string()),
         ];
 
         // Check if the result was added to the workflow_data
