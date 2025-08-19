@@ -389,4 +389,47 @@ mod tests {
             "Results should match expected output"
         );
     }
+   #[test]
+    fn test_run_pre_script() {
+        use std::sync::{Arc, Mutex};
+
+        // テスト用workflow_dataを生成
+        let workflow_data = OpStateWorkflowData {
+            workflow_id: "test_id_123".to_string(),
+            result: vec![],
+            capture_stdout: true,
+        };
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
+        
+        let pre_script_1 = "console.log('Pre script 1 executed');".to_string();
+        let pre_script_2 = r#"
+            function test_38() {
+                return 38;
+            }
+            globalThis.test_38 = test_38;
+        "#.to_string();
+
+        // JSスクリプトでopを呼び出し
+        let script = r#"
+            console.log(test_38());
+        "#;
+
+    let result = run_script(script, vec![], Some(workflow_data_arc.clone()), Some(vec![pre_script_1, pre_script_2]));
+        assert!(
+            result.is_ok(),
+            "workflow_id should be accessible from opstate"
+        );
+
+        let expected = vec![
+            WorkflowStdout::Stdout("Pre script 1 executed\n".to_string()),
+            WorkflowStdout::Stdout("38\n".to_string()),
+        ];
+
+        // Check if the result was added to the workflow_data
+        assert_eq!(
+            result.unwrap().lock().unwrap().get_results(),
+            &expected,
+            "Results should match expected output"
+        );
+    }
 }
