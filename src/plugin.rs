@@ -31,6 +31,8 @@ pub struct CorePluginFunction {
     pub func: Cow<'static, OpDecl>,
     /// Description of the function
     pub description: String,
+    /// Optional: Pre Run Script
+    pub pre_run_js: Option<String>,
 }
 
 impl CorePluginFunction {
@@ -45,11 +47,13 @@ impl CorePluginFunction {
         name: String,
         description: String,
         func: OpDecl,
+        pre_run_js: Option<String>,
     ) -> Self {
         Self {
             id,
             name,
             func: Cow::Owned(func),
+            pre_run_js,
             description,
         }
     }
@@ -65,6 +69,8 @@ impl CorePluginFunction {
             name: plugin_function.function_name.clone(),
             func: Cow::Owned(function),
             description: plugin_function.description.clone(),
+            pre_run_js: None,
+            
         }
     }
 }
@@ -153,6 +159,7 @@ mod tests {
             "name".to_string(),
             "description".to_string(),
             dummy_op(),
+            None
         );
         assert_eq!(func.id, "id");
         assert_eq!(func.name, "name");
@@ -174,6 +181,7 @@ mod tests {
             "name".to_string(),
             "desc".to_string(),
             dummy_op(),
+            Some("pre_run_js".to_string()),
         );
         let pkg = CorePluginPackage::new("pid".to_string(), "pname".to_string(), vec![f]);
         assert_eq!(pkg.id, "pid");

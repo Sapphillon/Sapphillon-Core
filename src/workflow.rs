@@ -170,6 +170,7 @@ mod tests {
             "fname".to_string(),
             "desc".to_string(),
             dummy_op(),
+            None
         )
     }
 
