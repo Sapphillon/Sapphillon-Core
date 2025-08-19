@@ -121,9 +121,8 @@ pub(crate) fn run_script(
         })),
         ..Default::default()
     };
-    
-    let mut extensions = vec![extension];
 
+    let mut extensions = vec![extension];
 
     // Create a new JsRuntime with the extension
     let mut runtime = JsRuntime::new(RuntimeOptions {
@@ -143,13 +142,10 @@ pub(crate) fn run_script(
         }
     }
     runtime.op_state().borrow_mut().put(data.clone());
-    
-    match pre_script {
-        Some(scripts) => {
-            let pre_run_script = scripts.join("\n");
-            runtime.execute_script("pre_script.js", pre_run_script)?;
-        }
-        None => {}
+
+    if let Some(scripts) = pre_script {
+        let pre_run_script = scripts.join("\n");
+        runtime.execute_script("pre_script.js", pre_run_script)?;
     }
 
     // Execute the provided script in the runtime
@@ -226,7 +222,12 @@ mod tests {
             }
         "#;
 
-        let result = run_script(script, vec![get_workflow_id()], Some(workflow_data_arc), None);
+        let result = run_script(
+            script,
+            vec![get_workflow_id()],
+            Some(workflow_data_arc),
+            None,
+        );
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -261,7 +262,12 @@ mod tests {
             Deno.core.ops.add_stdout();
         "#;
 
-    let result = run_script(script, vec![add_stdout()], Some(workflow_data_arc.clone()), None);
+        let result = run_script(
+            script,
+            vec![add_stdout()],
+            Some(workflow_data_arc.clone()),
+            None,
+        );
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -371,7 +377,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-    let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
+        let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -389,7 +395,7 @@ mod tests {
             "Results should match expected output"
         );
     }
-   #[test]
+    #[test]
     fn test_run_pre_script() {
         use std::sync::{Arc, Mutex};
 
@@ -400,21 +406,27 @@ mod tests {
             capture_stdout: true,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
-        
+
         let pre_script_1 = "console.log('Pre script 1 executed');".to_string();
         let pre_script_2 = r#"
             function test_38() {
                 return 38;
             }
             globalThis.test_38 = test_38;
-        "#.to_string();
+        "#
+        .to_string();
 
         // JSスクリプトでopを呼び出し
         let script = r#"
             console.log(test_38());
         "#;
 
-    let result = run_script(script, vec![], Some(workflow_data_arc.clone()), Some(vec![pre_script_1, pre_script_2]));
+        let result = run_script(
+            script,
+            vec![],
+            Some(workflow_data_arc.clone()),
+            Some(vec![pre_script_1, pre_script_2]),
+        );
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"

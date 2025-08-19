@@ -17,7 +17,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::proto::sapphillon::v1::{PluginFunction, PluginPackage};
-use deno_core::{OpDecl, Extension};
+use deno_core::OpDecl;
 use std::borrow::Cow;
 
 /// Core representation of a plugin function.
@@ -70,7 +70,6 @@ impl CorePluginFunction {
             func: Cow::Owned(function),
             description: plugin_function.description.clone(),
             pre_run_js: None,
-            
         }
     }
 }
@@ -159,7 +158,7 @@ mod tests {
             "name".to_string(),
             "description".to_string(),
             dummy_op(),
-            None
+            None,
         );
         assert_eq!(func.id, "id");
         assert_eq!(func.name, "name");

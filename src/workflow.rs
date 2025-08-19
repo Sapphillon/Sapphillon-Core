@@ -111,15 +111,16 @@ impl CoreWorkflowCode {
                         .filter_map(|func| func.pre_run_js.clone())
                 })
                 .collect();
-            if v.is_empty() {
-                None
-            } else {
-                Some(v)
-            }
+            if v.is_empty() { None } else { Some(v) }
         };
 
         let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true);
-        let result = run_script(&self.code, ops, Some(Arc::new(Mutex::new(opstate_workflow_data))), pre_run_js);
+        let result = run_script(
+            &self.code,
+            ops,
+            Some(Arc::new(Mutex::new(opstate_workflow_data))),
+            pre_run_js,
+        );
 
         let (description, result, result_type, exit_code) = match result {
             Ok(data) => (
@@ -186,7 +187,7 @@ mod tests {
             "fname".to_string(),
             "desc".to_string(),
             dummy_op(),
-            None
+            None,
         )
     }
 
@@ -211,10 +212,9 @@ mod tests {
             "fname".to_string(),
             "desc".to_string(),
             dummy_op(),
-            Some("console.log('pre-run script');".to_string())
+            Some("console.log('pre-run script');".to_string()),
         )
     }
-    
 
     fn dummy_plugin_package_with_pre_script() -> CorePluginPackage {
         CorePluginPackage::new(
@@ -223,7 +223,7 @@ mod tests {
             vec![dummy_plugin_function_with_pre_script()],
         )
     }
-    
+
     #[test]
     fn test_core_workflow_code_run_success() {
         let pkg = dummy_plugin_package();
