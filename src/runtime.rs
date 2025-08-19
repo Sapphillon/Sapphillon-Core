@@ -109,6 +109,7 @@ pub(crate) fn run_script(
     script: &str,
     ext_func: Vec<OpDecl>,
     workflow_data: Option<Arc<Mutex<OpStateWorkflowData>>>,
+    pre_script: Option<Vec<String>>,
 ) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<JsError>> {
     // Register the extension with the provided operations
     let extension = Extension {
@@ -142,6 +143,14 @@ pub(crate) fn run_script(
         }
     }
     runtime.op_state().borrow_mut().put(data.clone());
+    
+    match pre_script {
+        Some(scripts) => {
+            let pre_run_script = scripts.join("\n");
+            runtime.execute_script("pre_script.js", pre_run_script)?;
+        }
+        None => {}
+    }
 
     // Execute the provided script in the runtime
     let result = runtime.execute_script("workflow.js", script.to_string())?;
@@ -167,7 +176,7 @@ mod tests {
         console.log("Sum of [1, 2, 3, 4, 5]", Deno.core.ops.test_op([1, 2, 3, 4, 5]));
         "#;
 
-        let result = run_script(script, vec![test_op()], None);
+        let result = run_script(script, vec![test_op()], None, None);
         println!("[test_extension] result: {result:?}");
     }
 
@@ -175,14 +184,14 @@ mod tests {
     fn test_run_script() {
         let script = "1 + 1;";
 
-        let result = run_script(script, vec![], None);
+        let result = run_script(script, vec![], None, None);
         assert!(result.is_ok(), "Script should run successfully");
     }
     #[test]
     fn test_run_script_hello() {
         let script = "a = 1 + 1; console.log('Hello, world!');console.log(a);";
 
-        let result = run_script(script, vec![], None);
+        let result = run_script(script, vec![], None, None);
         assert!(result.is_ok(), "Script should run successfully");
     }
 
@@ -217,7 +226,7 @@ mod tests {
             }
         "#;
 
-        let result = run_script(script, vec![get_workflow_id()], Some(workflow_data_arc));
+        let result = run_script(script, vec![get_workflow_id()], Some(workflow_data_arc), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -252,7 +261,7 @@ mod tests {
             Deno.core.ops.add_stdout();
         "#;
 
-    let result = run_script(script, vec![add_stdout()], Some(workflow_data_arc.clone()));
+    let result = run_script(script, vec![add_stdout()], Some(workflow_data_arc.clone()), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -290,7 +299,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-        let result = run_script(script, vec![], Some(workflow_data_arc.clone()));
+        let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -362,7 +371,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-    let result = run_script(script, vec![], Some(workflow_data_arc.clone()));
+    let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"

@@ -103,7 +103,7 @@ impl CoreWorkflowCode {
         
 
         let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true);
-        let result = run_script(&self.code, ops, Some(Arc::new(Mutex::new(opstate_workflow_data))));
+        let result = run_script(&self.code, ops, Some(Arc::new(Mutex::new(opstate_workflow_data))), None);
 
         let (description, result, result_type, exit_code) = match result {
             Ok(data) => (
