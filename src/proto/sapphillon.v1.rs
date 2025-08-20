@@ -526,5 +526,27 @@ pub struct FixWorkflowResponse {
     #[prost(message, optional, tag="3")]
     pub status: ::core::option::Option<super::super::google::rpc::Status>,
 }
+/// Request to run a workflow.
+/// Contains the workflow definition to be executed.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RunWorkflowRequest {
+    /// The workflow definition to run.
+    #[prost(message, optional, tag="1")]
+    pub workflow_definition: ::core::option::Option<Workflow>,
+}
+/// Response after running a workflow.
+/// Contains the result of the workflow execution and status.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RunWorkflowResponse {
+    /// The result of the workflow execution.
+    #[prost(message, optional, tag="1")]
+    pub workflow_result: ::core::option::Option<WorkflowResult>,
+    /// The status of the response.
+    /// If the status is not OK, it indicates an error.
+    #[prost(message, optional, tag="2")]
+    pub status: ::core::option::Option<super::super::google::rpc::Status>,
+}
 include!("sapphillon.v1.tonic.rs");
 // @@protoc_insertion_point(module)
