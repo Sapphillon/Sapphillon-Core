@@ -487,11 +487,8 @@ pub struct GenerateWorkflowRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenerateWorkflowResponse {
     /// Structured workflow definition.
-    /// Format: String-encoded structure such as JSON or YAML.
-    /// Example (JSON):
-    ///    {"steps":\[{"id":"check_weather"},{"id":"notify","if":"raining"}\]}
-    #[prost(string, tag="1")]
-    pub workflow_definition: ::prost::alloc::string::String,
+    #[prost(message, optional, tag="1")]
+    pub workflow_definition: ::core::option::Option<Workflow>,
     /// The status of the response.
     /// If the status is not OK, it indicates an error.
     #[prost(message, optional, tag="2")]
@@ -518,9 +515,8 @@ pub struct FixWorkflowRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FixWorkflowResponse {
     /// The fixed workflow definition.
-    /// Format: JSON, YAML, or another structured text representation.
-    #[prost(string, tag="1")]
-    pub fixed_workflow_definition: ::prost::alloc::string::String,
+    #[prost(message, optional, tag="1")]
+    pub fixed_workflow_definition: ::core::option::Option<Workflow>,
     /// Summary of changes applied to produce the fixed definition.
     /// Example: "Renamed duplicate step IDs; added retry policy to 'notify'."
     #[prost(string, tag="2")]
