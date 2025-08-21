@@ -3,8 +3,6 @@ name: Rust Testing
 
 on:
   pull_request:
-  push:
-    branches: [ main ]
   workflow_dispatch:
   workflow_call:
 
