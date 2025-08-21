@@ -20,8 +20,8 @@
 pub use crate::error::Error;
 
 pub mod core;
+pub mod error;
 pub mod plugin;
 pub mod proto;
 pub mod runtime;
 pub mod workflow;
-pub mod error;

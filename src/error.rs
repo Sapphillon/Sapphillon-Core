@@ -65,16 +65,21 @@ pub enum WorkflowRuntimeErrorType {
     ///
     /// This covers runtime failures originating from the user-provided
     /// workflow script (script exceptions, evaluation errors, etc.).
-    WorkflowScriptExecuteError
-    
+    WorkflowScriptExecuteError,
 }
 
 impl std::fmt::Display for WorkflowRuntimeErrorType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            WorkflowRuntimeErrorType::CorePluginPrepareError => write!(f, "Core plugin prepare error"),
-            WorkflowRuntimeErrorType::CorePluginExecuteError => write!(f, "Core plugin execute error"),
-            WorkflowRuntimeErrorType::WorkflowScriptExecuteError => write!(f, "Workflow script execute error"),
+            WorkflowRuntimeErrorType::CorePluginPrepareError => {
+                write!(f, "Core plugin prepare error")
+            }
+            WorkflowRuntimeErrorType::CorePluginExecuteError => {
+                write!(f, "Core plugin execute error")
+            }
+            WorkflowRuntimeErrorType::WorkflowScriptExecuteError => {
+                write!(f, "Workflow script execute error")
+            }
         }
     }
 }
