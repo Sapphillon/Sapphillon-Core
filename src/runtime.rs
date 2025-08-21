@@ -19,6 +19,7 @@
 #![warn(clippy::field_reassign_with_default)]
 
 use crate::core::op_print_wrapper;
+use crate::error::{Error as SapphillonError, WorkflowRuntimeError, WorkflowRuntimeErrorType};
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
 use std::sync::{Arc, Mutex};
@@ -110,7 +111,7 @@ pub(crate) fn run_script(
     ext_func: Vec<OpDecl>,
     workflow_data: Option<Arc<Mutex<OpStateWorkflowData>>>,
     pre_script: Option<Vec<String>>,
-) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<JsError>> {
+) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<SapphillonError>> {
     // Register the extension with the provided operations
     let extension = Extension {
         name: "ext",
@@ -143,13 +144,26 @@ pub(crate) fn run_script(
     }
     runtime.op_state().borrow_mut().put(data.clone());
 
+    // Execute pre-run scripts if provided from core plugins
     if let Some(scripts) = pre_script {
         let pre_run_script = scripts.join("\n");
-        runtime.execute_script("pre_script.js", pre_run_script)?;
+        runtime.execute_script("pre_script.js", pre_run_script).map_err(|e: JsError| {
+            Box::new(SapphillonError::WorkflowRuntimeError(WorkflowRuntimeError {
+                message: "Failed to execute pre_script".to_string(),
+                error_type: WorkflowRuntimeErrorType::CorePluginPrepareError,
+                js_error: e,
+            }))
+        })?;
     }
 
     // Execute the provided script in the runtime
-    let result = runtime.execute_script("workflow.js", script.to_string())?;
+    runtime.execute_script("workflow.js", script.to_string()).map_err(|e: JsError| {
+        Box::new(SapphillonError::WorkflowRuntimeError(WorkflowRuntimeError {
+            message: "Failed to execute workflow script".to_string(),
+            error_type: WorkflowRuntimeErrorType::WorkflowScriptExecuteError,
+            js_error: e,
+        }))
+    })?;
 
     Ok(data)
 }
