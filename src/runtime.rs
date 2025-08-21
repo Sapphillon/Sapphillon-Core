@@ -466,4 +466,121 @@ mod tests {
             "Results should match expected output"
         );
     }
+    #[test]
+    fn test_run_script_with_pre_and_workflow_success_simple() {
+        use std::sync::{Arc, Mutex};
+
+        // Prepare workflow_data that captures stdout
+        let workflow_data = OpStateWorkflowData::new("wid_simple", true);
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        // Pre-script lines (will be joined with "\n")
+        let pre1 = "console.log('pre-run');".to_string();
+        let pre2 = "globalThis._val = 123;".to_string();
+
+        // Workflow script uses value set by pre-script
+        let script = r#"
+            console.log(globalThis._val);
+        "#;
+
+        let res = run_script(
+            script,
+            vec![],
+            Some(workflow_data_arc.clone()),
+            Some(vec![pre1, pre2]),
+        );
+        assert!(
+            res.is_ok(),
+            "Expected run_script to succeed when pre and workflow are valid"
+        );
+
+        let results = res.unwrap().lock().unwrap().get_results().clone();
+        // Expect pre-run output first, then workflow output
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0], WorkflowStdout::Stdout("pre-run\n".to_string()));
+        assert_eq!(results[1], WorkflowStdout::Stdout("123\n".to_string()));
+    }
+
+    #[test]
+    fn test_run_script_no_pre_script_simple() {
+        use std::sync::{Arc, Mutex};
+
+        let workflow_data = OpStateWorkflowData::new("wid_no_pre", true);
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        let script = r#"console.log('only workflow');"#;
+
+        let res = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
+        assert!(
+            res.is_ok(),
+            "Expected run_script to succeed when only workflow runs"
+        );
+
+        let results = res.unwrap().lock().unwrap().get_results().clone();
+        assert_eq!(results.len(), 1);
+        assert_eq!(
+            results[0],
+            WorkflowStdout::Stdout("only workflow\n".to_string())
+        );
+    }
+
+    #[test]
+    fn test_run_script_pre_script_failure_maps_error() {
+        
+
+        // Invalid JS in pre_script to force a JsError (syntax error)
+        let bad_pre = "function() {".to_string();
+        let script = r#"console.log('should not run');"#;
+
+        let res = run_script(script, vec![], None, Some(vec![bad_pre]));
+        match res {
+            Err(e) => match *e {
+                SapphillonError::WorkflowRuntimeError(wr) => {
+                    assert_eq!(wr.message, "Failed to execute pre_script");
+                    match wr.error_type {
+                        WorkflowRuntimeErrorType::CorePluginPrepareError => {}
+                        _ => panic!("unexpected error_type for pre_script failure"),
+                    }
+                    // js_error should contain a syntax error message
+                    let s = format!("{}", wr.js_error);
+                    assert!(
+                        s.to_lowercase().contains("syntax")
+                            || s.to_lowercase().contains("unexpected"),
+                        "js_error should indicate a syntax/unexpected token error, got: {s}"
+                    );
+                }
+            },
+            Ok(_) => panic!("expected an error when pre_script is invalid"),
+        }
+    }
+
+    #[test]
+    fn test_run_script_workflow_failure_maps_error() {
+        
+
+        // Valid pre-script
+        let pre = "console.log('pre ok');".to_string();
+        // Invalid workflow script (syntax error)
+        let bad_workflow = "var = ;".to_string();
+
+        let res = run_script(&bad_workflow, vec![], None, Some(vec![pre]));
+        match res {
+            Err(e) => match *e {
+                SapphillonError::WorkflowRuntimeError(wr) => {
+                    assert_eq!(wr.message, "Failed to execute workflow script");
+                    match wr.error_type {
+                        WorkflowRuntimeErrorType::WorkflowScriptExecuteError => {}
+                        _ => panic!("unexpected error_type for workflow failure"),
+                    }
+                    let s = format!("{}", wr.js_error);
+                    assert!(
+                        s.to_lowercase().contains("syntax")
+                            || s.to_lowercase().contains("unexpected"),
+                        "js_error should indicate a syntax/unexpected token error, got: {s}"
+                    );
+                }
+            },
+            Ok(_) => panic!("expected an error when workflow script is invalid"),
+        }
+    }
 }
