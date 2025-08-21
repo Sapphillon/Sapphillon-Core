@@ -44,7 +44,7 @@ pub mod google {
     pub mod r#type {
         include!("proto/google.type.rs");
     }
-    
+
     pub mod protobuf {
         include!("proto/google.protobuf.rs");
         pub mod compiler {
