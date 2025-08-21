@@ -1,6 +1,6 @@
 [package]
 name = "sapphillon_core"
-version = "0.5.4"
+version = "0.5.5"
 edition = "2024"
 authors = ["Yuta Takahashi <y.highbridge04@gmail.com>"]
 license-file = "LICENSE"
@@ -23,6 +23,7 @@ deno_core = { version = "0.355.0", default-features = false }
 deno_runtime = "0.221.0"
 deno_permissions = "0.72.0"
 deno_error = "0.7.0"
+unescaper = "0.1.6"
 
 
 [build-dependencies]
