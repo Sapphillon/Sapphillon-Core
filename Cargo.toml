@@ -24,6 +24,7 @@ deno_runtime = "0.221.0"
 deno_permissions = "0.72.0"
 deno_error = "0.7.0"
 unescaper = "0.1.6"
+thiserror = "2.0.16"
 
 
 [build-dependencies]
