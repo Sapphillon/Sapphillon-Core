@@ -52,7 +52,7 @@ impl CoreWorkflowCode {
     ) -> Self {
         Self {
             id,
-            code,
+            code: unescaper::unescape(&code).unwrap(),
             plugin_packages,
             code_revision,
             result: Vec::new(),
@@ -212,7 +212,7 @@ mod tests {
             "fname".to_string(),
             "desc".to_string(),
             dummy_op(),
-            Some("console.log('pre-run script');".to_string()),
+            Some(r"console.log('pre-run script');".to_string()),
         )
     }
 
@@ -298,12 +298,12 @@ mod tests {
         let pkg = dummy_plugin_package();
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
-            "console.log('test');".to_string(),
+            r"\nconsole.log('test');".to_string(),
             vec![pkg],
             2,
         );
         assert_eq!(code.id, "wid");
-        assert_eq!(code.code, "console.log('test');");
+        assert_eq!(code.code, "\nconsole.log('test');");
         assert_eq!(code.plugin_packages.len(), 1);
         assert_eq!(code.code_revision, 2);
         assert!(code.result.is_empty());
