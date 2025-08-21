@@ -53,6 +53,10 @@ pub struct Permission {
     #[prost(enumeration="PermissionLevel", tag="5")]
     pub permission_level: i32,
 }
+impl ::prost::Name for Permission {
+const NAME: &'static str = "Permission";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.Permission".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.Permission".into() }}
 /// Enumerates the type of action a permission authorizes.
 /// Values:
 /// - PERMISSION_TYPE_UNSPECIFIED: Default value. Do not use.
@@ -173,6 +177,10 @@ pub struct PluginFunction {
     #[prost(message, repeated, tag="4")]
     pub permissions: ::prost::alloc::vec::Vec<Permission>,
 }
+impl ::prost::Name for PluginFunction {
+const NAME: &'static str = "PluginFunction";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.PluginFunction".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.PluginFunction".into() }}
 /// Represents a plugin package that can be installed into the platform.
 /// A plugin groups one or more functions and includes metadata useful for discovery and governance.
 ///
@@ -239,11 +247,15 @@ pub struct PluginPackage {
     pub deprecated: ::core::option::Option<bool>,
     /// Time when the plugin was installed.
     #[prost(message, optional, tag="10")]
-    pub installed_at: ::core::option::Option<::prost_types::Timestamp>,
+    pub installed_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// Time when the plugin metadata or package was last updated.
     #[prost(message, optional, tag="11")]
-    pub updated_at: ::core::option::Option<::prost_types::Timestamp>,
+    pub updated_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
 }
+impl ::prost::Name for PluginPackage {
+const NAME: &'static str = "PluginPackage";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.PluginPackage".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.PluginPackage".into() }}
 /// Represents application version information.
 /// The version string typically follows Semantic Versioning.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -255,12 +267,20 @@ pub struct Version {
     #[prost(string, tag="1")]
     pub version: ::prost::alloc::string::String,
 }
+impl ::prost::Name for Version {
+const NAME: &'static str = "Version";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.Version".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.Version".into() }}
 /// Request for GetVersion.
 /// This message is intentionally empty to allow future extensibility without breaking changes.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct GetVersionRequest {
 }
+impl ::prost::Name for GetVersionRequest {
+const NAME: &'static str = "GetVersionRequest";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.GetVersionRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.GetVersionRequest".into() }}
 /// Response for GetVersion.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -269,6 +289,10 @@ pub struct GetVersionResponse {
     #[prost(message, optional, tag="1")]
     pub version: ::core::option::Option<Version>,
 }
+impl ::prost::Name for GetVersionResponse {
+const NAME: &'static str = "GetVersionResponse";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.GetVersionResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.GetVersionResponse".into() }}
 /// Represents a specific revision of workflow source code and metadata.
 ///
 /// Fields:
@@ -302,7 +326,7 @@ pub struct WorkflowCode {
     pub language: i32,
     /// Creation time of this code revision.
     #[prost(message, optional, tag="5")]
-    pub created_at: ::core::option::Option<::prost_types::Timestamp>,
+    pub created_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// Optional result previews or cached outputs associated with this code revision.
     /// Behavior: Optional. May be empty when no run has occurred. Can store multiple results.
     #[prost(message, repeated, tag="6")]
@@ -319,6 +343,10 @@ pub struct WorkflowCode {
     #[prost(string, repeated, tag="9")]
     pub plugin_function_ids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+impl ::prost::Name for WorkflowCode {
+const NAME: &'static str = "WorkflowCode";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.WorkflowCode".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.WorkflowCode".into() }}
 /// Captures the result of running a workflow at a specific code revision.
 ///
 /// Fields:
@@ -351,7 +379,7 @@ pub struct WorkflowResult {
     pub result: ::prost::alloc::string::String,
     /// Time the execution completed.
     #[prost(message, optional, tag="5")]
-    pub ran_at: ::core::option::Option<::prost_types::Timestamp>,
+    pub ran_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// Success or failure classification.
     #[prost(enumeration="WorkflowResultType", tag="6")]
     pub result_type: i32,
@@ -362,6 +390,10 @@ pub struct WorkflowResult {
     #[prost(int32, tag="9")]
     pub workflow_result_revision: i32,
 }
+impl ::prost::Name for WorkflowResult {
+const NAME: &'static str = "WorkflowResult";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.WorkflowResult".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.WorkflowResult".into() }}
 /// Represents a workflow entity including its code history and execution results.
 ///
 /// Fields:
@@ -397,14 +429,18 @@ pub struct Workflow {
     pub workflow_code: ::prost::alloc::vec::Vec<WorkflowCode>,
     /// Creation time of the workflow.
     #[prost(message, optional, tag="6")]
-    pub created_at: ::core::option::Option<::prost_types::Timestamp>,
+    pub created_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// Last update time of the workflow.
     #[prost(message, optional, tag="7")]
-    pub updated_at: ::core::option::Option<::prost_types::Timestamp>,
+    pub updated_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// Historical execution results for this workflow.
     #[prost(message, repeated, tag="8")]
     pub workflow_results: ::prost::alloc::vec::Vec<WorkflowResult>,
 }
+impl ::prost::Name for Workflow {
+const NAME: &'static str = "Workflow";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.Workflow".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.Workflow".into() }}
 /// Enumerates supported workflow source languages.
 /// Used to indicate the language of WorkflowCode.code.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -481,6 +517,10 @@ pub struct GenerateWorkflowRequest {
     #[prost(string, tag="1")]
     pub prompt: ::prost::alloc::string::String,
 }
+impl ::prost::Name for GenerateWorkflowRequest {
+const NAME: &'static str = "GenerateWorkflowRequest";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.GenerateWorkflowRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.GenerateWorkflowRequest".into() }}
 /// Server-streamed response containing the generated workflow definition.
 /// Each streamed message may be partial; the client should merge or replace as appropriate.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -494,6 +534,10 @@ pub struct GenerateWorkflowResponse {
     #[prost(message, optional, tag="2")]
     pub status: ::core::option::Option<super::super::google::rpc::Status>,
 }
+impl ::prost::Name for GenerateWorkflowResponse {
+const NAME: &'static str = "GenerateWorkflowResponse";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.GenerateWorkflowResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.GenerateWorkflowResponse".into() }}
 /// Request to fix a workflow definition using a problem description.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -509,6 +553,10 @@ pub struct FixWorkflowRequest {
     #[prost(string, tag="2")]
     pub description: ::prost::alloc::string::String,
 }
+impl ::prost::Name for FixWorkflowRequest {
+const NAME: &'static str = "FixWorkflowRequest";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.FixWorkflowRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.FixWorkflowRequest".into() }}
 /// Server-streamed response carrying fixed workflow definitions and a change summary.
 /// The final message typically represents the complete fixed definition.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -526,6 +574,10 @@ pub struct FixWorkflowResponse {
     #[prost(message, optional, tag="3")]
     pub status: ::core::option::Option<super::super::google::rpc::Status>,
 }
+impl ::prost::Name for FixWorkflowResponse {
+const NAME: &'static str = "FixWorkflowResponse";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.FixWorkflowResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.FixWorkflowResponse".into() }}
 /// Request to run a workflow.
 /// Contains the workflow definition to be executed.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -535,6 +587,10 @@ pub struct RunWorkflowRequest {
     #[prost(message, optional, tag="1")]
     pub workflow_definition: ::core::option::Option<Workflow>,
 }
+impl ::prost::Name for RunWorkflowRequest {
+const NAME: &'static str = "RunWorkflowRequest";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.RunWorkflowRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.RunWorkflowRequest".into() }}
 /// Response after running a workflow.
 /// Contains the result of the workflow execution and status.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -548,6 +604,10 @@ pub struct RunWorkflowResponse {
     #[prost(message, optional, tag="2")]
     pub status: ::core::option::Option<super::super::google::rpc::Status>,
 }
+impl ::prost::Name for RunWorkflowResponse {
+const NAME: &'static str = "RunWorkflowResponse";
+const PACKAGE: &'static str = "sapphillon.v1";
+fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.RunWorkflowResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.RunWorkflowResponse".into() }}
 /// Encoded file descriptor set for the `sapphillon.v1` package
 pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0a, 0xe1, 0x2a, 0x0a, 0x1e, 0x73, 0x61, 0x70, 0x70, 0x68, 0x69, 0x6c, 0x6c, 0x6f, 0x6e, 0x2f,

@@ -15,6 +15,10 @@ pub struct LatLng {
     #[prost(double, tag="2")]
     pub longitude: f64,
 }
+impl ::prost::Name for LatLng {
+const NAME: &'static str = "LatLng";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.LatLng".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.LatLng".into() }}
 /// A `CalendarPeriod` represents the abstract concept of a time period that has
 /// a canonical start. Grammatically, "the start of the current
 /// `CalendarPeriod`." All calendar times begin at midnight UTC.
@@ -222,8 +226,12 @@ pub struct Color {
     /// If omitted, this color object is rendered as a solid color
     /// (as if the alpha value had been explicitly given a value of 1.0).
     #[prost(message, optional, tag="4")]
-    pub alpha: ::core::option::Option<f32>,
+    pub alpha: ::core::option::Option<super::protobuf::FloatValue>,
 }
+impl ::prost::Name for Color {
+const NAME: &'static str = "Color";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.Color".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.Color".into() }}
 /// Represents a whole or partial calendar date, such as a birthday. The time of
 /// day and time zone are either specified elsewhere or are insignificant. The
 /// date is relative to the Gregorian Calendar. This can represent one of the
@@ -254,6 +262,10 @@ pub struct Date {
     #[prost(int32, tag="3")]
     pub day: i32,
 }
+impl ::prost::Name for Date {
+const NAME: &'static str = "Date";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.Date".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.Date".into() }}
 /// Represents civil time (or occasionally physical time).
 ///
 /// This type can represent a civil time in one of a few possible ways:
@@ -330,12 +342,16 @@ pub mod date_time {
         /// For example, a UTC offset of -4:00 would be represented as
         /// { seconds: -14400 }.
         #[prost(message, tag="8")]
-        UtcOffset(::prost_types::Duration),
+        UtcOffset(super::super::protobuf::Duration),
         /// Time zone.
         #[prost(message, tag="9")]
         TimeZone(super::TimeZone),
     }
 }
+impl ::prost::Name for DateTime {
+const NAME: &'static str = "DateTime";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.DateTime".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.DateTime".into() }}
 /// Represents a time zone from the
 /// [IANA Time Zone Database](<https://www.iana.org/time-zones>).
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -348,6 +364,10 @@ pub struct TimeZone {
     #[prost(string, tag="2")]
     pub version: ::prost::alloc::string::String,
 }
+impl ::prost::Name for TimeZone {
+const NAME: &'static str = "TimeZone";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.TimeZone".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.TimeZone".into() }}
 /// Represents a day of the week.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -474,6 +494,10 @@ pub struct Decimal {
     #[prost(string, tag="1")]
     pub value: ::prost::alloc::string::String,
 }
+impl ::prost::Name for Decimal {
+const NAME: &'static str = "Decimal";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.Decimal".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.Decimal".into() }}
 /// Represents a textual expression in the Common Expression Language (CEL)
 /// syntax. CEL is a C-like expression language. The syntax and semantics of CEL
 /// are documented at <https://github.com/google/cel-spec.>
@@ -526,6 +550,10 @@ pub struct Expr {
     #[prost(string, tag="4")]
     pub location: ::prost::alloc::string::String,
 }
+impl ::prost::Name for Expr {
+const NAME: &'static str = "Expr";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.Expr".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.Expr".into() }}
 /// Represents a fraction in terms of a numerator divided by a denominator.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
@@ -538,6 +566,10 @@ pub struct Fraction {
     #[prost(int64, tag="2")]
     pub denominator: i64,
 }
+impl ::prost::Name for Fraction {
+const NAME: &'static str = "Fraction";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.Fraction".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.Fraction".into() }}
 /// Represents a time interval, encoded as a Timestamp start (inclusive) and a
 /// Timestamp end (exclusive).
 ///
@@ -552,14 +584,18 @@ pub struct Interval {
     /// If specified, a Timestamp matching this interval will have to be the same
     /// or after the start.
     #[prost(message, optional, tag="1")]
-    pub start_time: ::core::option::Option<::prost_types::Timestamp>,
+    pub start_time: ::core::option::Option<super::protobuf::Timestamp>,
     /// Optional. Exclusive end of the interval.
     ///
     /// If specified, a Timestamp matching this interval will have to be before the
     /// end.
     #[prost(message, optional, tag="2")]
-    pub end_time: ::core::option::Option<::prost_types::Timestamp>,
+    pub end_time: ::core::option::Option<super::protobuf::Timestamp>,
 }
+impl ::prost::Name for Interval {
+const NAME: &'static str = "Interval";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.Interval".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.Interval".into() }}
 /// Localized variant of a text in a particular language.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -574,6 +610,10 @@ pub struct LocalizedText {
     #[prost(string, tag="2")]
     pub language_code: ::prost::alloc::string::String,
 }
+impl ::prost::Name for LocalizedText {
+const NAME: &'static str = "LocalizedText";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.LocalizedText".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.LocalizedText".into() }}
 /// Represents an amount of money with its currency type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -594,6 +634,10 @@ pub struct Money {
     #[prost(int32, tag="3")]
     pub nanos: i32,
 }
+impl ::prost::Name for Money {
+const NAME: &'static str = "Money";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.Money".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.Money".into() }}
 /// Represents a month in the Gregorian calendar.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -739,6 +783,10 @@ pub mod phone_number {
         #[prost(string, tag="2")]
         pub number: ::prost::alloc::string::String,
     }
+impl ::prost::Name for ShortCode {
+const NAME: &'static str = "ShortCode";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.PhoneNumber.ShortCode".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.PhoneNumber.ShortCode".into() }}
     /// Required.  Either a regular number, or a short code.  New fields may be
     /// added to the oneof below in the future, so clients should ignore phone
     /// numbers for which none of the fields they coded against are set.
@@ -770,6 +818,10 @@ pub mod phone_number {
         ShortCode(ShortCode),
     }
 }
+impl ::prost::Name for PhoneNumber {
+const NAME: &'static str = "PhoneNumber";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.PhoneNumber".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.PhoneNumber".into() }}
 /// Represents a postal address, e.g. for postal delivery or payments addresses.
 /// Given a postal address, a postal service can deliver items to a premise, P.O.
 /// Box or similar.
@@ -882,6 +934,10 @@ pub struct PostalAddress {
     #[prost(string, tag="11")]
     pub organization: ::prost::alloc::string::String,
 }
+impl ::prost::Name for PostalAddress {
+const NAME: &'static str = "PostalAddress";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.PostalAddress".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.PostalAddress".into() }}
 /// A quaternion is defined as the quotient of two directed lines in a
 /// three-dimensional space or equivalently as the quotient of two Euclidean
 /// vectors (<https://en.wikipedia.org/wiki/Quaternion>).
@@ -954,6 +1010,10 @@ pub struct Quaternion {
     #[prost(double, tag="4")]
     pub w: f64,
 }
+impl ::prost::Name for Quaternion {
+const NAME: &'static str = "Quaternion";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.Quaternion".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.Quaternion".into() }}
 /// Represents a time of day. The date and time zone are either not significant
 /// or are specified elsewhere. An API may choose to allow leap seconds. Related
 /// types are [google.type.Date][google.type.Date] and
@@ -976,6 +1036,10 @@ pub struct TimeOfDay {
     #[prost(int32, tag="4")]
     pub nanos: i32,
 }
+impl ::prost::Name for TimeOfDay {
+const NAME: &'static str = "TimeOfDay";
+const PACKAGE: &'static str = "google.type";
+fn full_name() -> ::prost::alloc::string::String { "google.type.TimeOfDay".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.TimeOfDay".into() }}
 /// Encoded file descriptor set for the `google.type` package
 pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0a, 0x88, 0x0c, 0x0a, 0x18, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x74, 0x79, 0x70, 0x65,

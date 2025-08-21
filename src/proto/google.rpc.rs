@@ -23,8 +23,12 @@ pub struct Status {
     /// A list of messages that carry the error details.  There is a common set of
     /// message types for APIs to use.
     #[prost(message, repeated, tag="3")]
-    pub details: ::prost::alloc::vec::Vec<::prost_types::Any>,
+    pub details: ::prost::alloc::vec::Vec<super::protobuf::Any>,
 }
+impl ::prost::Name for Status {
+const NAME: &'static str = "Status";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.Status".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.Status".into() }}
 /// The canonical error codes for gRPC APIs.
 ///
 ///
@@ -277,6 +281,10 @@ pub struct ErrorInfo {
     #[prost(map="string, string", tag="3")]
     pub metadata: ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
 }
+impl ::prost::Name for ErrorInfo {
+const NAME: &'static str = "ErrorInfo";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.ErrorInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.ErrorInfo".into() }}
 /// Describes when the clients can retry a failed request. Clients could ignore
 /// the recommendation here or retry when this information is missing from error
 /// responses.
@@ -295,8 +303,12 @@ pub struct ErrorInfo {
 pub struct RetryInfo {
     /// Clients should wait at least this long between retrying the same request.
     #[prost(message, optional, tag="1")]
-    pub retry_delay: ::core::option::Option<::prost_types::Duration>,
+    pub retry_delay: ::core::option::Option<super::protobuf::Duration>,
 }
+impl ::prost::Name for RetryInfo {
+const NAME: &'static str = "RetryInfo";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.RetryInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.RetryInfo".into() }}
 /// Describes additional debugging info.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -308,6 +320,10 @@ pub struct DebugInfo {
     #[prost(string, tag="2")]
     pub detail: ::prost::alloc::string::String,
 }
+impl ::prost::Name for DebugInfo {
+const NAME: &'static str = "DebugInfo";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.DebugInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.DebugInfo".into() }}
 /// Describes how a quota check failed.
 ///
 /// For example if a daily limit was exceeded for the calling project,
@@ -413,7 +429,15 @@ pub mod quota_failure {
         #[prost(int64, optional, tag="8")]
         pub future_quota_value: ::core::option::Option<i64>,
     }
+impl ::prost::Name for Violation {
+const NAME: &'static str = "Violation";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.QuotaFailure.Violation".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.QuotaFailure.Violation".into() }}
 }
+impl ::prost::Name for QuotaFailure {
+const NAME: &'static str = "QuotaFailure";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.QuotaFailure".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.QuotaFailure".into() }}
 /// Describes what preconditions have failed.
 ///
 /// For example, if an RPC failed because it required the Terms of Service to be
@@ -449,7 +473,15 @@ pub mod precondition_failure {
         #[prost(string, tag="3")]
         pub description: ::prost::alloc::string::String,
     }
+impl ::prost::Name for Violation {
+const NAME: &'static str = "Violation";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.PreconditionFailure.Violation".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.PreconditionFailure.Violation".into() }}
 }
+impl ::prost::Name for PreconditionFailure {
+const NAME: &'static str = "PreconditionFailure";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.PreconditionFailure".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.PreconditionFailure".into() }}
 /// Describes violations in a client request. This error type focuses on the
 /// syntactic aspects of the request.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -520,7 +552,15 @@ pub mod bad_request {
         #[prost(message, optional, tag="4")]
         pub localized_message: ::core::option::Option<super::LocalizedMessage>,
     }
+impl ::prost::Name for FieldViolation {
+const NAME: &'static str = "FieldViolation";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.BadRequest.FieldViolation".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.BadRequest.FieldViolation".into() }}
 }
+impl ::prost::Name for BadRequest {
+const NAME: &'static str = "BadRequest";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.BadRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.BadRequest".into() }}
 /// Contains metadata about the request that clients can attach when filing a bug
 /// or providing other forms of feedback.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -535,6 +575,10 @@ pub struct RequestInfo {
     #[prost(string, tag="2")]
     pub serving_data: ::prost::alloc::string::String,
 }
+impl ::prost::Name for RequestInfo {
+const NAME: &'static str = "RequestInfo";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.RequestInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.RequestInfo".into() }}
 /// Describes the resource that is being accessed.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -561,6 +605,10 @@ pub struct ResourceInfo {
     #[prost(string, tag="4")]
     pub description: ::prost::alloc::string::String,
 }
+impl ::prost::Name for ResourceInfo {
+const NAME: &'static str = "ResourceInfo";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.ResourceInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.ResourceInfo".into() }}
 /// Provides links to documentation or for performing an out of band action.
 ///
 /// For example, if a quota check failed with an error indicating the calling
@@ -586,7 +634,15 @@ pub mod help {
         #[prost(string, tag="2")]
         pub url: ::prost::alloc::string::String,
     }
+impl ::prost::Name for Link {
+const NAME: &'static str = "Link";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.Help.Link".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.Help.Link".into() }}
 }
+impl ::prost::Name for Help {
+const NAME: &'static str = "Help";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.Help".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.Help".into() }}
 /// Provides a localized error message that is safe to return to the user
 /// which can be attached to an RPC error.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -601,6 +657,10 @@ pub struct LocalizedMessage {
     #[prost(string, tag="2")]
     pub message: ::prost::alloc::string::String,
 }
+impl ::prost::Name for LocalizedMessage {
+const NAME: &'static str = "LocalizedMessage";
+const PACKAGE: &'static str = "google.rpc";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.LocalizedMessage".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.LocalizedMessage".into() }}
 /// Encoded file descriptor set for the `google.rpc` package
 pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0a, 0x9a, 0x10, 0x0a, 0x17, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x72, 0x70, 0x63, 0x2f,

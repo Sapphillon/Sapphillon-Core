@@ -15,7 +15,7 @@ pub struct Operation {
     /// Some services might not provide such metadata.  Any method that returns a
     /// long-running operation should document the metadata type, if any.
     #[prost(message, optional, tag="2")]
-    pub metadata: ::core::option::Option<::prost_types::Any>,
+    pub metadata: ::core::option::Option<super::protobuf::Any>,
     /// If the value is `false`, it means the operation is still in progress.
     /// If `true`, the operation is completed, and either `error` or `response` is
     /// available.
@@ -49,9 +49,13 @@ pub mod operation {
         /// is `TakeSnapshot()`, the inferred response type is
         /// `TakeSnapshotResponse`.
         #[prost(message, tag="5")]
-        Response(::prost_types::Any),
+        Response(super::super::protobuf::Any),
     }
 }
+impl ::prost::Name for Operation {
+const NAME: &'static str = "Operation";
+const PACKAGE: &'static str = "google.longrunning";
+fn full_name() -> ::prost::alloc::string::String { "google.longrunning.Operation".into() }fn type_url() -> ::prost::alloc::string::String { "/google.longrunning.Operation".into() }}
 /// The request message for
 /// [Operations.GetOperation][google.longrunning.Operations.GetOperation].
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -61,6 +65,10 @@ pub struct GetOperationRequest {
     #[prost(string, tag="1")]
     pub name: ::prost::alloc::string::String,
 }
+impl ::prost::Name for GetOperationRequest {
+const NAME: &'static str = "GetOperationRequest";
+const PACKAGE: &'static str = "google.longrunning";
+fn full_name() -> ::prost::alloc::string::String { "google.longrunning.GetOperationRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/google.longrunning.GetOperationRequest".into() }}
 /// The request message for
 /// [Operations.ListOperations][google.longrunning.Operations.ListOperations].
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -79,6 +87,10 @@ pub struct ListOperationsRequest {
     #[prost(string, tag="3")]
     pub page_token: ::prost::alloc::string::String,
 }
+impl ::prost::Name for ListOperationsRequest {
+const NAME: &'static str = "ListOperationsRequest";
+const PACKAGE: &'static str = "google.longrunning";
+fn full_name() -> ::prost::alloc::string::String { "google.longrunning.ListOperationsRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/google.longrunning.ListOperationsRequest".into() }}
 /// The response message for
 /// [Operations.ListOperations][google.longrunning.Operations.ListOperations].
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -91,6 +103,10 @@ pub struct ListOperationsResponse {
     #[prost(string, tag="2")]
     pub next_page_token: ::prost::alloc::string::String,
 }
+impl ::prost::Name for ListOperationsResponse {
+const NAME: &'static str = "ListOperationsResponse";
+const PACKAGE: &'static str = "google.longrunning";
+fn full_name() -> ::prost::alloc::string::String { "google.longrunning.ListOperationsResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/google.longrunning.ListOperationsResponse".into() }}
 /// The request message for
 /// [Operations.CancelOperation][google.longrunning.Operations.CancelOperation].
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -100,6 +116,10 @@ pub struct CancelOperationRequest {
     #[prost(string, tag="1")]
     pub name: ::prost::alloc::string::String,
 }
+impl ::prost::Name for CancelOperationRequest {
+const NAME: &'static str = "CancelOperationRequest";
+const PACKAGE: &'static str = "google.longrunning";
+fn full_name() -> ::prost::alloc::string::String { "google.longrunning.CancelOperationRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/google.longrunning.CancelOperationRequest".into() }}
 /// The request message for
 /// [Operations.DeleteOperation][google.longrunning.Operations.DeleteOperation].
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -109,6 +129,10 @@ pub struct DeleteOperationRequest {
     #[prost(string, tag="1")]
     pub name: ::prost::alloc::string::String,
 }
+impl ::prost::Name for DeleteOperationRequest {
+const NAME: &'static str = "DeleteOperationRequest";
+const PACKAGE: &'static str = "google.longrunning";
+fn full_name() -> ::prost::alloc::string::String { "google.longrunning.DeleteOperationRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/google.longrunning.DeleteOperationRequest".into() }}
 /// The request message for
 /// [Operations.WaitOperation][google.longrunning.Operations.WaitOperation].
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -121,8 +145,12 @@ pub struct WaitOperationRequest {
     /// will be at most the time permitted by the underlying HTTP/RPC protocol.
     /// If RPC context deadline is also specified, the shorter one will be used.
     #[prost(message, optional, tag="2")]
-    pub timeout: ::core::option::Option<::prost_types::Duration>,
+    pub timeout: ::core::option::Option<super::protobuf::Duration>,
 }
+impl ::prost::Name for WaitOperationRequest {
+const NAME: &'static str = "WaitOperationRequest";
+const PACKAGE: &'static str = "google.longrunning";
+fn full_name() -> ::prost::alloc::string::String { "google.longrunning.WaitOperationRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/google.longrunning.WaitOperationRequest".into() }}
 /// A message representing the message types used by a long-running operation.
 ///
 /// Example:
@@ -156,6 +184,10 @@ pub struct OperationInfo {
     #[prost(string, tag="2")]
     pub metadata_type: ::prost::alloc::string::String,
 }
+impl ::prost::Name for OperationInfo {
+const NAME: &'static str = "OperationInfo";
+const PACKAGE: &'static str = "google.longrunning";
+fn full_name() -> ::prost::alloc::string::String { "google.longrunning.OperationInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/google.longrunning.OperationInfo".into() }}
 /// Encoded file descriptor set for the `google.longrunning` package
 pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0a, 0xcf, 0x59, 0x0a, 0x23, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x6c, 0x6f, 0x6e, 0x67,
