@@ -13,6 +13,10 @@ pub struct ParsedExpr {
     #[prost(message, optional, tag="3")]
     pub source_info: ::core::option::Option<SourceInfo>,
 }
+impl ::prost::Name for ParsedExpr {
+const NAME: &'static str = "ParsedExpr";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.ParsedExpr".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.ParsedExpr".into() }}
 /// An abstract representation of a common expression.
 ///
 /// Expressions are abstractly represented as a collection of identifiers,
@@ -56,6 +60,10 @@ pub mod expr {
         #[prost(string, tag="1")]
         pub name: ::prost::alloc::string::String,
     }
+impl ::prost::Name for Ident {
+const NAME: &'static str = "Ident";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Expr.Ident".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Expr.Ident".into() }}
     /// A field selection expression. e.g. `request.auth`.
     #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -78,6 +86,10 @@ pub mod expr {
         #[prost(bool, tag="3")]
         pub test_only: bool,
     }
+impl ::prost::Name for Select {
+const NAME: &'static str = "Select";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Expr.Select".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Expr.Select".into() }}
     /// A call expression, including calls to predefined functions and operators.
     ///
     /// For example, `value == 10`, `size(map_value)`.
@@ -95,6 +107,10 @@ pub mod expr {
         #[prost(message, repeated, tag="3")]
         pub args: ::prost::alloc::vec::Vec<super::Expr>,
     }
+impl ::prost::Name for Call {
+const NAME: &'static str = "Call";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Expr.Call".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Expr.Call".into() }}
     /// A list creation expression.
     ///
     /// Lists may either be homogenous, e.g. `\[1, 2, 3\]`, or heterogeneous, e.g.
@@ -114,6 +130,10 @@ pub mod expr {
         #[prost(int32, repeated, tag="2")]
         pub optional_indices: ::prost::alloc::vec::Vec<i32>,
     }
+impl ::prost::Name for CreateList {
+const NAME: &'static str = "CreateList";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Expr.CreateList".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Expr.CreateList".into() }}
     /// A map or message creation expression.
     ///
     /// Maps are constructed as `{'key_name': 'value'}`. Message construction is
@@ -169,7 +189,15 @@ pub mod expr {
                 MapKey(super::super::super::Expr),
             }
         }
+impl ::prost::Name for Entry {
+const NAME: &'static str = "Entry";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Expr.CreateStruct.Entry".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Expr.CreateStruct.Entry".into() }}
     }
+impl ::prost::Name for CreateStruct {
+const NAME: &'static str = "CreateStruct";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Expr.CreateStruct".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Expr.CreateStruct".into() }}
     /// A comprehension expression applied to a list or map.
     ///
     /// Comprehensions are not part of the core syntax, but enabled with macros.
@@ -266,6 +294,10 @@ pub mod expr {
         #[prost(message, optional, boxed, tag="7")]
         pub result: ::core::option::Option<::prost::alloc::boxed::Box<super::Expr>>,
     }
+impl ::prost::Name for Comprehension {
+const NAME: &'static str = "Comprehension";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Expr.Comprehension".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Expr.Comprehension".into() }}
     /// Required. Variants of expressions.
     #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -293,6 +325,10 @@ pub mod expr {
         ComprehensionExpr(::prost::alloc::boxed::Box<Comprehension>),
     }
 }
+impl ::prost::Name for Expr {
+const NAME: &'static str = "Expr";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Expr".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Expr".into() }}
 /// Represents a primitive literal.
 ///
 /// Named 'Constant' here for backwards compatibility.
@@ -321,7 +357,7 @@ pub mod constant {
 #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ConstantKind {
         /// null value.
-        #[prost(enumeration="::prost_types::NullValue", tag="1")]
+        #[prost(enumeration="super::super::super::super::protobuf::NullValue", tag="1")]
         NullValue(i32),
         /// boolean value.
         #[prost(bool, tag="2")]
@@ -345,14 +381,18 @@ pub mod constant {
         ///
         /// Deprecated: duration is no longer considered a builtin cel type.
         #[prost(message, tag="8")]
-        DurationValue(::prost_types::Duration),
+        DurationValue(super::super::super::super::protobuf::Duration),
         /// protobuf.Timestamp value.
         ///
         /// Deprecated: timestamp is no longer considered a builtin cel type.
         #[prost(message, tag="9")]
-        TimestampValue(::prost_types::Timestamp),
+        TimestampValue(super::super::super::super::protobuf::Timestamp),
     }
 }
+impl ::prost::Name for Constant {
+const NAME: &'static str = "Constant";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Constant".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Constant".into() }}
 /// Source information collected at parse time.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -434,6 +474,10 @@ pub mod source_info {
             #[prost(int64, tag="2")]
             pub minor: i64,
         }
+impl ::prost::Name for Version {
+const NAME: &'static str = "Version";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.SourceInfo.Extension.Version".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.SourceInfo.Extension.Version".into() }}
         /// CEL component specifier.
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
         #[repr(i32)]
@@ -474,7 +518,15 @@ pub mod source_info {
             }
         }
     }
+impl ::prost::Name for Extension {
+const NAME: &'static str = "Extension";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.SourceInfo.Extension".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.SourceInfo.Extension".into() }}
 }
+impl ::prost::Name for SourceInfo {
+const NAME: &'static str = "SourceInfo";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.SourceInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.SourceInfo".into() }}
 /// A specific position in source.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -494,6 +546,10 @@ pub struct SourcePosition {
     #[prost(int32, tag="4")]
     pub column: i32,
 }
+impl ::prost::Name for SourcePosition {
+const NAME: &'static str = "SourcePosition";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.SourcePosition".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.SourcePosition".into() }}
 // Protos for representing CEL declarations and typed checked expressions.
 
 /// A CEL expression which has been successfully type checked.
@@ -542,6 +598,10 @@ pub struct CheckedExpr {
     #[prost(message, optional, tag="4")]
     pub expr: ::core::option::Option<Expr>,
 }
+impl ::prost::Name for CheckedExpr {
+const NAME: &'static str = "CheckedExpr";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.CheckedExpr".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.CheckedExpr".into() }}
 /// Represents a CEL type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -560,6 +620,10 @@ pub mod r#type {
         #[prost(message, optional, boxed, tag="1")]
         pub elem_type: ::core::option::Option<::prost::alloc::boxed::Box<super::Type>>,
     }
+impl ::prost::Name for ListType {
+const NAME: &'static str = "ListType";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Type.ListType".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Type.ListType".into() }}
     /// Map type with parameterized key and value types, e.g. `map<string, int>`.
     #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -571,6 +635,10 @@ pub mod r#type {
         #[prost(message, optional, boxed, tag="2")]
         pub value_type: ::core::option::Option<::prost::alloc::boxed::Box<super::Type>>,
     }
+impl ::prost::Name for MapType {
+const NAME: &'static str = "MapType";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Type.MapType".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Type.MapType".into() }}
     /// Function type with result and arg types.
     #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -582,6 +650,10 @@ pub mod r#type {
         #[prost(message, repeated, tag="2")]
         pub arg_types: ::prost::alloc::vec::Vec<super::Type>,
     }
+impl ::prost::Name for FunctionType {
+const NAME: &'static str = "FunctionType";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Type.FunctionType".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Type.FunctionType".into() }}
     /// Application defined abstract type.
     #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -593,6 +665,10 @@ pub mod r#type {
         #[prost(message, repeated, tag="2")]
         pub parameter_types: ::prost::alloc::vec::Vec<super::Type>,
     }
+impl ::prost::Name for AbstractType {
+const NAME: &'static str = "AbstractType";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Type.AbstractType".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Type.AbstractType".into() }}
     /// CEL primitive types.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
@@ -695,9 +771,9 @@ pub mod r#type {
     pub enum TypeKind {
         /// Dynamic type.
         #[prost(message, tag="1")]
-        Dyn(()),
+        Dyn(super::super::super::super::protobuf::Empty),
         /// Null value.
-        #[prost(enumeration="::prost_types::NullValue", tag="2")]
+        #[prost(enumeration="super::super::super::super::protobuf::NullValue", tag="2")]
         Null(i32),
         /// Primitive types: `true`, `1u`, `-2.0`, `'string'`, `b'bytes'`.
         #[prost(enumeration="PrimitiveType", tag="3")]
@@ -742,12 +818,16 @@ pub mod r#type {
         /// as the `ERROR` type. This permits the type-checker to discover other
         /// errors present in the expression.
         #[prost(message, tag="12")]
-        Error(()),
+        Error(super::super::super::super::protobuf::Empty),
         /// Abstract, application defined type.
         #[prost(message, tag="14")]
         AbstractType(AbstractType),
     }
 }
+impl ::prost::Name for Type {
+const NAME: &'static str = "Type";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Type".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Type".into() }}
 /// Represents a declaration of a named value or function.
 ///
 /// A declaration is part of the contract between the expression, the agent
@@ -793,6 +873,10 @@ pub mod decl {
         #[prost(string, tag="3")]
         pub doc: ::prost::alloc::string::String,
     }
+impl ::prost::Name for IdentDecl {
+const NAME: &'static str = "IdentDecl";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Decl.IdentDecl".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Decl.IdentDecl".into() }}
     /// Function declaration specifies one or more overloads which indicate the
     /// function's parameter types and return type.
     ///
@@ -862,7 +946,15 @@ pub mod decl {
             #[prost(string, tag="6")]
             pub doc: ::prost::alloc::string::String,
         }
+impl ::prost::Name for Overload {
+const NAME: &'static str = "Overload";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Decl.FunctionDecl.Overload".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Decl.FunctionDecl.Overload".into() }}
     }
+impl ::prost::Name for FunctionDecl {
+const NAME: &'static str = "FunctionDecl";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Decl.FunctionDecl".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Decl.FunctionDecl".into() }}
     /// Required. The declaration kind.
     #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -875,6 +967,10 @@ pub mod decl {
         Function(FunctionDecl),
     }
 }
+impl ::prost::Name for Decl {
+const NAME: &'static str = "Decl";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Decl".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Decl".into() }}
 /// Describes a resolved reference to a declaration.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -898,6 +994,10 @@ pub struct Reference {
     #[prost(message, optional, tag="4")]
     pub value: ::core::option::Option<Constant>,
 }
+impl ::prost::Name for Reference {
+const NAME: &'static str = "Reference";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Reference".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Reference".into() }}
 // Contains representations for CEL runtime values.
 
 /// Represents a CEL value.
@@ -918,7 +1018,7 @@ pub mod value {
 #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Kind {
         /// Null value.
-        #[prost(enumeration="::prost_types::NullValue", tag="1")]
+        #[prost(enumeration="super::super::super::super::protobuf::NullValue", tag="1")]
         NullValue(i32),
         /// Boolean value.
         #[prost(bool, tag="2")]
@@ -943,7 +1043,7 @@ pub mod value {
         EnumValue(super::EnumValue),
         /// The proto message backing an object value.
         #[prost(message, tag="10")]
-        ObjectValue(::prost_types::Any),
+        ObjectValue(super::super::super::super::protobuf::Any),
         /// Map value.
         #[prost(message, tag="11")]
         MapValue(super::MapValue),
@@ -955,6 +1055,10 @@ pub mod value {
         TypeValue(::prost::alloc::string::String),
     }
 }
+impl ::prost::Name for Value {
+const NAME: &'static str = "Value";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Value".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Value".into() }}
 /// An enum value.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -966,6 +1070,10 @@ pub struct EnumValue {
     #[prost(int32, tag="2")]
     pub value: i32,
 }
+impl ::prost::Name for EnumValue {
+const NAME: &'static str = "EnumValue";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.EnumValue".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.EnumValue".into() }}
 /// A list.
 ///
 /// Wrapped in a message so 'not set' and empty can be differentiated, which is
@@ -977,6 +1085,10 @@ pub struct ListValue {
     #[prost(message, repeated, tag="1")]
     pub values: ::prost::alloc::vec::Vec<Value>,
 }
+impl ::prost::Name for ListValue {
+const NAME: &'static str = "ListValue";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.ListValue".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.ListValue".into() }}
 /// A map.
 ///
 /// Wrapped in a message so 'not set' and empty can be differentiated, which is
@@ -1007,7 +1119,15 @@ pub mod map_value {
         #[prost(message, optional, tag="2")]
         pub value: ::core::option::Option<super::Value>,
     }
+impl ::prost::Name for Entry {
+const NAME: &'static str = "Entry";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.MapValue.Entry".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.MapValue.Entry".into() }}
 }
+impl ::prost::Name for MapValue {
+const NAME: &'static str = "MapValue";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.MapValue".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.MapValue".into() }}
 /// The state of an evaluation.
 ///
 /// Can represent an inital, partial, or completed state of evaluation.
@@ -1037,7 +1157,15 @@ pub mod eval_state {
         #[prost(int64, tag="2")]
         pub value: i64,
     }
+impl ::prost::Name for Result {
+const NAME: &'static str = "Result";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.EvalState.Result".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.EvalState.Result".into() }}
 }
+impl ::prost::Name for EvalState {
+const NAME: &'static str = "EvalState";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.EvalState".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.EvalState".into() }}
 /// The value of an evaluated expression.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1101,6 +1229,10 @@ pub mod expr_value {
         Unknown(super::UnknownSet),
     }
 }
+impl ::prost::Name for ExprValue {
+const NAME: &'static str = "ExprValue";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.ExprValue".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.ExprValue".into() }}
 /// A set of errors.
 ///
 /// The errors included depend on the context. See `ExprValue.error`.
@@ -1111,6 +1243,10 @@ pub struct ErrorSet {
     #[prost(message, repeated, tag="1")]
     pub errors: ::prost::alloc::vec::Vec<super::super::super::rpc::Status>,
 }
+impl ::prost::Name for ErrorSet {
+const NAME: &'static str = "ErrorSet";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.ErrorSet".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.ErrorSet".into() }}
 /// A set of expressions for which the value is unknown.
 ///
 /// The unknowns included depend on the context. See `ExprValue.unknown`.
@@ -1121,6 +1257,10 @@ pub struct UnknownSet {
     #[prost(int64, repeated, tag="1")]
     pub exprs: ::prost::alloc::vec::Vec<i64>,
 }
+impl ::prost::Name for UnknownSet {
+const NAME: &'static str = "UnknownSet";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.UnknownSet".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.UnknownSet".into() }}
 /// Values of intermediate expressions produced when evaluating expression.
 /// Deprecated, use `EvalState` instead.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1153,7 +1293,15 @@ pub mod explain {
         #[prost(int32, tag="2")]
         pub value_index: i32,
     }
+impl ::prost::Name for ExprStep {
+const NAME: &'static str = "ExprStep";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Explain.ExprStep".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Explain.ExprStep".into() }}
 }
+impl ::prost::Name for Explain {
+const NAME: &'static str = "Explain";
+const PACKAGE: &'static str = "google.api.expr.v1alpha1";
+fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Explain".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Explain".into() }}
 /// Encoded file descriptor set for the `google.api.expr.v1alpha1` package
 pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0a, 0xa4, 0x9a, 0x01, 0x0a, 0x25, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69,

@@ -17,10 +17,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::plugin::CorePluginPackage;
+use crate::proto::google::protobuf::Timestamp;
 use crate::proto::sapphillon;
 use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
 use crate::runtime::{OpStateWorkflowData, run_script};
-use prost_types::Timestamp;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 

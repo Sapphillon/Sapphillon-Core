@@ -24,6 +24,10 @@ pub struct ReadRequest {
     #[prost(int64, tag="3")]
     pub read_limit: i64,
 }
+impl ::prost::Name for ReadRequest {
+const NAME: &'static str = "ReadRequest";
+const PACKAGE: &'static str = "google.bytestream";
+fn full_name() -> ::prost::alloc::string::String { "google.bytestream.ReadRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/google.bytestream.ReadRequest".into() }}
 /// Response object for ByteStream.Read.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -35,6 +39,10 @@ pub struct ReadResponse {
     #[prost(bytes="vec", tag="10")]
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ReadResponse {
+const NAME: &'static str = "ReadResponse";
+const PACKAGE: &'static str = "google.bytestream";
+fn full_name() -> ::prost::alloc::string::String { "google.bytestream.ReadResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/google.bytestream.ReadResponse".into() }}
 /// Request object for ByteStream.Write.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -70,6 +78,10 @@ pub struct WriteRequest {
     #[prost(bytes="vec", tag="10")]
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for WriteRequest {
+const NAME: &'static str = "WriteRequest";
+const PACKAGE: &'static str = "google.bytestream";
+fn full_name() -> ::prost::alloc::string::String { "google.bytestream.WriteRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/google.bytestream.WriteRequest".into() }}
 /// Response object for ByteStream.Write.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
@@ -78,6 +90,10 @@ pub struct WriteResponse {
     #[prost(int64, tag="1")]
     pub committed_size: i64,
 }
+impl ::prost::Name for WriteResponse {
+const NAME: &'static str = "WriteResponse";
+const PACKAGE: &'static str = "google.bytestream";
+fn full_name() -> ::prost::alloc::string::String { "google.bytestream.WriteResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/google.bytestream.WriteResponse".into() }}
 /// Request object for ByteStream.QueryWriteStatus.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -86,6 +102,10 @@ pub struct QueryWriteStatusRequest {
     #[prost(string, tag="1")]
     pub resource_name: ::prost::alloc::string::String,
 }
+impl ::prost::Name for QueryWriteStatusRequest {
+const NAME: &'static str = "QueryWriteStatusRequest";
+const PACKAGE: &'static str = "google.bytestream";
+fn full_name() -> ::prost::alloc::string::String { "google.bytestream.QueryWriteStatusRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/google.bytestream.QueryWriteStatusRequest".into() }}
 /// Response object for ByteStream.QueryWriteStatus.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
@@ -98,6 +118,10 @@ pub struct QueryWriteStatusResponse {
     #[prost(bool, tag="2")]
     pub complete: bool,
 }
+impl ::prost::Name for QueryWriteStatusResponse {
+const NAME: &'static str = "QueryWriteStatusResponse";
+const PACKAGE: &'static str = "google.bytestream";
+fn full_name() -> ::prost::alloc::string::String { "google.bytestream.QueryWriteStatusResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/google.bytestream.QueryWriteStatusResponse".into() }}
 /// Encoded file descriptor set for the `google.bytestream` package
 pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0a, 0xa0, 0x41, 0x0a, 0x22, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x62, 0x79, 0x74, 0x65,

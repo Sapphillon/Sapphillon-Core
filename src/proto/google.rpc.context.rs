@@ -51,7 +51,7 @@ pub struct AttributeContext {
     pub api: ::core::option::Option<attribute_context::Api>,
     /// Supports extensions for advanced use cases, such as logs and metrics.
     #[prost(message, repeated, tag="8")]
-    pub extensions: ::prost::alloc::vec::Vec<::prost_types::Any>,
+    pub extensions: ::prost::alloc::vec::Vec<super::super::protobuf::Any>,
 }
 /// Nested message and enum types in `AttributeContext`.
 pub mod attribute_context {
@@ -82,6 +82,10 @@ pub mod attribute_context {
         #[prost(string, tag="8")]
         pub region_code: ::prost::alloc::string::String,
     }
+impl ::prost::Name for Peer {
+const NAME: &'static str = "Peer";
+const PACKAGE: &'static str = "google.rpc.context";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.AttributeContext.Peer".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.context.AttributeContext.Peer".into() }}
     /// This message defines attributes associated with API operations, such as
     /// a network API request. The terminology is based on the conventions used
     /// by Google APIs, Istio, and OpenAPI.
@@ -107,6 +111,10 @@ pub mod attribute_context {
         #[prost(string, tag="4")]
         pub version: ::prost::alloc::string::String,
     }
+impl ::prost::Name for Api {
+const NAME: &'static str = "Api";
+const PACKAGE: &'static str = "google.rpc.context";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.AttributeContext.Api".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.context.AttributeContext.Api".into() }}
     /// This message defines request authentication attributes. Terminology is
     /// based on the JSON Web Token (JWT) standard, but the terms also
     /// correlate to concepts in other standards.
@@ -158,7 +166,7 @@ pub mod attribute_context {
         /// SAML assertions are similarly specified, but with an identity provider
         /// dependent structure.
         #[prost(message, optional, tag="4")]
-        pub claims: ::core::option::Option<::prost_types::Struct>,
+        pub claims: ::core::option::Option<super::super::super::protobuf::Struct>,
         /// A list of access level resource names that allow resources to be
         /// accessed by authenticated requester. It is part of Secure GCP processing
         /// for the incoming request. An access level string has the format:
@@ -169,6 +177,10 @@ pub mod attribute_context {
         #[prost(string, repeated, tag="5")]
         pub access_levels: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     }
+impl ::prost::Name for Auth {
+const NAME: &'static str = "Auth";
+const PACKAGE: &'static str = "google.rpc.context";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.AttributeContext.Auth".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.context.AttributeContext.Auth".into() }}
     /// This message defines attributes for an HTTP request. If the actual
     /// request is not an HTTP request, the runtime system should try to map
     /// the actual request to an equivalent HTTP request.
@@ -204,7 +216,7 @@ pub mod attribute_context {
         /// The timestamp when the `destination` service receives the last byte of
         /// the request.
         #[prost(message, optional, tag="9")]
-        pub time: ::core::option::Option<::prost_types::Timestamp>,
+        pub time: ::core::option::Option<super::super::super::protobuf::Timestamp>,
         /// The HTTP request size in bytes. If unknown, it must be -1.
         #[prost(int64, tag="10")]
         pub size: i64,
@@ -223,6 +235,10 @@ pub mod attribute_context {
         #[prost(message, optional, tag="13")]
         pub auth: ::core::option::Option<Auth>,
     }
+impl ::prost::Name for Request {
+const NAME: &'static str = "Request";
+const PACKAGE: &'static str = "google.rpc.context";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.AttributeContext.Request".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.context.AttributeContext.Request".into() }}
     /// This message defines attributes for a typical network response. It
     /// generally models semantics of an HTTP response.
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -242,14 +258,18 @@ pub mod attribute_context {
         /// The timestamp when the `destination` service sends the last byte of
         /// the response.
         #[prost(message, optional, tag="4")]
-        pub time: ::core::option::Option<::prost_types::Timestamp>,
+        pub time: ::core::option::Option<super::super::super::protobuf::Timestamp>,
         /// The amount of time it takes the backend service to fully respond to a
         /// request. Measured from when the destination service starts to send the
         /// request to the backend until when the destination service receives the
         /// complete response from the backend.
         #[prost(message, optional, tag="5")]
-        pub backend_latency: ::core::option::Option<::prost_types::Duration>,
+        pub backend_latency: ::core::option::Option<super::super::super::protobuf::Duration>,
     }
+impl ::prost::Name for Response {
+const NAME: &'static str = "Response";
+const PACKAGE: &'static str = "google.rpc.context";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.AttributeContext.Response".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.context.AttributeContext.Response".into() }}
     /// This message defines core attributes for a resource. A resource is an
     /// addressable (named) entity provided by the destination service. For
     /// example, a file stored on a network storage service.
@@ -307,16 +327,16 @@ pub mod attribute_context {
         /// Output only. The timestamp when the resource was created. This may
         /// be either the time creation was initiated or when it was completed.
         #[prost(message, optional, tag="8")]
-        pub create_time: ::core::option::Option<::prost_types::Timestamp>,
+        pub create_time: ::core::option::Option<super::super::super::protobuf::Timestamp>,
         /// Output only. The timestamp when the resource was last updated. Any
         /// change to the resource made by users must refresh this value.
         /// Changes to a resource made by the service should refresh this value.
         #[prost(message, optional, tag="9")]
-        pub update_time: ::core::option::Option<::prost_types::Timestamp>,
+        pub update_time: ::core::option::Option<super::super::super::protobuf::Timestamp>,
         /// Output only. The timestamp when the resource was deleted.
         /// If the resource is not deleted, this must be empty.
         #[prost(message, optional, tag="10")]
-        pub delete_time: ::core::option::Option<::prost_types::Timestamp>,
+        pub delete_time: ::core::option::Option<super::super::super::protobuf::Timestamp>,
         /// Output only. An opaque value that uniquely identifies a version or
         /// generation of a resource. It can be used to confirm that the client
         /// and server agree on the ordering of a resource being written.
@@ -333,7 +353,15 @@ pub mod attribute_context {
         #[prost(string, tag="12")]
         pub location: ::prost::alloc::string::String,
     }
+impl ::prost::Name for Resource {
+const NAME: &'static str = "Resource";
+const PACKAGE: &'static str = "google.rpc.context";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.AttributeContext.Resource".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.context.AttributeContext.Resource".into() }}
 }
+impl ::prost::Name for AttributeContext {
+const NAME: &'static str = "AttributeContext";
+const PACKAGE: &'static str = "google.rpc.context";
+fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.AttributeContext".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.context.AttributeContext".into() }}
 /// Encoded file descriptor set for the `google.rpc.context` package
 pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0a, 0xb2, 0x90, 0x01, 0x0a, 0x2a, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x72, 0x70, 0x63,

@@ -45,6 +45,10 @@ pub struct Viewport {
     #[prost(message, optional, tag="2")]
     pub high: ::core::option::Option<super::super::r#type::LatLng>,
 }
+impl ::prost::Name for Viewport {
+const NAME: &'static str = "Viewport";
+const PACKAGE: &'static str = "google.geo.type";
+fn full_name() -> ::prost::alloc::string::String { "google.geo.type.Viewport".into() }fn type_url() -> ::prost::alloc::string::String { "/google.geo.type.Viewport".into() }}
 /// Encoded file descriptor set for the `google.geo.type` package
 pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0a, 0xa9, 0x13, 0x0a, 0x1e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x67, 0x65, 0x6f, 0x2f,

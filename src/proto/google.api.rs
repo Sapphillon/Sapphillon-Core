@@ -20,6 +20,10 @@ pub struct Http {
     #[prost(bool, tag="2")]
     pub fully_decode_reserved_expansion: bool,
 }
+impl ::prost::Name for Http {
+const NAME: &'static str = "Http";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.Http".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.Http".into() }}
 /// gRPC Transcoding
 ///
 /// gRPC Transcoding is a feature for mapping between a gRPC method and one or
@@ -352,6 +356,10 @@ pub mod http_rule {
         Custom(super::CustomHttpPattern),
     }
 }
+impl ::prost::Name for HttpRule {
+const NAME: &'static str = "HttpRule";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.HttpRule".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.HttpRule".into() }}
 /// A custom pattern is used for defining custom HTTP verb.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -363,6 +371,10 @@ pub struct CustomHttpPattern {
     #[prost(string, tag="2")]
     pub path: ::prost::alloc::string::String,
 }
+impl ::prost::Name for CustomHttpPattern {
+const NAME: &'static str = "CustomHttpPattern";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.CustomHttpPattern".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.CustomHttpPattern".into() }}
 /// The launch stage as defined by [Google Cloud Platform
 /// Launch Stages](<https://cloud.google.com/terms/launch-stages>).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -454,6 +466,10 @@ pub struct CommonLanguageSettings {
     #[prost(message, optional, tag="3")]
     pub selective_gapic_generation: ::core::option::Option<SelectiveGapicGeneration>,
 }
+impl ::prost::Name for CommonLanguageSettings {
+const NAME: &'static str = "CommonLanguageSettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.CommonLanguageSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.CommonLanguageSettings".into() }}
 /// Details about how and where to publish client libraries.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -495,6 +511,10 @@ pub struct ClientLibrarySettings {
     #[prost(message, optional, tag="28")]
     pub go_settings: ::core::option::Option<GoSettings>,
 }
+impl ::prost::Name for ClientLibrarySettings {
+const NAME: &'static str = "ClientLibrarySettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.ClientLibrarySettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.ClientLibrarySettings".into() }}
 /// This message configures the settings for publishing [Google Cloud Client
 /// libraries](<https://cloud.google.com/apis/docs/cloud-client-libraries>)
 /// generated from the service config.
@@ -546,6 +566,10 @@ pub struct Publishing {
     #[prost(string, tag="111")]
     pub rest_reference_documentation_uri: ::prost::alloc::string::String,
 }
+impl ::prost::Name for Publishing {
+const NAME: &'static str = "Publishing";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.Publishing".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.Publishing".into() }}
 /// Settings for Java client libraries.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -583,6 +607,10 @@ pub struct JavaSettings {
     #[prost(message, optional, tag="3")]
     pub common: ::core::option::Option<CommonLanguageSettings>,
 }
+impl ::prost::Name for JavaSettings {
+const NAME: &'static str = "JavaSettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.JavaSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.JavaSettings".into() }}
 /// Settings for C++ client libraries.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -591,6 +619,10 @@ pub struct CppSettings {
     #[prost(message, optional, tag="1")]
     pub common: ::core::option::Option<CommonLanguageSettings>,
 }
+impl ::prost::Name for CppSettings {
+const NAME: &'static str = "CppSettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.CppSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.CppSettings".into() }}
 /// Settings for Php client libraries.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -599,6 +631,10 @@ pub struct PhpSettings {
     #[prost(message, optional, tag="1")]
     pub common: ::core::option::Option<CommonLanguageSettings>,
 }
+impl ::prost::Name for PhpSettings {
+const NAME: &'static str = "PhpSettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.PhpSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.PhpSettings".into() }}
 /// Settings for Python client libraries.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -637,7 +673,15 @@ pub mod python_settings {
         #[prost(bool, tag="3")]
         pub unversioned_package_disabled: bool,
     }
+impl ::prost::Name for ExperimentalFeatures {
+const NAME: &'static str = "ExperimentalFeatures";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.PythonSettings.ExperimentalFeatures".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.PythonSettings.ExperimentalFeatures".into() }}
 }
+impl ::prost::Name for PythonSettings {
+const NAME: &'static str = "PythonSettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.PythonSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.PythonSettings".into() }}
 /// Settings for Node client libraries.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -646,6 +690,10 @@ pub struct NodeSettings {
     #[prost(message, optional, tag="1")]
     pub common: ::core::option::Option<CommonLanguageSettings>,
 }
+impl ::prost::Name for NodeSettings {
+const NAME: &'static str = "NodeSettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.NodeSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.NodeSettings".into() }}
 /// Settings for Dotnet client libraries.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -684,6 +732,10 @@ pub struct DotnetSettings {
     #[prost(string, repeated, tag="6")]
     pub handwritten_signatures: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+impl ::prost::Name for DotnetSettings {
+const NAME: &'static str = "DotnetSettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.DotnetSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.DotnetSettings".into() }}
 /// Settings for Ruby client libraries.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -692,6 +744,10 @@ pub struct RubySettings {
     #[prost(message, optional, tag="1")]
     pub common: ::core::option::Option<CommonLanguageSettings>,
 }
+impl ::prost::Name for RubySettings {
+const NAME: &'static str = "RubySettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.RubySettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.RubySettings".into() }}
 /// Settings for Go client libraries.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -710,6 +766,10 @@ pub struct GoSettings {
     #[prost(map="string, string", tag="2")]
     pub renamed_services: ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
 }
+impl ::prost::Name for GoSettings {
+const NAME: &'static str = "GoSettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.GoSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.GoSettings".into() }}
 /// Describes the generator configuration for a method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -768,7 +828,7 @@ pub mod method_settings {
         /// Initial delay after which the first poll request will be made.
         /// Default value: 5 seconds.
         #[prost(message, optional, tag="1")]
-        pub initial_poll_delay: ::core::option::Option<::prost_types::Duration>,
+        pub initial_poll_delay: ::core::option::Option<super::super::protobuf::Duration>,
         /// Multiplier to gradually increase delay between subsequent polls until it
         /// reaches max_poll_delay.
         /// Default value: 1.5.
@@ -777,13 +837,21 @@ pub mod method_settings {
         /// Maximum time between two subsequent poll requests.
         /// Default value: 45 seconds.
         #[prost(message, optional, tag="3")]
-        pub max_poll_delay: ::core::option::Option<::prost_types::Duration>,
+        pub max_poll_delay: ::core::option::Option<super::super::protobuf::Duration>,
         /// Total polling timeout.
         /// Default value: 5 minutes.
         #[prost(message, optional, tag="4")]
-        pub total_poll_timeout: ::core::option::Option<::prost_types::Duration>,
+        pub total_poll_timeout: ::core::option::Option<super::super::protobuf::Duration>,
     }
+impl ::prost::Name for LongRunning {
+const NAME: &'static str = "LongRunning";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.MethodSettings.LongRunning".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.MethodSettings.LongRunning".into() }}
 }
+impl ::prost::Name for MethodSettings {
+const NAME: &'static str = "MethodSettings";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.MethodSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.MethodSettings".into() }}
 /// This message is used to configure the generation of a subset of the RPCs in
 /// a service for client libraries.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -802,6 +870,10 @@ pub struct SelectiveGapicGeneration {
     #[prost(bool, tag="2")]
     pub generate_omitted_as_internal: bool,
 }
+impl ::prost::Name for SelectiveGapicGeneration {
+const NAME: &'static str = "SelectiveGapicGeneration";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.SelectiveGapicGeneration".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.SelectiveGapicGeneration".into() }}
 /// The organization for which the client libraries are being published.
 /// Affects the url where generated docs are published, etc.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -1055,6 +1127,10 @@ pub mod field_info {
         }
     }
 }
+impl ::prost::Name for FieldInfo {
+const NAME: &'static str = "FieldInfo";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.FieldInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.FieldInfo".into() }}
 /// A reference to a message type, for use in [FieldInfo][google.api.FieldInfo].
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1071,6 +1147,10 @@ pub struct TypeReference {
     #[prost(string, tag="1")]
     pub type_name: ::prost::alloc::string::String,
 }
+impl ::prost::Name for TypeReference {
+const NAME: &'static str = "TypeReference";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.TypeReference".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.TypeReference".into() }}
 /// Message that represents an arbitrary HTTP body. It should only be used for
 /// payload formats that can't be represented as JSON, such as raw binary or
 /// an HTML page.
@@ -1126,8 +1206,12 @@ pub struct HttpBody {
     /// Application specific response metadata. Must be set in the first response
     /// for streaming APIs.
     #[prost(message, repeated, tag="3")]
-    pub extensions: ::prost::alloc::vec::Vec<::prost_types::Any>,
+    pub extensions: ::prost::alloc::vec::Vec<super::protobuf::Any>,
 }
+impl ::prost::Name for HttpBody {
+const NAME: &'static str = "HttpBody";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.HttpBody".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.HttpBody".into() }}
 /// A simple descriptor of a resource type.
 ///
 /// ResourceDescriptor annotates a resource message (either by means of a
@@ -1334,6 +1418,10 @@ pub mod resource_descriptor {
         }
     }
 }
+impl ::prost::Name for ResourceDescriptor {
+const NAME: &'static str = "ResourceDescriptor";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.ResourceDescriptor".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.ResourceDescriptor".into() }}
 /// Defines a proto annotation that describes a string field that refers to
 /// an API resource.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1375,6 +1463,10 @@ pub struct ResourceReference {
     #[prost(string, tag="2")]
     pub child_type: ::prost::alloc::string::String,
 }
+impl ::prost::Name for ResourceReference {
+const NAME: &'static str = "ResourceReference";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.ResourceReference".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.ResourceReference".into() }}
 /// `Visibility` restricts service consumer's access to service elements,
 /// such as whether an application can call a visibility-restricted method.
 /// The restriction is expressed by applying visibility labels on service
@@ -1407,6 +1499,10 @@ pub struct Visibility {
     #[prost(message, repeated, tag="1")]
     pub rules: ::prost::alloc::vec::Vec<VisibilityRule>,
 }
+impl ::prost::Name for Visibility {
+const NAME: &'static str = "Visibility";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.Visibility".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.Visibility".into() }}
 /// A visibility rule provides visibility configuration for an individual API
 /// element.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1436,6 +1532,10 @@ pub struct VisibilityRule {
     #[prost(string, tag="2")]
     pub restriction: ::prost::alloc::string::String,
 }
+impl ::prost::Name for VisibilityRule {
+const NAME: &'static str = "VisibilityRule";
+const PACKAGE: &'static str = "google.api";
+fn full_name() -> ::prost::alloc::string::String { "google.api.VisibilityRule".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.VisibilityRule".into() }}
 /// Encoded file descriptor set for the `google.api` package
 pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0a, 0x95, 0x78, 0x0a, 0x15, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f,
