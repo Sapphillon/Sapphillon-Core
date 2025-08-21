@@ -2,6 +2,8 @@ version: v2
 clean: true
 plugins:
 - remote: buf.build/community/neoeinstein-prost:v0.4.0
+  opt:
+    - file_descriptor_set
   out: src/proto
 - remote: buf.build/community/neoeinstein-tonic:v0.4.1
   out: src/proto
