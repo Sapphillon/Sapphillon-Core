@@ -22,6 +22,7 @@ use std::borrow::Cow;
 
 /// Core representation of a plugin function.
 /// Holds the function's ID, name, and Deno operation.
+#[derive(Clone)]
 pub struct CorePluginFunction {
     /// Unique ID of the function
     pub id: String,
@@ -76,6 +77,7 @@ impl CorePluginFunction {
 
 /// Core representation of a plugin package.
 /// Holds the package ID, name, and a list of functions.
+#[derive(Clone)]
 pub struct CorePluginPackage {
     /// Unique ID of the package
     pub id: String,
