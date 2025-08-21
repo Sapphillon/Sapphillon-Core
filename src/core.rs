@@ -21,6 +21,22 @@ use deno_core::{OpState, op2};
 use std::io::{Write, stderr, stdout};
 use std::sync::{Arc, Mutex};
 
+/// A Deno op to wrap the `console.log` and `console.error` calls.
+///
+/// This function intercepts print operations from JavaScript. If output capturing is enabled
+/// in the `OpStateWorkflowData`, the message is stored in the state. Otherwise, it's printed
+/// to the standard output or standard error.
+///
+/// # Arguments
+///
+/// * `state` - The Deno `OpState`, used to access shared workflow data.
+/// * `msg` - The message string to be printed.
+/// * `is_err` - A boolean flag indicating if the message is an error.
+///
+/// # Returns
+///
+/// * `Ok(())` on successful execution.
+/// * `Err(std::io::Error)` if writing to `stdout` or `stderr` fails.
 #[op2(fast)]
 pub(crate) fn op_print_wrapper(
     state: &mut OpState,

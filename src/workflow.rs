@@ -28,7 +28,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub struct CoreWorkflowCode {
     /// Unique ID of the workflow code
     pub id: String,
-    /// Deno OpDecl (workflow code body)
+    /// The JavaScript code of the workflow.
     pub code: String,
     /// List of plugin packages used in the workflow
     pub plugin_packages: Vec<CorePluginPackage>,
@@ -38,13 +38,14 @@ pub struct CoreWorkflowCode {
 }
 
 impl CoreWorkflowCode {
-    /// Creates a new CoreWorkflowCode from the given ID, name, code, and plugin packages.
+    /// Creates a new `CoreWorkflowCode`.
     ///
     /// # Arguments
-    /// * `id` - Unique ID of the workflow code
-    /// * `code` - Deno OpDecl (workflow code body)
-    /// * `plugin_packages` - List of plugin packages used in the workflow
-    /// * `code_revision` - Revision number of the code
+    ///
+    /// * `id` - The unique identifier for the workflow code.
+    /// * `code` - The JavaScript code for the workflow.
+    /// * `plugin_packages` - A vector of `CorePluginPackage`s used in this workflow.
+    /// * `code_revision` - The revision number of the code.
     pub fn new(
         id: String,
         code: String,
@@ -151,11 +152,12 @@ impl CoreWorkflowCode {
         self.result.push(result_obj);
     }
 
-    /// Creates a CoreWorkflowCode from a proto WorkflowCode.
+    /// Creates a `CoreWorkflowCode` from a protobuf `WorkflowCode` message.
     ///
     /// # Arguments
-    /// * `workflow_code` - WorkflowCode defined in proto
-    /// * `plugin_packages` - List of plugin packages used in the workflow
+    ///
+    /// * `workflow_code` - The protobuf `WorkflowCode` message.
+    /// * `plugin_packages` - A vector of `CorePluginPackage`s used in this workflow.
     pub fn new_from_proto(
         workflow_code: &sapphillon::v1::WorkflowCode,
         plugin_packages: Vec<CorePluginPackage>,

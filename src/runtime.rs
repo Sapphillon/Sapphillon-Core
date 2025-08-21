@@ -84,26 +84,24 @@ impl OpStateWorkflowData {
     }
 }
 
-/// Executes the given JavaScript code within a `JsRuntime` configured with custom operations.
+/// Executes a JavaScript script in a Deno `JsRuntime`.
 ///
-/// # Overview
-/// Runs the provided JavaScript `script` in a new `JsRuntime` instance, registering the supplied vector of `OpDecl` as custom operations (ops) via an extension. Use `op2` to define these operations.
+/// This function sets up a `JsRuntime` with a custom extension that provides the core functionalities
+/// for the workflow execution environment. It can also execute pre-run scripts and manage workflow-specific
+/// state data.
 ///
 /// # Arguments
-/// - `script`: The JavaScript code to execute as a string.
-/// - `ext`: A vector of `OpDecl` representing custom operations to be registered in the runtime.
+///
+/// * `script` - The main JavaScript code to execute.
+/// * `ext_func` - A vector of `OpDecl`s that define the native functions available to the JavaScript runtime.
+/// * `workflow_data` - An optional, shareable `OpStateWorkflowData` that holds state across `op` calls.
+/// * `pre_script` - An optional vector of JavaScript code snippets to execute before the main script.
 ///
 /// # Returns
-/// - `Ok(())`: If the script executes successfully.
-/// - `Err(Box<JsError>)`: If an error occurs during execution.
 ///
-///
-/// # Notes
-/// - The extension is registered with the name "ext".
-/// - The script is always executed as the module "workflow.js".
-///
-/// # Errors
-/// - Any JavaScript execution error is returned as `Box<JsError>`.
+/// * `Ok(Arc<Mutex<OpStateWorkflowData>>)` - On successful execution, returns the (potentially modified)
+///   workflow data.
+/// * `Err(Box<JsError>)` - If any JavaScript error occurs during execution.
 #[allow(unused)]
 pub(crate) fn run_script(
     script: &str,
