@@ -37,12 +37,15 @@ pub struct CorePluginFunction {
 }
 
 impl CorePluginFunction {
-    /// Creates a new CorePluginFunction from the given ID, name, and function body.
+    /// Creates a new `CorePluginFunction`.
     ///
     /// # Arguments
-    /// * `id` - Unique ID of the function
-    /// * `name` - Function name
-    /// * `func` - Deno OpDecl (function body)
+    ///
+    /// * `id` - The unique identifier for the function.
+    /// * `name` - The name of the function.
+    /// * `description` - A description of what the function does.
+    /// * `func` - The `OpDecl` representing the function's implementation.
+    /// * `pre_run_js` - An optional JavaScript snippet to be executed before the main function.
     pub fn new(
         id: String,
         name: String,
@@ -59,11 +62,12 @@ impl CorePluginFunction {
         }
     }
 
-    /// Creates a CorePluginFunction from a proto PluginFunction and OpDecl.
+    /// Creates a `CorePluginFunction` from a protobuf `PluginFunction` and an `OpDecl`.
     ///
     /// # Arguments
-    /// * `plugin_function` - PluginFunction defined in proto
-    /// * `function` - Deno OpDecl (function body)
+    ///
+    /// * `plugin_function` - The protobuf `PluginFunction` message.
+    /// * `function` - The `OpDecl` representing the function's implementation.
     pub fn new_from_plugin_function(plugin_function: &PluginFunction, function: OpDecl) -> Self {
         Self {
             id: plugin_function.function_id.clone(),
@@ -88,12 +92,13 @@ pub struct CorePluginPackage {
 }
 
 impl CorePluginPackage {
-    /// Creates a new CorePluginPackage from the given ID, name, and function list.
+    /// Creates a new `CorePluginPackage`.
     ///
     /// # Arguments
-    /// * `id` - Unique ID of the package
-    /// * `name` - Package name
-    /// * `functions` - List of functions included in the package
+    ///
+    /// * `id` - The unique identifier for the package.
+    /// * `name` - The name of the package.
+    /// * `functions` - A vector of `CorePluginFunction` instances included in this package.
     pub fn new(id: String, name: String, functions: Vec<CorePluginFunction>) -> Self {
         Self {
             id,
@@ -102,11 +107,12 @@ impl CorePluginPackage {
         }
     }
 
-    /// Creates a CorePluginPackage from a proto PluginPackage and function list.
+    /// Creates a `CorePluginPackage` from a protobuf `PluginPackage` and a list of functions.
     ///
     /// # Arguments
-    /// * `plugin_package` - PluginPackage defined in proto
-    /// * `functions` - List of functions included in the package
+    ///
+    /// * `plugin_package` - The protobuf `PluginPackage` message.
+    /// * `functions` - A vector of `CorePluginFunction` instances to be included in this package.
     pub fn new_from_plugin_package(
         plugin_package: &PluginPackage,
         functions: Vec<CorePluginFunction>,
