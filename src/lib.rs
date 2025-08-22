@@ -17,8 +17,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #![cfg(not(doctest))]
+pub use crate::error::Error;
 
 pub mod core;
+pub mod error;
 pub mod plugin;
 pub mod proto;
 pub mod runtime;
