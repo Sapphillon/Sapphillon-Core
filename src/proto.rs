@@ -7,7 +7,7 @@ pub mod sapphillon {
     pub mod v1 {
         include!("proto/sapphillon.v1.rs");
     }
-    
+
     pub mod ai {
         pub mod v1 {
             include!("proto/sapphillon.ai.v1.rs");
