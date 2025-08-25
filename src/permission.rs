@@ -16,13 +16,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![cfg(not(doctest))]
-pub use crate::error::Error;
+use crate::proto::sapphillon::v1 as sapphillon_v1;
 
-pub mod core;
-pub mod error;
-pub mod plugin;
-pub mod proto;
-pub mod runtime;
-pub mod workflow;
-pub mod permission;
+impl std::fmt::Display for sapphillon_v1::Permission {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let permission_type = self.permission_type;
+        let perm = sapphillon_v1::PermissionType::try_from(permission_type).unwrap();
+        let resources = self.resource.join(", ");
+        write!(f, "Permission {{ type: {}, resources: [{}] }}",  perm.as_str_name(), resources)
+    }
+    
+}
