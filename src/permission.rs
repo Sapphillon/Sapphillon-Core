@@ -68,14 +68,7 @@ impl Permissions {
                 }
             }
         );
-        let pp = sapphillon_v1::Permission {
-            display_name: "a".to_string(),
-            description: "a".to_string(),
-            permission_type: 0,
-            resource: vec!["a".to_string()],
-            permission_level: 0
-        };
-        Permissions::new(perm_map.iter().map(|_, v| v).collect())
+        Permissions::new(perm_map.into_iter().map(|(_, v)| v).collect())
     }
 }
 
