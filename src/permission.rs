@@ -18,7 +18,7 @@
 
 use std::collections::HashMap;
 
-use crate::proto::sapphillon::v1 as sapphillon_v1;
+use crate::proto::sapphillon::{self, v1 as sapphillon_v1};
 
 impl std::fmt::Display for sapphillon_v1::Permission {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -46,6 +46,36 @@ impl std::fmt::Display for Permissions {
 impl Permissions {
     pub fn new(permissions: Vec<sapphillon_v1::Permission>) -> Self {
         Self { permissions }
+    }
+    
+    pub fn merge(self) -> Self {
+        let mut perm_map: HashMap<i32, sapphillon_v1::Permission> = HashMap::new();
+        
+        self.permissions.iter().for_each(
+            |p| {
+                match perm_map.get(&p.permission_type) {
+                    Some(perm) =>  {
+                        let new_permission = sapphillon_v1::Permission {
+                            display_name: p.display_name.clone() + ", " + &perm.display_name.clone(),
+                            description: p.description.clone() + ", " + &perm.description.clone(),
+                            permission_type: p.permission_type,
+                            resource: [p.resource.clone(), perm.resource.clone()].concat(),
+                            permission_level: std::cmp::max(perm.permission_level, p.permission_level)
+                        };
+                        perm_map.insert(p.permission_type, new_permission);
+                    },
+                    None => {perm_map.insert(p.permission_type, p.clone());}
+                }
+            }
+        );
+        let pp = sapphillon_v1::Permission {
+            display_name: "a".to_string(),
+            description: "a".to_string(),
+            permission_type: 0,
+            resource: vec!["a".to_string()],
+            permission_level: 0
+        };
+        Permissions::new(perm_map.iter().map(|_, v| v).collect())
     }
 }
 
