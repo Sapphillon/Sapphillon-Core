@@ -17,6 +17,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use thiserror::Error;
+#[allow(unused_imports)]
+use crate::permission::*;
+
 
 /// Top-level error type for the Sapphillon Core library.
 ///
@@ -129,33 +132,15 @@ pub struct WorkflowRuntimeError {
     /// should examine `js_error` directly.
     pub js_error: deno_core::error::JsError,
 }
-use crate::proto::sapphillon::v1::{Permission, PermissionType}
-
-#[derive(Debug, Clone)]
-pub struct Permissions {
-    pub permissions: Vec<Permission>
-    
-}
-
-impl std::fmt::Display for Permissions {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut msg = String::new();
-
-        for perm in &self.permissions {
-            let current = String::new();
-            let perm_type = PermissionType::try_from(perm.permission_type).unwrap();
-            msg.push_str(&format!("{}", perm_type));
-        }
-        write!(f, "Permissions: {}", msg)
-    }
-}
+use crate::proto::sapphillon::v1::{Permission, PermissionType};
+use crate::permission::Permissions;
 
 #[derive(Error, Debug)]
 #[error("Permission denied: Requested Permissions: {}, Granted Permissions: {}", requested, granted)]
 pub struct PermissionDeniedError {
-    /// The permissions that were requested.
-    pub requested: Vec<Permission>,
+    /// The permissions that were requested. 
+    pub requested: Permissions,
 
     /// The permissions that were granted.
-    pub granted: Vec<Permission>,
+    pub granted: Permissions,
 }
