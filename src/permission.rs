@@ -68,7 +68,7 @@ impl Permissions {
                 }
             }
         );
-        Permissions::new(perm_map.into_iter().map(|(_, v)| v).collect())
+        Permissions::new(perm_map.into_values().collect())
     }
 }
 
