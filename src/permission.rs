@@ -16,6 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::collections::HashMap;
+
 use crate::proto::sapphillon::v1 as sapphillon_v1;
 
 impl std::fmt::Display for sapphillon_v1::Permission {
@@ -39,5 +41,11 @@ impl std::fmt::Display for Permissions {
         write!(f, "Permissions: [{msg}]")
     }
     
+}
+
+impl Permissions {
+    pub fn new(permissions: Vec<sapphillon_v1::Permission>) -> Self {
+        Self { permissions }
+    }
 }
 
