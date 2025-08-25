@@ -27,3 +27,17 @@ impl std::fmt::Display for sapphillon_v1::Permission {
     }
     
 }
+
+#[derive(Debug, Clone)]
+pub struct Permissions {
+    pub permissions: Vec<sapphillon_v1::Permission>
+}
+
+impl std::fmt::Display for Permissions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let msg = self.permissions.iter().map(|p| format!("{p}")).collect::<Vec<_>>().join(", ");
+        write!(f, "Permissions: [{msg}]")
+    }
+    
+}
+
