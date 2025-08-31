@@ -28,7 +28,7 @@ impl std::fmt::Display for sapphillon_v1::Permission {
         let permission_type = self.permission_type;
         let perm = sapphillon_v1::PermissionType::try_from(permission_type).unwrap();
         let resources = self.resource.join(", ");
-        write!(f, "Permission {{ type: {}, resources: [{}] }}",  perm.as_str_name(), resources)
+        write!(f, "Permission {{{{ type: {}, resources: [{}] }}}}", perm.as_str_name(), resources)
     }
     
 }
@@ -203,7 +203,9 @@ pub fn paths_cover_as_set<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> b
 
 #[cfg(test)]
 mod tests {
-    use super::{normalize_forgiving, paths_cover_by_ancestor, paths_cover_as_set};
+    use crate::proto::sapphillon::v1 as sapphillon_v1;
+
+    use super::*;
     use std::path::{Path, PathBuf};
 
     // Helper to convert many &str to Vec<PathBuf>
@@ -277,5 +279,67 @@ mod tests {
         let a = pvec(&["a/b", "c/e"]);
         let b = pvec(&["a/b", "a/b", "c/e"]);
         assert!(paths_cover_as_set(&a, &b), "duplicates in b should not affect set coverage");
+    }
+    #[test]
+    fn test_display_for_permission() {
+        let p1 = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/tmp/test.txt".to_string()],
+            ..Default::default()
+        };
+        assert_eq!(
+            p1.to_string(),
+            "Permission {{ type: PERMISSION_TYPE_FILESYSTEM_READ, resources: [/tmp/test.txt] }}"
+        );
+
+        let p2 = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::NetAccess as i32,
+            resource: vec!["google.com".to_string(), "example.com".to_string()],
+            ..Default::default()
+        };
+        assert_eq!(
+            p2.to_string(),
+            "Permission {{ type: PERMISSION_TYPE_NET_ACCESS, resources: [google.com, example.com] }}"
+        );
+
+        let p3 = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::Execute as i32,
+            resource: vec![],
+            ..Default::default()
+        };
+        assert_eq!(
+            p3.to_string(),
+            "Permission {{ type: PERMISSION_TYPE_EXECUTE, resources: [] }}"
+        );
+    }
+    #[test]
+    fn test_display_for_permissions() {
+        let p1 = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/tmp/a".to_string()],
+            ..Default::default()
+        };
+        let p2 = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemWrite as i32,
+            resource: vec!["/tmp/b".to_string()],
+            ..Default::default()
+        };
+
+        let perms1 = Permissions::new(vec![p1.clone()]);
+        assert_eq!(
+            perms1.to_string(),
+            "Permissions: [Permission {{ type: PERMISSION_TYPE_FILESYSTEM_READ, resources: [/tmp/a] }}]"
+        );
+
+        let perms2 = Permissions::new(vec![p1, p2]);
+        // The order is not guaranteed because of the underlying HashMap in merge(), so we check for both possibilities.
+        let expected1 = "Permissions: [Permission {{ type: PERMISSION_TYPE_FILESYSTEM_READ, resources: [/tmp/a] }}, Permission {{ type: PERMISSION_TYPE_FILESYSTEM_WRITE, resources: [/tmp/b] }}]";
+        let expected2 = "Permissions: [Permission {{ type: PERMISSION_TYPE_FILESYSTEM_WRITE, resources: [/tmp/b] }}, Permission {{ type: PERMISSION_TYPE_FILESYSTEM_READ, resources: [/tmp/a] }}]";
+        let actual = perms2.to_string();
+        assert!(actual == expected1 || actual == expected2);
+
+
+        let perms3 = Permissions::new(vec![]);
+        assert_eq!(perms3.to_string(), "Permissions: []");
     }
 }
