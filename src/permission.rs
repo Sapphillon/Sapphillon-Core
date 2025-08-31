@@ -200,3 +200,82 @@ pub fn paths_cover_as_set<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> b
     let set_a: HashSet<PathBuf> = a.iter().map(|p| normalize_forgiving(p.as_ref())).collect();
     b.iter().all(|p| set_a.contains(&normalize_forgiving(p.as_ref())))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{normalize_forgiving, paths_cover_by_ancestor, paths_cover_as_set};
+    use std::path::{Path, PathBuf};
+
+    // Helper to convert many &str to Vec<PathBuf>
+    fn pvec(v: &[&str]) -> Vec<PathBuf> {
+        v.iter().map(|s| PathBuf::from(s)).collect()
+    }
+
+    #[test]
+    fn test_normalize_forgiving_lexical_collapse_simple() {
+        let input = Path::new("a/./b/../c");
+        let out = normalize_forgiving(input);
+        assert_eq!(out, PathBuf::from("a/c"), "should remove '.' and collapse '..'");
+    }
+
+    #[test]
+    fn test_normalize_forgiving_leading_parent_dirs_are_dropped() {
+        // Leading ".." with no prior segment causes a pop on empty => effectively ignored
+        let input = Path::new("../a/../b");
+        let out = normalize_forgiving(input);
+        // Behavior of current implementation: leading '..' disappears, then 'a', then '..' removes 'a', leaving 'b'
+        assert_eq!(out, PathBuf::from("b"), "leading '..' is effectively ignored and net result collapses to 'b'");
+    }
+
+    #[test]
+    fn test_normalize_forgiving_trailing_parent_dir() {
+        let input = Path::new("../x/./y/..");
+        let out = normalize_forgiving(input);
+        // Sequence: '..' (ignored), 'x', '.', 'y', '..' (removes y) => 'x'
+        assert_eq!(out, PathBuf::from("x"));
+    }
+
+    #[test]
+    fn test_paths_cover_by_ancestor_basic_true() {
+        // Redundant base 'a/b' should be removed because 'a' covers it
+        let bases = pvec(&["a", "a/b", "x/y"]);
+        let targets = pvec(&["a/file.txt", "a/b/c", "x/y/z"]);
+        assert!(paths_cover_by_ancestor(&bases, &targets), "all targets lie under at least one ancestor base");
+    }
+
+    #[test]
+    fn test_paths_cover_by_ancestor_false_missing_base() {
+        let bases = pvec(&["a/dir"]);
+        let targets = pvec(&["a/dir/file", "other/file"]);
+        assert!(!paths_cover_by_ancestor(&bases, &targets), "target outside provided bases should fail coverage");
+    }
+
+    #[test]
+    fn test_paths_cover_by_ancestor_normalization() {
+        // Base normalizes from a/./b/../c -> a/c
+        let bases = pvec(&["a/./b/../c"]);
+        let targets = pvec(&["a/c/d", "a/c"]);
+        assert!(paths_cover_by_ancestor(&bases, &targets), "normalized base should cover normalized targets");
+    }
+
+    #[test]
+    fn test_paths_cover_as_set_true_with_normalization() {
+        let a = pvec(&["a/./b", "c/d/../e"]);
+        let b = pvec(&["a/b", "c/e"]);
+        assert!(paths_cover_as_set(&a, &b), "normalized set a should contain all normalized b paths");
+    }
+
+    #[test]
+    fn test_paths_cover_as_set_false_missing() {
+        let a = pvec(&["a/b", "c/e"]);
+        let b = pvec(&["a/b", "c/e", "x/y"]);
+        assert!(!paths_cover_as_set(&a, &b), "missing element in a should cause false");
+    }
+
+    #[test]
+    fn test_paths_cover_as_set_duplicates_in_b() {
+        let a = pvec(&["a/b", "c/e"]);
+        let b = pvec(&["a/b", "a/b", "c/e"]);
+        assert!(paths_cover_as_set(&a, &b), "duplicates in b should not affect set coverage");
+    }
+}
