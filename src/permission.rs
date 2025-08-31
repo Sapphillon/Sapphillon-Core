@@ -30,7 +30,7 @@ impl std::fmt::Display for sapphillon_v1::Permission {
     
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Permissions {
     pub permissions: Vec<sapphillon_v1::Permission>
 }
@@ -42,6 +42,7 @@ impl std::fmt::Display for Permissions {
     }
     
 }
+
 
 impl Permissions {
     pub fn new(permissions: Vec<sapphillon_v1::Permission>) -> Self {
