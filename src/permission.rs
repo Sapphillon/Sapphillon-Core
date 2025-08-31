@@ -71,5 +71,35 @@ impl Permissions {
         );
         Permissions::new(perm_map.into_values().collect())
     }
+    
+}
+
+pub enum CheckPermissionResult {
+    Ok,
+    MissingPermission(Permissions),
+}
+
+pub fn check_permission(permissions: &Permissions, required: &Permissions) -> CheckPermissionResult {
+    let merged_permissions = permissions.clone().merge();
+    let merged_required = required.clone().merge();
+    let mut missing_permissions = merged_required.clone();
+    
+    for i in 0..merged_permissions.permissions.len() {
+        let mut found = false;
+        for j in 0..merged_permissions.permissions.len() {
+            let perm = &merged_permissions.permissions[i];
+            let req = &merged_required.permissions[j];
+            
+            if perm.permission_type == req.permission_type {
+                found = true;
+            }
+        }
+        
+        if !found {
+            missing_permissions.permissions.push(merged_required.permissions[i].clone());
+        }
+    }
+
+    CheckPermissionResult::Ok
 }
 
