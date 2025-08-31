@@ -524,8 +524,6 @@ mod tests {
 
     #[test]
     fn test_run_script_pre_script_failure_maps_error() {
-        
-
         // Invalid JS in pre_script to force a JsError (syntax error)
         let bad_pre = "function() {".to_string();
         let script = r#"console.log('should not run');"#;
@@ -554,8 +552,6 @@ mod tests {
 
     #[test]
     fn test_run_script_workflow_failure_maps_error() {
-        
-
         // Valid pre-script
         let pre = "console.log('pre ok');".to_string();
         // Invalid workflow script (syntax error)

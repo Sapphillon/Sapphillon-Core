@@ -16,11 +16,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use crate::proto::sapphillon::v1 as sapphillon_v1;
 
-use crate::proto::sapphillon::{self, v1 as sapphillon_v1};
-
-use std::path::{Path, PathBuf, Component};
 use std::collections::{HashMap, HashSet};
+use std::path::{Component, Path, PathBuf};
 use url::Url;
 
 impl std::fmt::Display for sapphillon_v1::Permission {
@@ -28,53 +27,59 @@ impl std::fmt::Display for sapphillon_v1::Permission {
         let permission_type = self.permission_type;
         let perm = sapphillon_v1::PermissionType::try_from(permission_type).unwrap();
         let resources = self.resource.join(", ");
-        write!(f, "Permission {{{{ type: {}, resources: [{}] }}}}", perm.as_str_name(), resources)
+        write!(
+            f,
+            "Permission {{{{ type: {}, resources: [{}] }}}}",
+            perm.as_str_name(),
+            resources
+        )
     }
-    
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Permissions {
-    pub permissions: Vec<sapphillon_v1::Permission>
+    pub permissions: Vec<sapphillon_v1::Permission>,
 }
 
 impl std::fmt::Display for Permissions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let msg = self.permissions.iter().map(|p| format!("{p}")).collect::<Vec<_>>().join(", ");
+        let msg = self
+            .permissions
+            .iter()
+            .map(|p| format!("{p}"))
+            .collect::<Vec<_>>()
+            .join(", ");
         write!(f, "Permissions: [{msg}]")
     }
-    
 }
-
 
 impl Permissions {
     pub fn new(permissions: Vec<sapphillon_v1::Permission>) -> Self {
         Self { permissions }
     }
-    
+
     pub fn merge(self) -> Self {
         let mut perm_map: HashMap<i32, sapphillon_v1::Permission> = HashMap::new();
-        
-        self.permissions.iter().for_each(
-            |p| {
-                match perm_map.get(&p.permission_type) {
-                    Some(perm) =>  {
-                        let new_permission = sapphillon_v1::Permission {
-                            display_name: p.display_name.clone() + ", " + &perm.display_name.clone(),
-                            description: p.description.clone() + ", " + &perm.description.clone(),
-                            permission_type: p.permission_type,
-                            resource: [p.resource.clone(), perm.resource.clone()].concat(),
-                            permission_level: std::cmp::max(perm.permission_level, p.permission_level)
-                        };
-                        perm_map.insert(p.permission_type, new_permission);
-                    },
-                    None => {perm_map.insert(p.permission_type, p.clone());}
+
+        self.permissions
+            .iter()
+            .for_each(|p| match perm_map.get(&p.permission_type) {
+                Some(perm) => {
+                    let new_permission = sapphillon_v1::Permission {
+                        display_name: p.display_name.clone() + ", " + &perm.display_name.clone(),
+                        description: p.description.clone() + ", " + &perm.description.clone(),
+                        permission_type: p.permission_type,
+                        resource: [p.resource.clone(), perm.resource.clone()].concat(),
+                        permission_level: std::cmp::max(perm.permission_level, p.permission_level),
+                    };
+                    perm_map.insert(p.permission_type, new_permission);
                 }
-            }
-        );
+                None => {
+                    perm_map.insert(p.permission_type, p.clone());
+                }
+            });
         Permissions::new(perm_map.into_values().collect())
     }
-    
 }
 
 pub enum CheckPermissionResult {
@@ -82,30 +87,34 @@ pub enum CheckPermissionResult {
     MissingPermission(Permissions),
 }
 
-pub fn check_permission(permissions: &Permissions, required: &Permissions) -> CheckPermissionResult {
+pub fn check_permission(
+    permissions: &Permissions,
+    required: &Permissions,
+) -> CheckPermissionResult {
     let merged_permissions = permissions.clone().merge();
     let merged_required = required.clone().merge();
     let mut missing_permissions = merged_required.clone();
-    
+
     for i in 0..merged_permissions.permissions.len() {
         let mut found = false;
         for j in 0..merged_permissions.permissions.len() {
             let perm = &merged_permissions.permissions[i];
             let req = &merged_required.permissions[j];
-            
+
             if perm.permission_type == req.permission_type {
                 found = true;
             }
         }
-        
+
         if !found {
-            missing_permissions.permissions.push(merged_required.permissions[i].clone());
+            missing_permissions
+                .permissions
+                .push(merged_required.permissions[i].clone());
         }
     }
 
     CheckPermissionResult::Ok
 }
-
 
 /// Normalize the given path in a "forgiving" manner.
 ///
@@ -131,8 +140,10 @@ fn normalize_forgiving(p: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for comp in p.components() {
         match comp {
-            Component::CurDir => {}               // "."
-            Component::ParentDir => { out.pop(); } // ".."
+            Component::CurDir => {} // "."
+            Component::ParentDir => {
+                out.pop();
+            } // ".."
             other => out.push(other.as_os_str()), // Prefix/RootDir/Normal unchanged
         }
     }
@@ -174,10 +185,10 @@ pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B])
     }
 
     // Check every target is covered by at least one minimal base
-    b.iter().map(|p| normalize_forgiving(p.as_ref()))
+    b.iter()
+        .map(|p| normalize_forgiving(p.as_ref()))
         .all(|t| minimal.iter().any(|base| t.starts_with(base)))
 }
-
 
 /// Return true if every normalized path in b appears exactly (after forgiving
 /// normalization) in the set derived from a.
@@ -198,9 +209,9 @@ pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B])
 /// Original (JA intent): 集合として a が b を（正規化後に）包含するか
 pub fn paths_cover_as_set<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> bool {
     let set_a: HashSet<PathBuf> = a.iter().map(|p| normalize_forgiving(p.as_ref())).collect();
-    b.iter().all(|p| set_a.contains(&normalize_forgiving(p.as_ref())))
+    b.iter()
+        .all(|p| set_a.contains(&normalize_forgiving(p.as_ref())))
 }
-
 
 /// Lexically normalize a sequence of path (or URL path) segments.
 /// Rules:
@@ -223,9 +234,11 @@ where
     let mut out: Vec<String> = Vec::new();
     for s in segments {
         match s.as_str() {
-            "." => {}                     // 無視
-            ".." => { out.pop(); }        // 一つ戻る
-            "" => {}                      // 連続スラッシュや末尾の空要素は無視
+            "." => {} // 無視
+            ".." => {
+                out.pop();
+            } // 一つ戻る
+            "" => {}  // 連続スラッシュや末尾の空要素は無視
             _ => out.push(s),
         }
     }
@@ -299,9 +312,15 @@ pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) ->
     let mut bases: HashMap<(String, String, u16), Vec<Vec<String>>> = HashMap::new();
 
     for s in a {
-        let Ok(url) = Url::parse(s.as_ref()) else { continue };
-        let Some(key) = origin_key(&url) else { continue };
-        let Some(mut segs) = url_segments(&url) else { continue };
+        let Ok(url) = Url::parse(s.as_ref()) else {
+            continue;
+        };
+        let Some(key) = origin_key(&url) else {
+            continue;
+        };
+        let Some(mut segs) = url_segments(&url) else {
+            continue;
+        };
 
         // 冗長ベース除去（a/b が a に包含されるなら a を優先）
         let entry = bases.entry(key).or_default();
@@ -314,11 +333,19 @@ pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) ->
         entry.push(std::mem::take(&mut segs));
     }
 
-    'outer: for s in b {
-        let Ok(url) = Url::parse(s.as_ref()) else { return false };
-        let Some(key) = origin_key(&url) else { return false };
-        let Some(segs) = url_segments(&url) else { return false };
-        let Some(entry) = bases.get(&key) else { return false };
+    for s in b {
+        let Ok(url) = Url::parse(s.as_ref()) else {
+            return false;
+        };
+        let Some(key) = origin_key(&url) else {
+            return false;
+        };
+        let Some(segs) = url_segments(&url) else {
+            return false;
+        };
+        let Some(entry) = bases.get(&key) else {
+            return false;
+        };
         if !entry.iter().any(|base| segs.starts_with(base)) {
             return false;
         }
@@ -353,7 +380,6 @@ pub fn urls_cover_as_set<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool
         .all(|u| set_a.contains(&u.to_string()))
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::proto::sapphillon::v1 as sapphillon_v1;
@@ -363,14 +389,18 @@ mod tests {
 
     // Helper to convert many &str to Vec<PathBuf>
     fn pvec(v: &[&str]) -> Vec<PathBuf> {
-        v.iter().map(|s| PathBuf::from(s)).collect()
+        v.iter().map(PathBuf::from).collect()
     }
 
     #[test]
     fn test_normalize_forgiving_lexical_collapse_simple() {
         let input = Path::new("a/./b/../c");
         let out = normalize_forgiving(input);
-        assert_eq!(out, PathBuf::from("a/c"), "should remove '.' and collapse '..'");
+        assert_eq!(
+            out,
+            PathBuf::from("a/c"),
+            "should remove '.' and collapse '..'"
+        );
     }
 
     #[test]
@@ -379,7 +409,11 @@ mod tests {
         let input = Path::new("../a/../b");
         let out = normalize_forgiving(input);
         // Behavior of current implementation: leading '..' disappears, then 'a', then '..' removes 'a', leaving 'b'
-        assert_eq!(out, PathBuf::from("b"), "leading '..' is effectively ignored and net result collapses to 'b'");
+        assert_eq!(
+            out,
+            PathBuf::from("b"),
+            "leading '..' is effectively ignored and net result collapses to 'b'"
+        );
     }
 
     #[test]
@@ -395,14 +429,20 @@ mod tests {
         // Redundant base 'a/b' should be removed because 'a' covers it
         let bases = pvec(&["a", "a/b", "x/y"]);
         let targets = pvec(&["a/file.txt", "a/b/c", "x/y/z"]);
-        assert!(paths_cover_by_ancestor(&bases, &targets), "all targets lie under at least one ancestor base");
+        assert!(
+            paths_cover_by_ancestor(&bases, &targets),
+            "all targets lie under at least one ancestor base"
+        );
     }
 
     #[test]
     fn test_paths_cover_by_ancestor_false_missing_base() {
         let bases = pvec(&["a/dir"]);
         let targets = pvec(&["a/dir/file", "other/file"]);
-        assert!(!paths_cover_by_ancestor(&bases, &targets), "target outside provided bases should fail coverage");
+        assert!(
+            !paths_cover_by_ancestor(&bases, &targets),
+            "target outside provided bases should fail coverage"
+        );
     }
 
     #[test]
@@ -410,28 +450,40 @@ mod tests {
         // Base normalizes from a/./b/../c -> a/c
         let bases = pvec(&["a/./b/../c"]);
         let targets = pvec(&["a/c/d", "a/c"]);
-        assert!(paths_cover_by_ancestor(&bases, &targets), "normalized base should cover normalized targets");
+        assert!(
+            paths_cover_by_ancestor(&bases, &targets),
+            "normalized base should cover normalized targets"
+        );
     }
 
     #[test]
     fn test_paths_cover_as_set_true_with_normalization() {
         let a = pvec(&["a/./b", "c/d/../e"]);
         let b = pvec(&["a/b", "c/e"]);
-        assert!(paths_cover_as_set(&a, &b), "normalized set a should contain all normalized b paths");
+        assert!(
+            paths_cover_as_set(&a, &b),
+            "normalized set a should contain all normalized b paths"
+        );
     }
 
     #[test]
     fn test_paths_cover_as_set_false_missing() {
         let a = pvec(&["a/b", "c/e"]);
         let b = pvec(&["a/b", "c/e", "x/y"]);
-        assert!(!paths_cover_as_set(&a, &b), "missing element in a should cause false");
+        assert!(
+            !paths_cover_as_set(&a, &b),
+            "missing element in a should cause false"
+        );
     }
 
     #[test]
     fn test_paths_cover_as_set_duplicates_in_b() {
         let a = pvec(&["a/b", "c/e"]);
         let b = pvec(&["a/b", "a/b", "c/e"]);
-        assert!(paths_cover_as_set(&a, &b), "duplicates in b should not affect set coverage");
+        assert!(
+            paths_cover_as_set(&a, &b),
+            "duplicates in b should not affect set coverage"
+        );
     }
     #[test]
     fn test_display_for_permission() {
@@ -491,38 +543,36 @@ mod tests {
         let actual = perms2.to_string();
         assert!(actual == expected1 || actual == expected2);
 
-
         let perms3 = Permissions::new(vec![]);
         assert_eq!(perms3.to_string(), "Permissions: []");
     }
-    
+
     #[test]
     fn test_url_checker() {
-            let a = vec![
-        "https://example.com/project/src",
-        "https://data.example.com/data",
-        "http://example.com:80/base",
-    ];
+        let a = vec![
+            "https://example.com/project/src",
+            "https://data.example.com/data",
+            "http://example.com:80/base",
+        ];
 
-    let b_ok = vec![
-        "https://example.com/project/src/lib/mod.rs",
-        "https://data.example.com/data/input/file.csv?part=1",
-        "http://example.com/base/child",
-    ];
+        let b_ok = vec![
+            "https://example.com/project/src/lib/mod.rs",
+            "https://data.example.com/data/input/file.csv?part=1",
+            "http://example.com/base/child",
+        ];
 
-    let b_ng = vec![
-        "https://example.com/project/tests/test.rs",
-        "https://other.example.com/data/x",
-    ];
+        let b_ng = vec![
+            "https://example.com/project/tests/test.rs",
+            "https://other.example.com/data/x",
+        ];
 
-    assert!(urls_cover_by_ancestor(&a, &b_ok));
-    assert!(!urls_cover_by_ancestor(&a, &b_ng));
-    
-    // 完全一致（既定ポートの明示/非明示は同一視）
-    let a2 = vec!["https://example.com/api", "https://example.com/"];
-    let b2 = vec!["https://example.com/"];
-    assert!(urls_cover_as_set(&a2, &b2));
-    
+        assert!(urls_cover_by_ancestor(&a, &b_ok));
+        assert!(!urls_cover_by_ancestor(&a, &b_ng));
+
+        // 完全一致（既定ポートの明示/非明示は同一視）
+        let a2 = vec!["https://example.com/api", "https://example.com/"];
+        let b2 = vec!["https://example.com/"];
+        assert!(urls_cover_as_set(&a2, &b2));
     }
 
     // -----------------------------
@@ -532,44 +582,65 @@ mod tests {
     // normalize_segments
     #[test]
     fn test_segments_basic_collapse() {
-        let v = vec!["a",".","b","..","c"].into_iter().map(String::from).collect::<Vec<_>>();
-        assert_eq!(normalize_segments(v), vec!["a","c"]);
+        let v = vec!["a", ".", "b", "..", "c"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
+        assert_eq!(normalize_segments(v), vec!["a", "c"]);
     }
 
     #[test]
     fn test_segments_leading_parent_dirs() {
-        let v = vec!["..","a","..","b"].into_iter().map(String::from).collect::<Vec<_>>();
+        let v = vec!["..", "a", "..", "b"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
         assert_eq!(normalize_segments(v), vec!["b"]);
     }
 
     #[test]
     fn test_segments_multiple_pops_past_start() {
-        let v = vec!["a","..","..","b"].into_iter().map(String::from).collect::<Vec<_>>();
+        let v = vec!["a", "..", "..", "b"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
         assert_eq!(normalize_segments(v), vec!["b"]);
     }
 
     #[test]
     fn test_segments_empty_segments_discarded() {
-        let v = vec!["","a","","b",""].into_iter().map(String::from).collect::<Vec<_>>();
-        assert_eq!(normalize_segments(v), vec!["a","b"]);
+        let v = vec!["", "a", "", "b", ""]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
+        assert_eq!(normalize_segments(v), vec!["a", "b"]);
     }
 
     #[test]
     fn test_segments_mixed_and_all_removed() {
-        let v = vec![".","..","..","."].into_iter().map(String::from).collect::<Vec<_>>();
+        let v = vec![".", "..", "..", "."]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
         assert!(normalize_segments(v).is_empty());
     }
 
     #[test]
     fn test_segments_unicode_and_dot_handling() {
-        let v = vec!["α","β","..","γ"].into_iter().map(String::from).collect::<Vec<_>>();
-        assert_eq!(normalize_segments(v), vec!["α","γ"]);
+        let v = vec!["α", "β", "..", "γ"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
+        assert_eq!(normalize_segments(v), vec!["α", "γ"]);
     }
 
     #[test]
     fn test_segments_percent_not_decoded() {
         // "%2E" should not be treated as ".", so it is retained
-        let v = vec!["a%2E","."].into_iter().map(String::from).collect::<Vec<_>>();
+        let v = vec!["a%2E", "."]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
         assert_eq!(normalize_segments(v), vec!["a%2E"]);
     }
 
@@ -580,7 +651,7 @@ mod tests {
         let u2 = Url::parse("http://example.com:80/").unwrap();
         let k1 = origin_key(&u1).unwrap();
         let k2 = origin_key(&u2).unwrap();
-        assert_eq!(k1, ("http".into(),"example.com".into(),80));
+        assert_eq!(k1, ("http".into(), "example.com".into(), 80));
         assert_eq!(k1, k2);
     }
 
@@ -588,8 +659,14 @@ mod tests {
     fn test_origin_key_non_default_and_https() {
         let u1 = Url::parse("http://example.com:8080/").unwrap();
         let u2 = Url::parse("https://example.com/").unwrap();
-        assert_eq!(origin_key(&u1).unwrap(), ("http".into(),"example.com".into(),8080));
-        assert_eq!(origin_key(&u2).unwrap(), ("https".into(),"example.com".into(),443));
+        assert_eq!(
+            origin_key(&u1).unwrap(),
+            ("http".into(), "example.com".into(), 8080)
+        );
+        assert_eq!(
+            origin_key(&u2).unwrap(),
+            ("https".into(), "example.com".into(), 443)
+        );
     }
 
     #[test]
@@ -604,26 +681,29 @@ mod tests {
     fn test_origin_key_ipv6() {
         let u = Url::parse("http://[2001:db8::1]/").unwrap();
         // url::Url::host_str() returns the bracketed form for IPv6; keep as-is.
-        assert_eq!(origin_key(&u).unwrap(), ("http".into(),"[2001:db8::1]".into(),80));
+        assert_eq!(
+            origin_key(&u).unwrap(),
+            ("http".into(), "[2001:db8::1]".into(), 80)
+        );
     }
 
     // url_segments
     #[test]
     fn test_url_segments_simple() {
         let u = Url::parse("https://example.com/a/b").unwrap();
-        assert_eq!(url_segments(&u).unwrap(), vec!["a","b"]);
+        assert_eq!(url_segments(&u).unwrap(), vec!["a", "b"]);
     }
 
     #[test]
     fn test_url_segments_multiple_slashes() {
         let u = Url::parse("https://example.com//a//b///").unwrap();
-        assert_eq!(url_segments(&u).unwrap(), vec!["a","b"]);
+        assert_eq!(url_segments(&u).unwrap(), vec!["a", "b"]);
     }
 
     #[test]
     fn test_url_segments_dot_and_dotdot() {
         let u = Url::parse("https://example.com/a/./b/../c").unwrap();
-        assert_eq!(url_segments(&u).unwrap(), vec!["a","c"]);
+        assert_eq!(url_segments(&u).unwrap(), vec!["a", "c"]);
     }
 
     #[test]
@@ -641,7 +721,7 @@ mod tests {
     #[test]
     fn test_url_segments_percent_encoding_preserved() {
         let u = Url::parse("https://example.com/a%2Eb/c").unwrap();
-        assert_eq!(url_segments(&u).unwrap(), vec!["a%2Eb","c"]);
+        assert_eq!(url_segments(&u).unwrap(), vec!["a%2Eb", "c"]);
     }
 
     #[test]
@@ -655,49 +735,58 @@ mod tests {
     fn test_urls_cover_by_ancestor_prefix_boundary_fail() {
         let a = vec!["https://example.com/app"];
         let b = vec!["https://example.com/application/file"];
-        assert!(!urls_cover_by_ancestor(&a,&b), "segment boundary should prevent false positive (app vs application)");
+        assert!(
+            !urls_cover_by_ancestor(&a, &b),
+            "segment boundary should prevent false positive (app vs application)"
+        );
     }
 
     #[test]
     fn test_urls_cover_by_ancestor_port_equivalence() {
         let a = vec!["http://example.com:80/base"];
         let b = vec!["http://example.com/base/x"];
-        assert!(urls_cover_by_ancestor(&a,&b));
+        assert!(urls_cover_by_ancestor(&a, &b));
     }
 
     #[test]
     fn test_urls_cover_by_ancestor_scheme_mismatch() {
         let a = vec!["http://example.com/base"];
         let b = vec!["https://example.com/base/x"];
-        assert!(!urls_cover_by_ancestor(&a,&b));
+        assert!(!urls_cover_by_ancestor(&a, &b));
     }
 
     #[test]
     fn test_urls_cover_by_ancestor_trailing_slash_normalization() {
         let a = vec!["https://example.com/base/"];
         let b = vec!["https://example.com/base/x"];
-        assert!(urls_cover_by_ancestor(&a,&b));
+        assert!(urls_cover_by_ancestor(&a, &b));
     }
 
     #[test]
     fn test_urls_cover_by_ancestor_invalid_base_skipped() {
         let a = vec!["::::", "https://example.com/a/b", "https://example.com/a"];
         let b = vec!["https://example.com/a/x"];
-        assert!(urls_cover_by_ancestor(&a,&b), "invalid base should be skipped; minimal base a covers");
+        assert!(
+            urls_cover_by_ancestor(&a, &b),
+            "invalid base should be skipped; minimal base a covers"
+        );
     }
 
     #[test]
     fn test_urls_cover_by_ancestor_invalid_target_false() {
         let a = vec!["https://example.com/a"];
         let b = vec!["::not_a_url::"];
-        assert!(!urls_cover_by_ancestor(&a,&b), "invalid target triggers false");
+        assert!(
+            !urls_cover_by_ancestor(&a, &b),
+            "invalid target triggers false"
+        );
     }
 
     #[test]
     fn test_urls_cover_by_ancestor_dot_segments_in_target() {
         let a = vec!["https://example.com/a/b"];
         let b = vec!["https://example.com/a/b/c/./d/../e"];
-        assert!(urls_cover_by_ancestor(&a,&b));
+        assert!(urls_cover_by_ancestor(&a, &b));
     }
 
     // urls_cover_as_set advanced
@@ -705,14 +794,14 @@ mod tests {
     fn test_urls_cover_as_set_default_port_canonicalization() {
         let a = vec!["http://example.com"];
         let b = vec!["http://example.com:80/"];
-        assert!(urls_cover_as_set(&a,&b));
+        assert!(urls_cover_as_set(&a, &b));
     }
 
     #[test]
     fn test_urls_cover_as_set_query_mismatch() {
         let a = vec!["https://e.com/a?x=1"];
         let b = vec!["https://e.com/a?x=2"];
-        assert!(!urls_cover_as_set(&a,&b));
+        assert!(!urls_cover_as_set(&a, &b));
     }
 
     #[test]
@@ -720,22 +809,25 @@ mod tests {
         let a = vec!["https://e.com/a#frag"];
         let b = vec!["https://e.com/a"];
         // Fragment participates in serialization, so mismatch => false
-        assert!(!urls_cover_as_set(&a,&b));
+        assert!(!urls_cover_as_set(&a, &b));
     }
 
     #[test]
     fn test_urls_cover_as_set_duplicates_and_invalid_skip() {
         let a = vec!["https://example.com/"];
-        let b = vec!["https://example.com/","https://example.com/","::not_a_url::"];
+        let b = vec![
+            "https://example.com/",
+            "https://example.com/",
+            "::not_a_url::",
+        ];
         // Invalid b URL skipped by filter_map; duplicates ignored; still covered
-        assert!(urls_cover_as_set(&a,&b));
+        assert!(urls_cover_as_set(&a, &b));
     }
 
     #[test]
     fn test_urls_cover_as_set_missing_element() {
         let a = vec!["https://example.com/a"];
-        let b = vec!["https://example.com/a","https://example.com/b"];
-        assert!(!urls_cover_as_set(&a,&b));
+        let b = vec!["https://example.com/a", "https://example.com/b"];
+        assert!(!urls_cover_as_set(&a, &b));
     }
-
 }

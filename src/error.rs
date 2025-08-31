@@ -16,10 +16,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use thiserror::Error;
 #[allow(unused_imports)]
 use crate::permission::*;
-
+use thiserror::Error;
 
 /// Top-level error type for the Sapphillon Core library.
 ///
@@ -132,13 +131,15 @@ pub struct WorkflowRuntimeError {
     /// should examine `js_error` directly.
     pub js_error: deno_core::error::JsError,
 }
-use crate::proto::sapphillon::v1::{Permission, PermissionType};
-use crate::permission::Permissions;
 
 #[derive(Error, Debug)]
-#[error("Permission denied: Requested Permissions: {}, Granted Permissions: {}", requested, granted)]
+#[error(
+    "Permission denied: Requested Permissions: {}, Granted Permissions: {}",
+    requested,
+    granted
+)]
 pub struct PermissionDeniedError {
-    /// The permissions that were requested. 
+    /// The permissions that were requested.
     pub requested: Permissions,
 
     /// The permissions that were granted.
