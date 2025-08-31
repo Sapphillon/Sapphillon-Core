@@ -202,7 +202,6 @@ pub fn paths_cover_as_set<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> b
 }
 
 
-//// English:
 /// Lexically normalize a sequence of path (or URL path) segments.
 /// Rules:
 /// - "." segments are discarded.
@@ -233,7 +232,6 @@ where
     out
 }
 
-//// English:
 /// Construct a comparison origin key from a Url consisting of:
 /// (lowercased scheme, lowercased host, effective port).
 ///
@@ -252,7 +250,6 @@ fn origin_key(u: &Url) -> Option<(String, String, u16)> {
     Some((scheme, host, port))
 }
 
-//// English:
 /// Return the normalized (lexically collapsed) path segments of the given URL.
 ///
 /// Behavior:
@@ -272,7 +269,6 @@ fn url_segments(u: &Url) -> Option<Vec<String>> {
     Some(normalize_segments(segs))
 }
 
-//// English:
 /// Return true if for every URL in b there exists at least one "base" URL in a
 /// with the SAME ORIGIN (scheme, host, effective port) whose normalized path
 /// segments are a prefix of the target URL's normalized path segments.
@@ -330,7 +326,6 @@ pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) ->
     true
 }
 
-//// English:
 /// Exact (set) coverage of URLs: every URL in b, when successfully parsed and
 /// serialized back to a string (Url::to_string), must exactly match one of the
 /// serialized forms obtained from a.
