@@ -102,7 +102,20 @@ pub fn check_permission(
             let req = &merged_required.permissions[j];
 
             if perm.permission_type == req.permission_type {
-                found = true;
+                match perm.permission_type {
+                    4 | 5 => // 4: FilesystemRead, 5: FilesystemWrite
+                    {
+                        let perm_paths: Vec<PathBuf> = perm.resource.iter().map(|s| std::path::PathBuf::from(s)).collect();
+                        let req_paths: Vec<PathBuf> = req.resource.iter().map(|s| std::path::PathBuf::from(s)).collect();
+                        
+                        if paths_cover_by_ancestor(&perm_paths, &req_paths) {
+                            found = true;
+                        }
+
+                    }
+                    _ => {found = true;}
+                    
+                }
             }
         }
 
