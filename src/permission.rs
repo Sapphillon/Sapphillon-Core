@@ -202,7 +202,21 @@ pub fn paths_cover_as_set<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> b
 }
 
 
-/// セグメントのレキシカル正規化（"." を除去し、".." で一つ戻す）
+//// English:
+/// Lexically normalize a sequence of path (or URL path) segments.
+/// Rules:
+/// - "." segments are discarded.
+/// - ".." pops one previously retained normal segment (if any).
+/// - Empty segments (caused by consecutive slashes or a trailing slash) are ignored.
+/// - All other segments are kept verbatim (no percent‑decoding or case folding).
+///
+/// This is a purely lexical rewrite; it does not consult the filesystem nor
+/// attempt to collapse beyond simple "." / ".." handling. It mirrors the
+/// fallback logic used for path normalization in this module.
+///
+/// Returned vector contains the normalized, ordered segments.
+///
+/// JA: セグメントのレキシカル正規化（"." を除去し、".." で一つ戻す）
 fn normalize_segments<I>(segments: I) -> Vec<String>
 where
     I: IntoIterator<Item = String>,
@@ -219,7 +233,18 @@ where
     out
 }
 
-/// Url から比較用オリジンキーを作成（scheme, host, port_or_default）
+//// English:
+/// Construct a comparison origin key from a Url consisting of:
+/// (lowercased scheme, lowercased host, effective port).
+///
+/// The effective port is the explicit port if present, otherwise the scheme's
+/// known default (via url::Url::port_or_known_default). Returns None if either
+/// host or default port is unavailable (e.g., data URLs, opaque origins).
+///
+/// This normalized triple allows grouping and matching URLs by "same origin"
+/// semantics needed for coverage checks.
+///
+/// JA: Url から比較用オリジンキーを作成（scheme, host, port_or_default）
 fn origin_key(u: &Url) -> Option<(String, String, u16)> {
     let scheme = u.scheme().to_ascii_lowercase();
     let host = u.host_str()?.to_ascii_lowercase();
@@ -227,7 +252,18 @@ fn origin_key(u: &Url) -> Option<(String, String, u16)> {
     Some((scheme, host, port))
 }
 
-/// URL の正規化済みパスセグメントを取得（cannot-be-a-base は None）
+//// English:
+/// Return the normalized (lexically collapsed) path segments of the given URL.
+///
+/// Behavior:
+/// - If the URL is "cannot-be-a-base" (opaque, e.g. data:, mailto:), returns None.
+/// - Otherwise extracts path segments, then applies normalize_segments to
+///   collapse "." / ".." and discard empty segments.
+/// - Does not perform percent-decoding; operates on the raw segment strings.
+///
+/// Used as a canonical representation for prefix (ancestor) comparisons.
+///
+/// JA: URL の正規化済みパスセグメントを取得（cannot-be-a-base は None）
 fn url_segments(u: &Url) -> Option<Vec<String>> {
     let segs = u
         .path_segments()?
@@ -236,7 +272,32 @@ fn url_segments(u: &Url) -> Option<Vec<String>> {
     Some(normalize_segments(segs))
 }
 
-/// a のどれかのベース URL が b の各 URL を「同一オリジンかつパスの前方一致」で包含しているか
+//// English:
+/// Return true if for every URL in b there exists at least one "base" URL in a
+/// with the SAME ORIGIN (scheme, host, effective port) whose normalized path
+/// segments are a prefix of the target URL's normalized path segments.
+///
+/// Procedure:
+/// 1. Parse each candidate base URL in a. Reject (skip) invalid or opaque URLs.
+/// 2. Group bases by origin key (scheme, host, effective port).
+/// 3. For each origin group maintain only a minimal set of base segment vectors:
+///    - If a new base is already covered (its segments start_with an existing
+///      shorter base), discard it.
+///    - If the new base is a strict ancestor (shorter prefix) of existing bases,
+///      remove those longer descendants and keep the shorter one.
+/// 4. For every URL in b:
+///    - Parse & derive its origin key and normalized segments.
+///    - Look up the minimal base list for that origin.
+///    - Ensure at least one base's segment vector is a prefix of the target's.
+/// 5. Fail fast (return false) on any invalid URL, missing origin group, or
+///    uncovered target. Return true only if all targets pass.
+///
+/// Notes:
+/// - Path normalization is purely lexical (no symlink resolution).
+/// - Query and fragment components are ignored for coverage (only path matters).
+/// - An origin mismatch immediately causes failure for that URL.
+///
+/// JA: a のどれかのベース URL が b の各 URL を「同一オリジンかつパスの前方一致」で包含しているか
 pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
     // オリジンごとに最小集合のベースセグメントを持つ
     let mut bases: HashMap<(String, String, u16), Vec<Vec<String>>> = HashMap::new();
@@ -269,7 +330,23 @@ pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) ->
     true
 }
 
-/// 完全一致の集合包含（URL のシリアライズ表現で比較）
+//// English:
+/// Exact (set) coverage of URLs: every URL in b, when successfully parsed and
+/// serialized back to a string (Url::to_string), must exactly match one of the
+/// serialized forms obtained from a.
+///
+/// Characteristics:
+/// - Both sides are parsed; invalid URLs are silently skipped (b invalid => not
+///   counted as covered since it cannot match; leads to false via all()).
+/// - Uses the serialization rules of url::Url; default ports are elided, so
+///   "http://example.com" and "http://example.com:80" serialize identically.
+/// - Ignores multiplicity and order (pure set membership).
+///
+/// Difference vs urls_cover_by_ancestor:
+/// - This requires exact equality of full serialized URL (path, query, etc.).
+/// - The ancestor variant allows path prefix containment within the same origin.
+///
+/// JA: 完全一致の集合包含（URL のシリアライズ表現で比較）
 pub fn urls_cover_as_set<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
     let set_a: HashSet<String> = a
         .iter()
