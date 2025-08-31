@@ -24,6 +24,7 @@ deno_core = { version = "0.355.0", default-features = false }
 deno_error = "0.7.0"
 unescaper = "0.1.6"
 thiserror = "2.0.16"
+url = "2.5.7"
 
 
 [build-dependencies]

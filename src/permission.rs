@@ -16,12 +16,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
 
 use crate::proto::sapphillon::{self, v1 as sapphillon_v1};
 
 use std::path::{Path, PathBuf, Component};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+use url::Url;
 
 impl std::fmt::Display for sapphillon_v1::Permission {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -201,6 +201,87 @@ pub fn paths_cover_as_set<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> b
     b.iter().all(|p| set_a.contains(&normalize_forgiving(p.as_ref())))
 }
 
+
+/// セグメントのレキシカル正規化（"." を除去し、".." で一つ戻す）
+fn normalize_segments<I>(segments: I) -> Vec<String>
+where
+    I: IntoIterator<Item = String>,
+{
+    let mut out: Vec<String> = Vec::new();
+    for s in segments {
+        match s.as_str() {
+            "." => {}                     // 無視
+            ".." => { out.pop(); }        // 一つ戻る
+            "" => {}                      // 連続スラッシュや末尾の空要素は無視
+            _ => out.push(s),
+        }
+    }
+    out
+}
+
+/// Url から比較用オリジンキーを作成（scheme, host, port_or_default）
+fn origin_key(u: &Url) -> Option<(String, String, u16)> {
+    let scheme = u.scheme().to_ascii_lowercase();
+    let host = u.host_str()?.to_ascii_lowercase();
+    let port = u.port_or_known_default()?; // 既定ポートを補完
+    Some((scheme, host, port))
+}
+
+/// URL の正規化済みパスセグメントを取得（cannot-be-a-base は None）
+fn url_segments(u: &Url) -> Option<Vec<String>> {
+    let segs = u
+        .path_segments()?
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>();
+    Some(normalize_segments(segs))
+}
+
+/// a のどれかのベース URL が b の各 URL を「同一オリジンかつパスの前方一致」で包含しているか
+pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
+    // オリジンごとに最小集合のベースセグメントを持つ
+    let mut bases: HashMap<(String, String, u16), Vec<Vec<String>>> = HashMap::new();
+
+    for s in a {
+        let Ok(url) = Url::parse(s.as_ref()) else { continue };
+        let Some(key) = origin_key(&url) else { continue };
+        let Some(mut segs) = url_segments(&url) else { continue };
+
+        // 冗長ベース除去（a/b が a に包含されるなら a を優先）
+        let entry = bases.entry(key).or_default();
+        // 既存に包含されていれば追加不要
+        if entry.iter().any(|m| segs.starts_with(m)) {
+            continue;
+        }
+        // 今回の方が短い（祖先）なら既存の子孫を削除
+        entry.retain(|m| !m.starts_with(&segs));
+        entry.push(std::mem::take(&mut segs));
+    }
+
+    'outer: for s in b {
+        let Ok(url) = Url::parse(s.as_ref()) else { return false };
+        let Some(key) = origin_key(&url) else { return false };
+        let Some(segs) = url_segments(&url) else { return false };
+        let Some(entry) = bases.get(&key) else { return false };
+        if !entry.iter().any(|base| segs.starts_with(base)) {
+            return false;
+        }
+    }
+    true
+}
+
+/// 完全一致の集合包含（URL のシリアライズ表現で比較）
+pub fn urls_cover_as_set<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
+    let set_a: HashSet<String> = a
+        .iter()
+        .filter_map(|s| Url::parse(s.as_ref()).ok())
+        .map(|u| u.to_string()) // 既定ポートはシリアライズに出ない
+        .collect();
+    b.iter()
+        .filter_map(|s| Url::parse(s.as_ref()).ok())
+        .all(|u| set_a.contains(&u.to_string()))
+}
+
+
 #[cfg(test)]
 mod tests {
     use crate::proto::sapphillon::v1 as sapphillon_v1;
@@ -341,5 +422,34 @@ mod tests {
 
         let perms3 = Permissions::new(vec![]);
         assert_eq!(perms3.to_string(), "Permissions: []");
+    }
+    
+    #[test]
+    fn test_url_checker() {
+            let a = vec![
+        "https://example.com/project/src",
+        "https://data.example.com/data",
+        "http://example.com:80/base",
+    ];
+
+    let b_ok = vec![
+        "https://example.com/project/src/lib/mod.rs",
+        "https://data.example.com/data/input/file.csv?part=1",
+        "http://example.com/base/child",
+    ];
+
+    let b_ng = vec![
+        "https://example.com/project/tests/test.rs",
+        "https://other.example.com/data/x",
+    ];
+
+    assert!(urls_cover_by_ancestor(&a, &b_ok));
+    assert!(!urls_cover_by_ancestor(&a, &b_ng));
+
+    // 完全一致（既定ポートの明示/非明示は同一視）
+    let a2 = vec!["https://example.com/api", "https://example.com/"];
+    let b2 = vec!["https://example.com/"];
+    assert!(urls_cover_as_set(&a2, &b2));
+
     }
 }
