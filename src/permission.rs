@@ -156,7 +156,7 @@ fn normalize_forgiving(p: &Path) -> PathBuf {
 /// - Does not guarantee existence on disk.
 ///
 /// Original (JA): a のどれかが b の各要素の祖先（ディレクトリ包含）か
-fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> bool {
+pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> bool {
     // Normalize base paths
     let mut bases: Vec<PathBuf> = a.iter().map(|p| normalize_forgiving(p.as_ref())).collect();
 
