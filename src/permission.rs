@@ -517,11 +517,225 @@ mod tests {
 
     assert!(urls_cover_by_ancestor(&a, &b_ok));
     assert!(!urls_cover_by_ancestor(&a, &b_ng));
-
+    
     // 完全一致（既定ポートの明示/非明示は同一視）
     let a2 = vec!["https://example.com/api", "https://example.com/"];
     let b2 = vec!["https://example.com/"];
     assert!(urls_cover_as_set(&a2, &b2));
-
+    
     }
+
+    // -----------------------------
+    // Additional comprehensive tests
+    // -----------------------------
+
+    // normalize_segments
+    #[test]
+    fn test_segments_basic_collapse() {
+        let v = vec!["a",".","b","..","c"].into_iter().map(String::from).collect::<Vec<_>>();
+        assert_eq!(normalize_segments(v), vec!["a","c"]);
+    }
+
+    #[test]
+    fn test_segments_leading_parent_dirs() {
+        let v = vec!["..","a","..","b"].into_iter().map(String::from).collect::<Vec<_>>();
+        assert_eq!(normalize_segments(v), vec!["b"]);
+    }
+
+    #[test]
+    fn test_segments_multiple_pops_past_start() {
+        let v = vec!["a","..","..","b"].into_iter().map(String::from).collect::<Vec<_>>();
+        assert_eq!(normalize_segments(v), vec!["b"]);
+    }
+
+    #[test]
+    fn test_segments_empty_segments_discarded() {
+        let v = vec!["","a","","b",""].into_iter().map(String::from).collect::<Vec<_>>();
+        assert_eq!(normalize_segments(v), vec!["a","b"]);
+    }
+
+    #[test]
+    fn test_segments_mixed_and_all_removed() {
+        let v = vec![".","..","..","."].into_iter().map(String::from).collect::<Vec<_>>();
+        assert!(normalize_segments(v).is_empty());
+    }
+
+    #[test]
+    fn test_segments_unicode_and_dot_handling() {
+        let v = vec!["α","β","..","γ"].into_iter().map(String::from).collect::<Vec<_>>();
+        assert_eq!(normalize_segments(v), vec!["α","γ"]);
+    }
+
+    #[test]
+    fn test_segments_percent_not_decoded() {
+        // "%2E" should not be treated as ".", so it is retained
+        let v = vec!["a%2E","."].into_iter().map(String::from).collect::<Vec<_>>();
+        assert_eq!(normalize_segments(v), vec!["a%2E"]);
+    }
+
+    // origin_key
+    #[test]
+    fn test_origin_key_default_and_explicit_ports() {
+        let u1 = Url::parse("http://Example.COM").unwrap();
+        let u2 = Url::parse("http://example.com:80/").unwrap();
+        let k1 = origin_key(&u1).unwrap();
+        let k2 = origin_key(&u2).unwrap();
+        assert_eq!(k1, ("http".into(),"example.com".into(),80));
+        assert_eq!(k1, k2);
+    }
+
+    #[test]
+    fn test_origin_key_non_default_and_https() {
+        let u1 = Url::parse("http://example.com:8080/").unwrap();
+        let u2 = Url::parse("https://example.com/").unwrap();
+        assert_eq!(origin_key(&u1).unwrap(), ("http".into(),"example.com".into(),8080));
+        assert_eq!(origin_key(&u2).unwrap(), ("https".into(),"example.com".into(),443));
+    }
+
+    #[test]
+    fn test_origin_key_opaque_and_mailto_none() {
+        let data = Url::parse("data:text/plain,abc").unwrap();
+        assert!(origin_key(&data).is_none(), "opaque URL should yield None");
+        let mail = Url::parse("mailto:user@example.com").unwrap();
+        assert!(origin_key(&mail).is_none(), "mailto URL has no host/port");
+    }
+
+    #[test]
+    fn test_origin_key_ipv6() {
+        let u = Url::parse("http://[2001:db8::1]/").unwrap();
+        // url::Url::host_str() returns the bracketed form for IPv6; keep as-is.
+        assert_eq!(origin_key(&u).unwrap(), ("http".into(),"[2001:db8::1]".into(),80));
+    }
+
+    // url_segments
+    #[test]
+    fn test_url_segments_simple() {
+        let u = Url::parse("https://example.com/a/b").unwrap();
+        assert_eq!(url_segments(&u).unwrap(), vec!["a","b"]);
+    }
+
+    #[test]
+    fn test_url_segments_multiple_slashes() {
+        let u = Url::parse("https://example.com//a//b///").unwrap();
+        assert_eq!(url_segments(&u).unwrap(), vec!["a","b"]);
+    }
+
+    #[test]
+    fn test_url_segments_dot_and_dotdot() {
+        let u = Url::parse("https://example.com/a/./b/../c").unwrap();
+        assert_eq!(url_segments(&u).unwrap(), vec!["a","c"]);
+    }
+
+    #[test]
+    fn test_url_segments_root_only() {
+        let u = Url::parse("https://example.com/").unwrap();
+        assert_eq!(url_segments(&u).unwrap(), Vec::<String>::new());
+    }
+
+    #[test]
+    fn test_url_segments_trailing_parent_dir() {
+        let u = Url::parse("https://example.com/a/b/..").unwrap();
+        assert_eq!(url_segments(&u).unwrap(), vec!["a"]);
+    }
+
+    #[test]
+    fn test_url_segments_percent_encoding_preserved() {
+        let u = Url::parse("https://example.com/a%2Eb/c").unwrap();
+        assert_eq!(url_segments(&u).unwrap(), vec!["a%2Eb","c"]);
+    }
+
+    #[test]
+    fn test_url_segments_opaque_none() {
+        let u = Url::parse("data:text/plain,xyz").unwrap();
+        assert!(url_segments(&u).is_none());
+    }
+
+    // urls_cover_by_ancestor advanced
+    #[test]
+    fn test_urls_cover_by_ancestor_prefix_boundary_fail() {
+        let a = vec!["https://example.com/app"];
+        let b = vec!["https://example.com/application/file"];
+        assert!(!urls_cover_by_ancestor(&a,&b), "segment boundary should prevent false positive (app vs application)");
+    }
+
+    #[test]
+    fn test_urls_cover_by_ancestor_port_equivalence() {
+        let a = vec!["http://example.com:80/base"];
+        let b = vec!["http://example.com/base/x"];
+        assert!(urls_cover_by_ancestor(&a,&b));
+    }
+
+    #[test]
+    fn test_urls_cover_by_ancestor_scheme_mismatch() {
+        let a = vec!["http://example.com/base"];
+        let b = vec!["https://example.com/base/x"];
+        assert!(!urls_cover_by_ancestor(&a,&b));
+    }
+
+    #[test]
+    fn test_urls_cover_by_ancestor_trailing_slash_normalization() {
+        let a = vec!["https://example.com/base/"];
+        let b = vec!["https://example.com/base/x"];
+        assert!(urls_cover_by_ancestor(&a,&b));
+    }
+
+    #[test]
+    fn test_urls_cover_by_ancestor_invalid_base_skipped() {
+        let a = vec!["::::", "https://example.com/a/b", "https://example.com/a"];
+        let b = vec!["https://example.com/a/x"];
+        assert!(urls_cover_by_ancestor(&a,&b), "invalid base should be skipped; minimal base a covers");
+    }
+
+    #[test]
+    fn test_urls_cover_by_ancestor_invalid_target_false() {
+        let a = vec!["https://example.com/a"];
+        let b = vec!["::not_a_url::"];
+        assert!(!urls_cover_by_ancestor(&a,&b), "invalid target triggers false");
+    }
+
+    #[test]
+    fn test_urls_cover_by_ancestor_dot_segments_in_target() {
+        let a = vec!["https://example.com/a/b"];
+        let b = vec!["https://example.com/a/b/c/./d/../e"];
+        assert!(urls_cover_by_ancestor(&a,&b));
+    }
+
+    // urls_cover_as_set advanced
+    #[test]
+    fn test_urls_cover_as_set_default_port_canonicalization() {
+        let a = vec!["http://example.com"];
+        let b = vec!["http://example.com:80/"];
+        assert!(urls_cover_as_set(&a,&b));
+    }
+
+    #[test]
+    fn test_urls_cover_as_set_query_mismatch() {
+        let a = vec!["https://e.com/a?x=1"];
+        let b = vec!["https://e.com/a?x=2"];
+        assert!(!urls_cover_as_set(&a,&b));
+    }
+
+    #[test]
+    fn test_urls_cover_as_set_fragment_difference() {
+        let a = vec!["https://e.com/a#frag"];
+        let b = vec!["https://e.com/a"];
+        // Fragment participates in serialization, so mismatch => false
+        assert!(!urls_cover_as_set(&a,&b));
+    }
+
+    #[test]
+    fn test_urls_cover_as_set_duplicates_and_invalid_skip() {
+        let a = vec!["https://example.com/"];
+        let b = vec!["https://example.com/","https://example.com/","::not_a_url::"];
+        // Invalid b URL skipped by filter_map; duplicates ignored; still covered
+        assert!(urls_cover_as_set(&a,&b));
+    }
+
+    #[test]
+    fn test_urls_cover_as_set_missing_element() {
+        let a = vec!["https://example.com/a"];
+        let b = vec!["https://example.com/a","https://example.com/b"];
+        assert!(!urls_cover_as_set(&a,&b));
+    }
+
 }
