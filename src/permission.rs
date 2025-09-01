@@ -93,48 +93,54 @@ pub fn check_permission(
 ) -> CheckPermissionResult {
     let merged_permissions = permissions.clone().merge();
     let merged_required = required.clone().merge();
-    let mut missing_permissions = merged_required.clone();
+    let mut missing_permissions = Permissions::new(vec![]);
 
-    for i in 0..merged_permissions.permissions.len() {
-        let mut found = false;
-        for j in 0..merged_permissions.permissions.len() {
-            let perm = &merged_permissions.permissions[i];
-            let req = &merged_required.permissions[j];
+    // For each required permission, ensure at least one granted permission covers it.
+    'req_loop: for req in &merged_required.permissions {
+        for perm in &merged_permissions.permissions {
+            if perm.permission_type != req.permission_type {
+                continue;
+            }
 
-            if perm.permission_type == req.permission_type {
-                match perm.permission_type {
-                    4 | 5 => // 4: FilesystemRead, 5: FilesystemWrite
-                    {
-                        let perm_paths: Vec<PathBuf> = perm.resource.iter().map(|s| std::path::PathBuf::from(s)).collect();
-                        let req_paths: Vec<PathBuf> = req.resource.iter().map(|s| std::path::PathBuf::from(s)).collect();
-                        
-                        if paths_cover_by_ancestor(&perm_paths, &req_paths) {
-                            found = true;
-                        }
+            match perm.permission_type {
+                // Filesystem read/write: check path ancestor coverage
+                4 | 5 => {
+                    let perm_paths: Vec<PathBuf> =
+                        perm.resource.iter().map(|s| PathBuf::from(s)).collect();
+                    let req_paths: Vec<PathBuf> =
+                        req.resource.iter().map(|s| PathBuf::from(s)).collect();
 
+                    if paths_cover_by_ancestor(&perm_paths, &req_paths) {
+                        continue 'req_loop;
                     }
-                    6 => {
-                        let perm_urls: Vec<&str> = perm.resource.iter().map(|s| s.as_str()).collect();
-                        let req_urls: Vec<&str> = req.resource.iter().map(|s| s.as_str()).collect();
+                }
 
-                        if paths_cover_by_ancestor(&perm_urls, &req_urls) {
-                            found = true;
-                        }
+                // Network/URL-based permissions: use URL ancestor coverage
+                6 => {
+                    let perm_urls: Vec<&str> = perm.resource.iter().map(|s| s.as_str()).collect();
+                    let req_urls: Vec<&str> = req.resource.iter().map(|s| s.as_str()).collect();
+
+                    if urls_cover_by_ancestor(&perm_urls, &req_urls) {
+                        continue 'req_loop;
                     }
-                    _ => {found = true;}
-                    
+                }
+
+                // Other permission types: presence of the same type is sufficient
+                _ => {
+                    continue 'req_loop;
                 }
             }
         }
 
-        if !found {
-            missing_permissions
-                .permissions
-                .push(merged_required.permissions[i].clone());
-        }
+        // No granting permission covered this required permission
+        missing_permissions.permissions.push(req.clone());
     }
 
-    CheckPermissionResult::Ok
+    if missing_permissions.permissions.is_empty() {
+        CheckPermissionResult::Ok
+    } else {
+        CheckPermissionResult::MissingPermission(missing_permissions)
+    }
 }
 
 /// Normalize the given path in a "forgiving" manner.
@@ -902,5 +908,99 @@ mod tests {
         // display_name/description should include parts from inputs
         assert!(m.display_name.contains("A") || m.display_name.contains("B"));
         assert!(m.description.contains("d1") || m.description.contains("d2"));
+    }
+
+    // -----------------------------
+    // Tests for check_permission behaviour
+    // -----------------------------
+    #[test]
+    fn test_check_permission_filesystem_ok() {
+        let granted = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/project".to_string()],
+            ..Default::default()
+        };
+        let required = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/project/src/main.rs".to_string()],
+            ..Default::default()
+        };
+
+        let res = check_permission(&Permissions::new(vec![granted]), &Permissions::new(vec![required]));
+        assert!(matches!(res, CheckPermissionResult::Ok));
+    }
+
+    #[test]
+    fn test_check_permission_filesystem_missing() {
+        let granted = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/other".to_string()],
+            ..Default::default()
+        };
+        let required = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/project/src/main.rs".to_string()],
+            ..Default::default()
+        };
+
+        let res = check_permission(&Permissions::new(vec![granted]), &Permissions::new(vec![required]));
+        match res {
+            CheckPermissionResult::MissingPermission(m) => {
+                assert_eq!(m.permissions.len(), 1);
+                assert_eq!(m.permissions[0].permission_type, sapphillon_v1::PermissionType::FilesystemRead as i32);
+            }
+            _ => panic!("expected MissingPermission"),
+        }
+    }
+
+    #[test]
+    fn test_check_permission_url_ok() {
+        let granted = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::NetAccess as i32,
+            resource: vec!["https://example.com/api".to_string()],
+            ..Default::default()
+        };
+        let required = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::NetAccess as i32,
+            resource: vec!["https://example.com/api/v1/resource".to_string()],
+            ..Default::default()
+        };
+
+        let res = check_permission(&Permissions::new(vec![granted]), &Permissions::new(vec![required]));
+        assert!(matches!(res, CheckPermissionResult::Ok));
+    }
+
+    #[test]
+    fn test_check_permission_url_missing() {
+        let granted = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::NetAccess as i32,
+            resource: vec!["https://api.example.com/".to_string()],
+            ..Default::default()
+        };
+        let required = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::NetAccess as i32,
+            resource: vec!["https://example.com/api/v1/resource".to_string()],
+            ..Default::default()
+        };
+
+        let res = check_permission(&Permissions::new(vec![granted]), &Permissions::new(vec![required]));
+        assert!(matches!(res, CheckPermissionResult::MissingPermission(_)));
+    }
+
+    #[test]
+    fn test_check_permission_other_type_presence() {
+        let granted = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::Execute as i32,
+            resource: vec![],
+            ..Default::default()
+        };
+        let required = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::Execute as i32,
+            resource: vec![],
+            ..Default::default()
+        };
+
+        let res = check_permission(&Permissions::new(vec![granted]), &Permissions::new(vec![required]));
+        assert!(matches!(res, CheckPermissionResult::Ok));
     }
 }
