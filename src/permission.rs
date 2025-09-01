@@ -844,11 +844,63 @@ mod tests {
         // Invalid b URL skipped by filter_map; duplicates ignored; still covered
         assert!(urls_cover_as_set(&a, &b));
     }
-
+ 
     #[test]
     fn test_urls_cover_as_set_missing_element() {
         let a = vec!["https://example.com/a"];
         let b = vec!["https://example.com/a", "https://example.com/b"];
         assert!(!urls_cover_as_set(&a, &b));
+    }
+ 
+    // -----------------------------
+    // Tests for Permissions::new and merge behaviour
+    // -----------------------------
+    #[test]
+    fn test_permissions_new_empty_and_single() {
+        // empty
+        let empty = Permissions::new(vec![]);
+        assert!(empty.permissions.is_empty(), "empty permissions should be empty");
+ 
+        // single element preserved
+        let p = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::Execute as i32,
+            resource: vec!["/bin".to_string()],
+            ..Default::default()
+        };
+        let perms = Permissions::new(vec![p.clone()]);
+        assert_eq!(perms.permissions, vec![p]);
+    }
+ 
+    #[test]
+    fn test_permissions_merge_same_type() {
+        let p1 = sapphillon_v1::Permission {
+            display_name: "A".to_string(),
+            description: "d1".to_string(),
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/tmp/a".to_string()],
+            permission_level: 1,
+        };
+        let p2 = sapphillon_v1::Permission {
+            display_name: "B".to_string(),
+            description: "d2".to_string(),
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/tmp/b".to_string()],
+            permission_level: 2,
+        };
+ 
+        let merged = Permissions::new(vec![p1.clone(), p2.clone()]).merge();
+        // merge groups by permission_type -> only one entry
+        assert_eq!(merged.permissions.len(), 1);
+        let m = merged.permissions.into_iter().next().unwrap();
+        // permission_type preserved
+        assert_eq!(m.permission_type, p1.permission_type);
+        // both resources present (order not guaranteed)
+        assert!(m.resource.contains(&"/tmp/a".to_string()));
+        assert!(m.resource.contains(&"/tmp/b".to_string()));
+        // permission_level is max
+        assert_eq!(m.permission_level, 2);
+        // display_name/description should include parts from inputs
+        assert!(m.display_name.contains("A") || m.display_name.contains("B"));
+        assert!(m.description.contains("d1") || m.description.contains("d2"));
     }
 }
