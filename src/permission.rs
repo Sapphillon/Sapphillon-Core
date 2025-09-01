@@ -113,6 +113,14 @@ pub fn check_permission(
                         }
 
                     }
+                    6 => {
+                        let perm_urls: Vec<&str> = perm.resource.iter().map(|s| s.as_str()).collect();
+                        let req_urls: Vec<&str> = req.resource.iter().map(|s| s.as_str()).collect();
+
+                        if paths_cover_by_ancestor(&perm_urls, &req_urls) {
+                            found = true;
+                        }
+                    }
                     _ => {found = true;}
                     
                 }
