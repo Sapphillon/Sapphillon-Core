@@ -36,6 +36,21 @@ impl std::fmt::Display for sapphillon_v1::Permission {
     }
 }
 
+/// A collection wrapper around protobuf permissions.
+///
+/// `Permissions` holds a vector of [`sapphillon_v1::Permission`] messages and
+/// provides utility operations for common tasks such as merging entries that
+/// refer to the same logical permission type.
+///
+/// Invariants and behavior:
+/// - Before `merge()`, the vector may contain multiple entries with the same
+///   `permission_type`. After `merge()`, there will be at most one entry per
+///   distinct `permission_type`.
+/// - The underlying permissions are the canonical protobuf message type used
+///   across the codebase; this wrapper focuses on convenience helpers.
+///
+/// Example:
+/// let perms = Permissions::new(vec![...]);
 #[derive(Debug, Clone, PartialEq)]
 pub struct Permissions {
     pub permissions: Vec<sapphillon_v1::Permission>,
@@ -54,13 +69,31 @@ impl std::fmt::Display for Permissions {
 }
 
 impl Permissions {
+    /// Construct a `Permissions` wrapper from a vector of protobuf messages.
+    ///
+    /// This consumes the provided vector and returns a `Permissions` that owns
+    /// the inner data. This function performs no normalization or merging; use
+    /// [`merge`] when you want to coalesce entries by permission type.
+    ///
+    /// Complexity: O(1) (ownership move of the vector).
     pub fn new(permissions: Vec<sapphillon_v1::Permission>) -> Self {
         Self { permissions }
     }
-
+ 
+    /// Merge permissions that share the same `permission_type`.
+    ///
+    /// Merge strategy:
+    /// - `display_name` and `description` are concatenated with ", ".
+    /// - `resource` vectors are concatenated, preserving all entries from inputs.
+    /// - `permission_level` becomes the maximum of the merged entries.
+    ///
+    /// The returned `Permissions` contains at most one `Permission` value per
+    /// distinct `permission_type`. Order of resulting entries is unspecified.
+    ///
+    /// Complexity: O(n) time and O(n) additional memory in the general case.
     pub fn merge(self) -> Self {
         let mut perm_map: HashMap<i32, sapphillon_v1::Permission> = HashMap::new();
-
+ 
         self.permissions
             .iter()
             .for_each(|p| match perm_map.get(&p.permission_type) {
@@ -82,11 +115,45 @@ impl Permissions {
     }
 }
 
+/// Result of a permission check between granted and required permissions.
+///
+/// - `Ok` indicates all required permissions are satisfied by the granted set.
+/// - `MissingPermission` contains a `Permissions` value listing the required
+///   permissions that were not covered by the granted permissions.
 pub enum CheckPermissionResult {
     Ok,
     MissingPermission(Permissions),
 }
 
+/// Check whether a set of granted `permissions` covers all `required`
+/// permissions and return a `CheckPermissionResult`.
+///
+/// Matching rules by permission type:
+/// - Filesystem read/write (permission types 4 and 5): the granted resource
+///   paths are treated as base directories; a required path is satisfied if
+///   it is lexically under (has an ancestor) at least one granted base. The
+///   check uses `paths_cover_by_ancestor`.
+/// - Network/URL-based access (permission type 6): a required URL is satisfied
+///   if there exists a granted base URL with the same origin (scheme, host,
+///   effective port) whose normalized path segments are a prefix of the
+///   required URL's segments. The check uses `urls_cover_by_ancestor`.
+/// - Other permission types: presence of any granted permission with the same
+///   `permission_type` is treated as sufficient coverage.
+///
+/// Implementation notes:
+/// - Both `permissions` and `required` are merged first (see `Permissions::merge`)
+///   so that multiple entries for the same `permission_type` are coalesced.
+/// - Returned `MissingPermission` contains the subset of required permissions
+///   that could not be satisfied by any granted permission according to the
+///   rules above.
+///
+/// Example:
+/// let granted = Permissions::new(vec![ /* ... */ ]);
+/// let required = Permissions::new(vec![ /* ... */ ]);
+/// match check_permission(&granted, &required) {
+///     CheckPermissionResult::Ok => { /* allowed */ }
+///     CheckPermissionResult::MissingPermission(m) => { /* handle missing */ }
+/// }
 pub fn check_permission(
     permissions: &Permissions,
     required: &Permissions,
@@ -94,14 +161,14 @@ pub fn check_permission(
     let merged_permissions = permissions.clone().merge();
     let merged_required = required.clone().merge();
     let mut missing_permissions = Permissions::new(vec![]);
-
+ 
     // For each required permission, ensure at least one granted permission covers it.
     'req_loop: for req in &merged_required.permissions {
         for perm in &merged_permissions.permissions {
             if perm.permission_type != req.permission_type {
                 continue;
             }
-
+ 
             match perm.permission_type {
                 // Filesystem read/write: check path ancestor coverage
                 4 | 5 => {
@@ -109,33 +176,33 @@ pub fn check_permission(
                         perm.resource.iter().map(|s| PathBuf::from(s)).collect();
                     let req_paths: Vec<PathBuf> =
                         req.resource.iter().map(|s| PathBuf::from(s)).collect();
-
+ 
                     if paths_cover_by_ancestor(&perm_paths, &req_paths) {
                         continue 'req_loop;
                     }
                 }
-
+ 
                 // Network/URL-based permissions: use URL ancestor coverage
                 6 => {
                     let perm_urls: Vec<&str> = perm.resource.iter().map(|s| s.as_str()).collect();
                     let req_urls: Vec<&str> = req.resource.iter().map(|s| s.as_str()).collect();
-
+ 
                     if urls_cover_by_ancestor(&perm_urls, &req_urls) {
                         continue 'req_loop;
                     }
                 }
-
+ 
                 // Other permission types: presence of the same type is sufficient
                 _ => {
                     continue 'req_loop;
                 }
             }
         }
-
+ 
         // No granting permission covered this required permission
         missing_permissions.permissions.push(req.clone());
     }
-
+ 
     if missing_permissions.permissions.is_empty() {
         CheckPermissionResult::Ok
     } else {
