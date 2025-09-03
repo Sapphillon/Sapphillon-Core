@@ -86,7 +86,11 @@ impl OpStateWorkflowData {
             .collect::<Vec<String>>()
             .join("\n")
     }
+    pub fn get_allowed_permissions(&self) -> &Option<Permissions> {
+        &self.allowed_permissions
+    }
 }
+
 
 /// Executes a JavaScript script in a Deno `JsRuntime`.
 ///
