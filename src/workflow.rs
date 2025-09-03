@@ -21,6 +21,7 @@ use crate::proto::google::protobuf::Timestamp;
 use crate::proto::sapphillon;
 use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
 use crate::runtime::{OpStateWorkflowData, run_script};
+use crate::permission::Permissions;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -35,6 +36,8 @@ pub struct CoreWorkflowCode {
 
     pub code_revision: i32,
     pub result: Vec<sapphillon::v1::WorkflowResult>,
+    pub allowed_permissions: Option<Permissions>,
+    pub required_permissions: Option<Permissions>,
 }
 
 impl CoreWorkflowCode {
@@ -51,6 +54,9 @@ impl CoreWorkflowCode {
         code: String,
         plugin_packages: Vec<CorePluginPackage>,
         code_revision: i32,
+        allowed_permissions: Option<Permissions>,
+        required_permissions: Option<Permissions>,
+
     ) -> Self {
         Self {
             id,
@@ -58,6 +64,8 @@ impl CoreWorkflowCode {
             plugin_packages,
             code_revision,
             result: Vec::new(),
+            allowed_permissions,
+            required_permissions,
         }
     }
 
@@ -161,6 +169,8 @@ impl CoreWorkflowCode {
     pub fn new_from_proto(
         workflow_code: &sapphillon::v1::WorkflowCode,
         plugin_packages: Vec<CorePluginPackage>,
+        required_permissions: Option<Permissions>,
+        allowed_permissions: Option<Permissions>,
     ) -> Self {
         Self {
             id: workflow_code.id.clone(),
@@ -168,6 +178,8 @@ impl CoreWorkflowCode {
             plugin_packages,
             code_revision: workflow_code.code_revision,
             result: Vec::new(),
+            required_permissions,
+            allowed_permissions
         }
     }
 }
@@ -235,6 +247,8 @@ mod tests {
             "console.log(1 + 1);".to_string(),
             vec![pkg],
             1,
+            None,
+            None
         );
         code.run();
         assert_eq!(code.result.len(), 1);
@@ -255,6 +269,8 @@ mod tests {
             "console.log(1 + 1);".to_string(),
             vec![pkg],
             1,
+            None,
+            None
         );
         code.run();
         assert_eq!(code.result.len(), 1);
@@ -275,6 +291,8 @@ mod tests {
             "throw new Error('fail');".to_string(),
             vec![pkg],
             1,
+            None,
+            None
         );
         code.run();
         assert_eq!(code.result.len(), 1);
@@ -304,6 +322,8 @@ mod tests {
             r"\nconsole.log('test');".to_string(),
             vec![pkg],
             2,
+            None,
+            None
         );
         assert_eq!(code.id, "wid");
         assert_eq!(code.code, "\nconsole.log('test');");
@@ -316,7 +336,7 @@ mod tests {
     fn test_core_workflow_code_new_from_proto() {
         let proto = dummy_proto_workflow_code();
         let pkg = dummy_plugin_package();
-        let code = CoreWorkflowCode::new_from_proto(&proto, vec![pkg]);
+        let code = CoreWorkflowCode::new_from_proto(&proto, vec![pkg], None, None);
         assert_eq!(code.id, proto.id);
         assert_eq!(code.code, proto.code);
         assert_eq!(code.plugin_packages.len(), 1);
@@ -332,6 +352,8 @@ mod tests {
             "console.log('test');".to_string(),
             vec![pkg],
             1,
+            None,
+            None
         );
         assert!(code.result.is_empty(), "Initial results should be empty");
     }
