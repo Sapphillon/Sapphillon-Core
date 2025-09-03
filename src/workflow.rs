@@ -124,7 +124,7 @@ impl CoreWorkflowCode {
             if v.is_empty() { None } else { Some(v) }
         };
 
-        let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true, self.allowed_permissions.clone());
+        let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true, self.allowed_permissions.clone(),  self.required_permissions.clone());
         let result = run_script(
             &self.code,
             ops,
