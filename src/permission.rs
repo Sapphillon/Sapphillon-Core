@@ -1091,4 +1091,13 @@ mod tests {
         );
         assert!(matches!(res, CheckPermissionResult::Ok));
     }
+    
+    #[test]
+    fn test_check_permission_none() {
+        let res = check_permission(
+            &Permissions::new(vec![]),
+            &Permissions::new(vec![]),
+        );
+        assert!(matches!(res, CheckPermissionResult::Ok));
+    }
 }
