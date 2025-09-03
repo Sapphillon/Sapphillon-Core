@@ -19,8 +19,10 @@
 #![warn(clippy::field_reassign_with_default)]
 
 use crate::core::op_print_wrapper;
-use crate::permission::Permissions;
-use crate::error::{Error as SapphillonError, WorkflowRuntimeError, WorkflowRuntimeErrorType};
+use crate::permission::{Permissions, check_permission, CheckPermissionResult};
+use crate::error::{Error as SapphillonError, WorkflowRuntimeError, WorkflowRuntimeErrorType, PermissionDeniedError};
+use crate::proto::sapphillon::v1::Permission;
+
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
 use std::sync::{Arc, Mutex};
@@ -118,6 +120,8 @@ pub(crate) fn run_script(
     pre_script: Option<Vec<String>>,
     required_permissions: Option<Permissions>,
 ) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<SapphillonError>> {
+
+
     // Register the extension with the provided operations
     let extension = Extension {
         name: "ext",
@@ -150,6 +154,34 @@ pub(crate) fn run_script(
         }
     }
     runtime.op_state().borrow_mut().put(data.clone());
+
+    // Check Permission
+    // Use the workflow data that was placed into `op_state` above (`data`) to determine
+    // what permissions are allowed for this runtime. Avoid using the original
+    // `workflow_data` variable because it was moved into `data`.
+    let allowed_permissions: Permissions = {
+        let guard = data.lock().unwrap();
+        guard
+            .get_allowed_permissions()
+            .clone()
+            .unwrap_or_else(|| Permissions::new(vec![]))
+    };
+    
+    // Normalize required_permissions (shadowing the parameter) to a concrete Permissions.
+    let required_permissions: Permissions = required_permissions
+        .unwrap_or_else(|| Permissions::new(vec![]));
+
+    let perm_check_result = check_permission(&allowed_permissions, &required_permissions);
+    
+    match perm_check_result {
+        CheckPermissionResult::Ok => {},
+        CheckPermissionResult::MissingPermission(missing) => {
+            return Err(Box::new(SapphillonError::PermissionDeniedError(PermissionDeniedError {
+                requested: required_permissions,
+                granted: allowed_permissions,
+            })));
+        }
+    }
 
     // Execute pre-run scripts if provided from core plugins
     if let Some(scripts) = pre_script {
@@ -566,6 +598,9 @@ mod tests {
                         "js_error should indicate a syntax/unexpected token error, got: {s}"
                     );
                 }
+                SapphillonError::PermissionDeniedError(_) => {
+                    panic!("unexpected PermissionDeniedError when testing pre_script failure")
+                }
             },
             Ok(_) => panic!("expected an error when pre_script is invalid"),
         }
@@ -593,6 +628,9 @@ mod tests {
                             || s.to_lowercase().contains("unexpected"),
                         "js_error should indicate a syntax/unexpected token error, got: {s}"
                     );
+                }
+                SapphillonError::PermissionDeniedError(_) => {
+                    panic!("unexpected PermissionDeniedError when testing workflow failure")
                 }
             },
             Ok(_) => panic!("expected an error when workflow script is invalid"),

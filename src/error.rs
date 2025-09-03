@@ -42,6 +42,12 @@ pub enum Error {
     /// is formatted, and it enables `From<WorkflowRuntimeError>` conversions.
     #[error(transparent)]
     WorkflowRuntimeError(#[from] WorkflowRuntimeError),
+
+    /// Permission denied error for permission checks.
+    ///
+    /// Wraps [`PermissionDeniedError`] so callers can return a unified `Error`.
+    #[error(transparent)]
+    PermissionDeniedError(#[from] PermissionDeniedError),
 }
 
 /// Specific categories of workflow runtime failures.
