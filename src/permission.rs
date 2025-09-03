@@ -79,7 +79,7 @@ impl Permissions {
     pub fn new(permissions: Vec<sapphillon_v1::Permission>) -> Self {
         Self { permissions }
     }
- 
+
     /// Merge permissions that share the same `permission_type`.
     ///
     /// Merge strategy:
@@ -93,7 +93,7 @@ impl Permissions {
     /// Complexity: O(n) time and O(n) additional memory in the general case.
     pub fn merge(self) -> Self {
         let mut perm_map: HashMap<i32, sapphillon_v1::Permission> = HashMap::new();
- 
+
         self.permissions
             .iter()
             .for_each(|p| match perm_map.get(&p.permission_type) {
@@ -161,48 +161,48 @@ pub fn check_permission(
     let merged_permissions = permissions.clone().merge();
     let merged_required = required.clone().merge();
     let mut missing_permissions = Permissions::new(vec![]);
- 
+
     // For each required permission, ensure at least one granted permission covers it.
     'req_loop: for req in &merged_required.permissions {
         for perm in &merged_permissions.permissions {
             if perm.permission_type != req.permission_type {
                 continue;
             }
- 
+
             match perm.permission_type {
                 // Filesystem read/write: check path ancestor coverage
                 4 | 5 => {
                     let perm_paths: Vec<PathBuf> =
-                        perm.resource.iter().map(|s| PathBuf::from(s)).collect();
+                        perm.resource.iter().map(PathBuf::from).collect();
                     let req_paths: Vec<PathBuf> =
-                        req.resource.iter().map(|s| PathBuf::from(s)).collect();
- 
+                        req.resource.iter().map(PathBuf::from).collect();
+
                     if paths_cover_by_ancestor(&perm_paths, &req_paths) {
                         continue 'req_loop;
                     }
                 }
- 
+
                 // Network/URL-based permissions: use URL ancestor coverage
                 6 => {
                     let perm_urls: Vec<&str> = perm.resource.iter().map(|s| s.as_str()).collect();
                     let req_urls: Vec<&str> = req.resource.iter().map(|s| s.as_str()).collect();
- 
+
                     if urls_cover_by_ancestor(&perm_urls, &req_urls) {
                         continue 'req_loop;
                     }
                 }
- 
+
                 // Other permission types: presence of the same type is sufficient
                 _ => {
                     continue 'req_loop;
                 }
             }
         }
- 
+
         // No granting permission covered this required permission
         missing_permissions.permissions.push(req.clone());
     }
- 
+
     if missing_permissions.permissions.is_empty() {
         CheckPermissionResult::Ok
     } else {
@@ -917,14 +917,14 @@ mod tests {
         // Invalid b URL skipped by filter_map; duplicates ignored; still covered
         assert!(urls_cover_as_set(&a, &b));
     }
- 
+
     #[test]
     fn test_urls_cover_as_set_missing_element() {
         let a = vec!["https://example.com/a"];
         let b = vec!["https://example.com/a", "https://example.com/b"];
         assert!(!urls_cover_as_set(&a, &b));
     }
- 
+
     // -----------------------------
     // Tests for Permissions::new and merge behaviour
     // -----------------------------
@@ -932,8 +932,11 @@ mod tests {
     fn test_permissions_new_empty_and_single() {
         // empty
         let empty = Permissions::new(vec![]);
-        assert!(empty.permissions.is_empty(), "empty permissions should be empty");
- 
+        assert!(
+            empty.permissions.is_empty(),
+            "empty permissions should be empty"
+        );
+
         // single element preserved
         let p = sapphillon_v1::Permission {
             permission_type: sapphillon_v1::PermissionType::Execute as i32,
@@ -943,7 +946,7 @@ mod tests {
         let perms = Permissions::new(vec![p.clone()]);
         assert_eq!(perms.permissions, vec![p]);
     }
- 
+
     #[test]
     fn test_permissions_merge_same_type() {
         let p1 = sapphillon_v1::Permission {
@@ -960,7 +963,7 @@ mod tests {
             resource: vec!["/tmp/b".to_string()],
             permission_level: 2,
         };
- 
+
         let merged = Permissions::new(vec![p1.clone(), p2.clone()]).merge();
         // merge groups by permission_type -> only one entry
         assert_eq!(merged.permissions.len(), 1);
@@ -993,7 +996,10 @@ mod tests {
             ..Default::default()
         };
 
-        let res = check_permission(&Permissions::new(vec![granted]), &Permissions::new(vec![required]));
+        let res = check_permission(
+            &Permissions::new(vec![granted]),
+            &Permissions::new(vec![required]),
+        );
         assert!(matches!(res, CheckPermissionResult::Ok));
     }
 
@@ -1010,11 +1016,17 @@ mod tests {
             ..Default::default()
         };
 
-        let res = check_permission(&Permissions::new(vec![granted]), &Permissions::new(vec![required]));
+        let res = check_permission(
+            &Permissions::new(vec![granted]),
+            &Permissions::new(vec![required]),
+        );
         match res {
             CheckPermissionResult::MissingPermission(m) => {
                 assert_eq!(m.permissions.len(), 1);
-                assert_eq!(m.permissions[0].permission_type, sapphillon_v1::PermissionType::FilesystemRead as i32);
+                assert_eq!(
+                    m.permissions[0].permission_type,
+                    sapphillon_v1::PermissionType::FilesystemRead as i32
+                );
             }
             _ => panic!("expected MissingPermission"),
         }
@@ -1033,7 +1045,10 @@ mod tests {
             ..Default::default()
         };
 
-        let res = check_permission(&Permissions::new(vec![granted]), &Permissions::new(vec![required]));
+        let res = check_permission(
+            &Permissions::new(vec![granted]),
+            &Permissions::new(vec![required]),
+        );
         assert!(matches!(res, CheckPermissionResult::Ok));
     }
 
@@ -1050,7 +1065,10 @@ mod tests {
             ..Default::default()
         };
 
-        let res = check_permission(&Permissions::new(vec![granted]), &Permissions::new(vec![required]));
+        let res = check_permission(
+            &Permissions::new(vec![granted]),
+            &Permissions::new(vec![required]),
+        );
         assert!(matches!(res, CheckPermissionResult::MissingPermission(_)));
     }
 
@@ -1067,7 +1085,10 @@ mod tests {
             ..Default::default()
         };
 
-        let res = check_permission(&Permissions::new(vec![granted]), &Permissions::new(vec![required]));
+        let res = check_permission(
+            &Permissions::new(vec![granted]),
+            &Permissions::new(vec![required]),
+        );
         assert!(matches!(res, CheckPermissionResult::Ok));
     }
 }
