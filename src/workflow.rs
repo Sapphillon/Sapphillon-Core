@@ -124,12 +124,13 @@ impl CoreWorkflowCode {
             if v.is_empty() { None } else { Some(v) }
         };
 
-        let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true, None);
+        let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true, self.allowed_permissions.clone());
         let result = run_script(
             &self.code,
             ops,
             Some(Arc::new(Mutex::new(opstate_workflow_data))),
             pre_run_js,
+            self.required_permissions.clone()
         );
 
         let (description, result, result_type, exit_code) = match result {

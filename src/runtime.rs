@@ -116,6 +116,7 @@ pub(crate) fn run_script(
     ext_func: Vec<OpDecl>,
     workflow_data: Option<Arc<Mutex<OpStateWorkflowData>>>,
     pre_script: Option<Vec<String>>,
+    required_permissions: Option<Permissions>,
 ) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<SapphillonError>> {
     // Register the extension with the provided operations
     let extension = Extension {
@@ -200,7 +201,7 @@ mod tests {
         console.log("Sum of [1, 2, 3, 4, 5]", Deno.core.ops.test_op([1, 2, 3, 4, 5]));
         "#;
 
-        let result = run_script(script, vec![test_op()], None, None);
+        let result = run_script(script, vec![test_op()], None, None, None);
         println!("[test_extension] result: {result:?}");
     }
 
@@ -208,14 +209,14 @@ mod tests {
     fn test_run_script() {
         let script = "1 + 1;";
 
-        let result = run_script(script, vec![], None, None);
+        let result = run_script(script, vec![], None, None, None);
         assert!(result.is_ok(), "Script should run successfully");
     }
     #[test]
     fn test_run_script_hello() {
         let script = "a = 1 + 1; console.log('Hello, world!');console.log(a);";
 
-        let result = run_script(script, vec![], None, None);
+        let result = run_script(script, vec![], None, None, None);
         assert!(result.is_ok(), "Script should run successfully");
     }
 
@@ -256,6 +257,7 @@ mod tests {
             vec![get_workflow_id()],
             Some(workflow_data_arc),
             None,
+            None
         );
         assert!(
             result.is_ok(),
@@ -297,6 +299,7 @@ mod tests {
             vec![add_stdout()],
             Some(workflow_data_arc.clone()),
             None,
+            None
         );
         assert!(
             result.is_ok(),
@@ -336,7 +339,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-        let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
+        let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None, None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -412,7 +415,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-        let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
+        let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None, None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -462,6 +465,7 @@ mod tests {
             vec![],
             Some(workflow_data_arc.clone()),
             Some(vec![pre_script_1, pre_script_2]),
+            None
         );
         assert!(
             result.is_ok(),
@@ -502,6 +506,7 @@ mod tests {
             vec![],
             Some(workflow_data_arc.clone()),
             Some(vec![pre1, pre2]),
+            None
         );
         assert!(
             res.is_ok(),
@@ -524,7 +529,7 @@ mod tests {
 
         let script = r#"console.log('only workflow');"#;
 
-        let res = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
+        let res = run_script(script, vec![], Some(workflow_data_arc.clone()), None, None);
         assert!(
             res.is_ok(),
             "Expected run_script to succeed when only workflow runs"
@@ -544,7 +549,7 @@ mod tests {
         let bad_pre = "function() {".to_string();
         let script = r#"console.log('should not run');"#;
 
-        let res = run_script(script, vec![], None, Some(vec![bad_pre]));
+        let res = run_script(script, vec![], None, Some(vec![bad_pre]), None);
         match res {
             Err(e) => match *e {
                 SapphillonError::WorkflowRuntimeError(wr) => {
@@ -573,7 +578,7 @@ mod tests {
         // Invalid workflow script (syntax error)
         let bad_workflow = "var = ;".to_string();
 
-        let res = run_script(&bad_workflow, vec![], None, Some(vec![pre]));
+        let res = run_script(&bad_workflow, vec![], None, Some(vec![pre]), None);
         match res {
             Err(e) => match *e {
                 SapphillonError::WorkflowRuntimeError(wr) => {
