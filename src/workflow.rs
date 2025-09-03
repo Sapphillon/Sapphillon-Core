@@ -116,7 +116,7 @@ impl CoreWorkflowCode {
             if v.is_empty() { None } else { Some(v) }
         };
 
-        let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true);
+        let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true, None);
         let result = run_script(
             &self.code,
             ops,

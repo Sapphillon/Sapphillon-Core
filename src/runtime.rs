@@ -19,6 +19,7 @@
 #![warn(clippy::field_reassign_with_default)]
 
 use crate::core::op_print_wrapper;
+use crate::permission::Permissions;
 use crate::error::{Error as SapphillonError, WorkflowRuntimeError, WorkflowRuntimeErrorType};
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
@@ -39,15 +40,17 @@ pub struct OpStateWorkflowData {
     workflow_id: String,
     result: Vec<WorkflowStdout>,
     capture_stdout: bool,
+    allowed_permissions: Option<Permissions>,
 }
 
 impl OpStateWorkflowData {
     /// Creates a new `OpStateWorkflowData` instance with the specified workflow ID and stdout capture flag.
-    pub fn new(workflow_id: &str, capture_stdout: bool) -> Self {
+    pub fn new(workflow_id: &str, capture_stdout: bool, allowed_permissions: Option<Permissions>) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
             result: Vec::new(),
             capture_stdout,
+            allowed_permissions
         }
     }
 
@@ -137,6 +140,7 @@ pub(crate) fn run_script(
             data = Arc::new(Mutex::new(OpStateWorkflowData::new(
                 "default_workflow",
                 false,
+                None
             )));
         }
     }
@@ -230,6 +234,7 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: false,
+            allowed_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -274,6 +279,7 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![WorkflowStdout::Stdout("Initial stdout".to_string())],
             capture_stdout: true,
+            allowed_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -316,6 +322,7 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
+            allowed_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -352,6 +359,7 @@ mod tests {
             workflow_id: "w".to_string(),
             result: vec![],
             capture_stdout: true,
+            allowed_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "");
     }
@@ -362,6 +370,7 @@ mod tests {
             workflow_id: "w".to_string(),
             result: vec![WorkflowStdout::Stdout("Hello".to_string())],
             capture_stdout: true,
+            allowed_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "Hello");
     }
@@ -376,6 +385,7 @@ mod tests {
                 WorkflowStdout::Stdout("Three".to_string()),
             ],
             capture_stdout: true,
+            allowed_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "One\nTwo\nThree");
     }
@@ -388,6 +398,7 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
+            allowed_permissions: None
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -424,6 +435,7 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
+            allowed_permissions: None
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -469,7 +481,7 @@ mod tests {
         use std::sync::{Arc, Mutex};
 
         // Prepare workflow_data that captures stdout
-        let workflow_data = OpStateWorkflowData::new("wid_simple", true);
+        let workflow_data = OpStateWorkflowData::new("wid_simple", true, None);
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
         // Pre-script lines (will be joined with "\n")
@@ -503,7 +515,7 @@ mod tests {
     fn test_run_script_no_pre_script_simple() {
         use std::sync::{Arc, Mutex};
 
-        let workflow_data = OpStateWorkflowData::new("wid_no_pre", true);
+        let workflow_data = OpStateWorkflowData::new("wid_no_pre", true, None);
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
         let script = r#"console.log('only workflow');"#;
