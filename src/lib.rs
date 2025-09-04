@@ -21,6 +21,7 @@ pub use crate::error::Error;
 
 pub mod core;
 pub mod error;
+pub mod permission;
 pub mod plugin;
 pub mod proto;
 pub mod runtime;

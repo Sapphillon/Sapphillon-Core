@@ -16,6 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#[allow(unused_imports)]
+use crate::permission::*;
 use thiserror::Error;
 
 /// Top-level error type for the Sapphillon Core library.
@@ -40,6 +42,12 @@ pub enum Error {
     /// is formatted, and it enables `From<WorkflowRuntimeError>` conversions.
     #[error(transparent)]
     WorkflowRuntimeError(#[from] WorkflowRuntimeError),
+
+    /// Permission denied error for permission checks.
+    ///
+    /// Wraps [`PermissionDeniedError`] so callers can return a unified `Error`.
+    #[error(transparent)]
+    PermissionDeniedError(#[from] PermissionDeniedError),
 }
 
 /// Specific categories of workflow runtime failures.
@@ -128,4 +136,18 @@ pub struct WorkflowRuntimeError {
     /// not declared with `#[source]` here; callers that need source chaining
     /// should examine `js_error` directly.
     pub js_error: deno_core::error::JsError,
+}
+
+#[derive(Error, Debug)]
+#[error(
+    "Permission denied: Requested Permissions: {}, Granted Permissions: {}",
+    requested,
+    granted
+)]
+pub struct PermissionDeniedError {
+    /// The permissions that were requested.
+    pub requested: Permissions,
+
+    /// The permissions that were granted.
+    pub granted: Permissions,
 }
