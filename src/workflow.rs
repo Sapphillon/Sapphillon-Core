@@ -16,12 +16,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use crate::permission::Permissions;
 use crate::plugin::CorePluginPackage;
 use crate::proto::google::protobuf::Timestamp;
 use crate::proto::sapphillon;
 use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
 use crate::runtime::{OpStateWorkflowData, run_script};
-use crate::permission::Permissions;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -56,7 +56,6 @@ impl CoreWorkflowCode {
         code_revision: i32,
         allowed_permissions: Option<Permissions>,
         required_permissions: Option<Permissions>,
-
     ) -> Self {
         Self {
             id,
@@ -124,7 +123,12 @@ impl CoreWorkflowCode {
             if v.is_empty() { None } else { Some(v) }
         };
 
-        let opstate_workflow_data = OpStateWorkflowData::new(&self.id, true, self.allowed_permissions.clone(),  self.required_permissions.clone());
+        let opstate_workflow_data = OpStateWorkflowData::new(
+            &self.id,
+            true,
+            self.allowed_permissions.clone(),
+            self.required_permissions.clone(),
+        );
         let result = run_script(
             &self.code,
             ops,
@@ -179,7 +183,7 @@ impl CoreWorkflowCode {
             code_revision: workflow_code.code_revision,
             result: Vec::new(),
             required_permissions,
-            allowed_permissions
+            allowed_permissions,
         }
     }
 }
@@ -248,7 +252,7 @@ mod tests {
             vec![pkg],
             1,
             None,
-            None
+            None,
         );
         code.run();
         assert_eq!(code.result.len(), 1);
@@ -270,7 +274,7 @@ mod tests {
             vec![pkg],
             1,
             None,
-            None
+            None,
         );
         code.run();
         assert_eq!(code.result.len(), 1);
@@ -292,7 +296,7 @@ mod tests {
             vec![pkg],
             1,
             None,
-            None
+            None,
         );
         code.run();
         assert_eq!(code.result.len(), 1);
@@ -323,7 +327,7 @@ mod tests {
             vec![pkg],
             2,
             None,
-            None
+            None,
         );
         assert_eq!(code.id, "wid");
         assert_eq!(code.code, "\nconsole.log('test');");
@@ -353,8 +357,268 @@ mod tests {
             vec![pkg],
             1,
             None,
-            None
+            None,
         );
         assert!(code.result.is_empty(), "Initial results should be empty");
+    }
+}
+
+#[cfg(test)]
+mod permission_tests {
+    //! Comprehensive permission validation test suite.
+    //!
+    //! Goals:
+    //! - Verify that [`CoreWorkflowCode::run()`] routes through `runtime::run_script()`
+    //!   which invokes `permission::check_permission`, and that missing required
+    //!   permissions yield a `PermissionDeniedError` producing a Failure `WorkflowResult`.
+    //! - FilesystemRead / FilesystemWrite: ancestor directory coverage logic works.
+    //! - NetAccess: origin (scheme, host, effective port) + normalized path segment
+    //!   prefix coverage works.
+    //! - Execute: presence of the permission type alone (no resources) is sufficient.
+    //! - Duplicate allowed permissions of the same type are merged but still cover
+    //!   required resources (merge semantics).
+    //! - Multiple simultaneously missing types surface each `PermissionType` name
+    //!   in the error message.
+    //!
+    //! Categories:
+    //! 1. Single success per PermissionType
+    //! 2. Single failure per PermissionType
+    //! 3. Composite success (all types satisfied)
+    //! 4. Composite failure (multiple missing types)
+    //! 5. Merge behavior (duplicate allowed entries)
+    //! 6. Error detail (checks "Permission denied" + Requested / Granted fragments)
+    //!
+    //! These tests collectively ensure logical correctness, merge behavior, and
+    //! diagnostic clarity of the permission system.
+    use super::CoreWorkflowCode;
+    use crate::permission::Permissions;
+    use crate::proto::sapphillon;
+    use crate::proto::sapphillon::v1::{Permission, PermissionType};
+
+    // ----------------------------
+    // Helper constructors
+    // ----------------------------
+    fn perm(permission_type: PermissionType, resources: &[&str]) -> Permission {
+        Permission {
+            permission_type: permission_type as i32,
+            resource: resources.iter().map(|s| s.to_string()).collect(),
+            ..Default::default()
+        }
+    }
+
+    fn run_with_permissions(
+        allowed: Vec<Permission>,
+        required: Vec<Permission>,
+        script: &str,
+    ) -> CoreWorkflowCode {
+        let mut code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            script.to_string(),
+            vec![], // no plugin packages needed
+            1,
+            Some(Permissions::new(allowed)),
+            Some(Permissions::new(required)),
+        );
+        code.run();
+        code
+    }
+
+    // ---------------
+    // Single success cases
+    // ---------------
+    #[test]
+    fn test_workflow_permissions_fs_read_success() {
+        let allowed = vec![perm(PermissionType::FilesystemRead, &["/project"])];
+        let required = vec![perm(
+            PermissionType::FilesystemRead,
+            &["/project/src/main.rs"],
+        )];
+        let code = run_with_permissions(allowed, required, "console.log(1);");
+        assert_eq!(code.result.len(), 1);
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 0);
+        assert_eq!(
+            res.result_type,
+            sapphillon::v1::WorkflowResultType::SuccessUnspecified as i32
+        );
+    }
+
+    #[test]
+    fn test_workflow_permissions_fs_write_success() {
+        let allowed = vec![perm(PermissionType::FilesystemWrite, &["/data"])];
+        let required = vec![perm(
+            PermissionType::FilesystemWrite,
+            &["/data/output/result.txt"],
+        )];
+        let code = run_with_permissions(allowed, required, "console.log('ok');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 0);
+    }
+
+    #[test]
+    fn test_workflow_permissions_net_access_success() {
+        let allowed = vec![perm(
+            PermissionType::NetAccess,
+            &["https://example.com/api"],
+        )];
+        let required = vec![perm(
+            PermissionType::NetAccess,
+            &["https://example.com/api/v1/resource"],
+        )];
+        let code = run_with_permissions(allowed, required, "console.log('net');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 0);
+    }
+
+    #[test]
+    fn test_workflow_permissions_execute_success() {
+        let allowed = vec![perm(PermissionType::Execute, &[])];
+        let required = vec![perm(PermissionType::Execute, &[])];
+        let code = run_with_permissions(allowed, required, "console.log('exec');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 0);
+    }
+
+    // ---------------
+    // Single failure cases
+    // ---------------
+    #[test]
+    fn test_workflow_permissions_fs_read_failure() {
+        let allowed = vec![perm(PermissionType::FilesystemRead, &["/other"])];
+        let required = vec![perm(
+            PermissionType::FilesystemRead,
+            &["/project/src/main.rs"],
+        )];
+        let code = run_with_permissions(allowed, required, "console.log('x');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 1);
+        assert_eq!(
+            res.result_type,
+            sapphillon::v1::WorkflowResultType::Failure as i32
+        );
+        assert!(res.result.contains("Permission denied"));
+        assert!(res.result.contains("PERMISSION_TYPE_FILESYSTEM_READ"));
+    }
+
+    #[test]
+    fn test_workflow_permissions_fs_write_failure() {
+        let allowed = vec![perm(PermissionType::FilesystemWrite, &["/base"])];
+        let required = vec![perm(
+            PermissionType::FilesystemWrite,
+            &["/data/output/result.txt"],
+        )];
+        let code = run_with_permissions(allowed, required, "console.log('x');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 1);
+        assert!(res.result.contains("PERMISSION_TYPE_FILESYSTEM_WRITE"));
+    }
+
+    #[test]
+    fn test_workflow_permissions_net_access_failure() {
+        let allowed = vec![perm(
+            PermissionType::NetAccess,
+            &["https://api.example.com/"],
+        )];
+        let required = vec![perm(
+            PermissionType::NetAccess,
+            &["https://example.com/api/v1/resource"],
+        )];
+        let code = run_with_permissions(allowed, required, "console.log('net');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 1);
+        assert!(res.result.contains("PERMISSION_TYPE_NET_ACCESS"));
+    }
+
+    #[test]
+    fn test_workflow_permissions_execute_failure() {
+        let allowed = vec![];
+        let required = vec![perm(PermissionType::Execute, &[])];
+        let code = run_with_permissions(allowed, required, "console.log('exec');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 1);
+        assert!(res.result.contains("PERMISSION_TYPE_EXECUTE"));
+    }
+
+    // ---------------
+    // Composite success (all types)
+    // ---------------
+    #[test]
+    fn test_workflow_permissions_composite_success() {
+        let allowed = vec![
+            perm(PermissionType::FilesystemRead, &["/workspace"]),
+            perm(PermissionType::FilesystemWrite, &["/workspace/tmp"]),
+            perm(PermissionType::NetAccess, &["https://example.com/api"]),
+            perm(PermissionType::Execute, &[]),
+        ];
+        let required = vec![
+            perm(PermissionType::FilesystemRead, &["/workspace/src/lib.rs"]),
+            perm(PermissionType::FilesystemWrite, &["/workspace/tmp/out.log"]),
+            perm(
+                PermissionType::NetAccess,
+                &["https://example.com/api/v1/users"],
+            ),
+            perm(PermissionType::Execute, &[]),
+        ];
+        let code = run_with_permissions(allowed, required, "console.log('all');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 0);
+    }
+
+    // ---------------
+    // Composite failure (multiple missing)
+    // ---------------
+    #[test]
+    fn test_workflow_permissions_composite_multiple_missing() {
+        let allowed = vec![perm(PermissionType::FilesystemRead, &["/workspace"])];
+        let required = vec![
+            perm(PermissionType::FilesystemWrite, &["/workspace/tmp/out.txt"]),
+            perm(PermissionType::Execute, &[]),
+        ];
+        let code = run_with_permissions(allowed, required, "console.log('x');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 1);
+        assert!(res.result.contains("PERMISSION_TYPE_FILESYSTEM_WRITE"));
+        assert!(res.result.contains("PERMISSION_TYPE_EXECUTE"));
+    }
+
+    // ---------------
+    // Merge duplication success
+    // ---------------
+    #[test]
+    fn test_workflow_permissions_merge_duplicate_allowed() {
+        // Two read bases; required path covered by second
+        let allowed = vec![
+            perm(PermissionType::FilesystemRead, &["/data/common"]),
+            perm(PermissionType::FilesystemRead, &["/data/project"]),
+        ];
+        let required = vec![perm(
+            PermissionType::FilesystemRead,
+            &["/data/project/src/main.rs"],
+        )];
+        let code = run_with_permissions(allowed, required, "console.log('dup');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 0);
+    }
+
+    // ---------------
+    // Error message detail check
+    // ---------------
+    #[test]
+    fn test_workflow_permissions_failure_message_detail() {
+        let allowed = vec![perm(PermissionType::FilesystemRead, &["/a"])];
+        let required = vec![
+            perm(PermissionType::FilesystemRead, &["/b/file.txt"]),
+            perm(PermissionType::Execute, &[]),
+        ];
+        let code = run_with_permissions(allowed, required, "console.log('x');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 1);
+        // Basic markers
+        assert!(res.result.contains("Permission denied"));
+        assert!(res.result.contains("PERMISSION_TYPE_FILESYSTEM_READ"));
+        assert!(res.result.contains("PERMISSION_TYPE_EXECUTE"));
+        // Check Requested / Granted fragments present
+        assert!(res.result.contains("Requested Permissions"));
+        assert!(res.result.contains("Granted Permissions"));
     }
 }

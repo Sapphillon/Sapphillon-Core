@@ -174,8 +174,7 @@ pub fn check_permission(
                 4 | 5 => {
                     let perm_paths: Vec<PathBuf> =
                         perm.resource.iter().map(PathBuf::from).collect();
-                    let req_paths: Vec<PathBuf> =
-                        req.resource.iter().map(PathBuf::from).collect();
+                    let req_paths: Vec<PathBuf> = req.resource.iter().map(PathBuf::from).collect();
 
                     if paths_cover_by_ancestor(&perm_paths, &req_paths) {
                         continue 'req_loop;
@@ -1091,13 +1090,10 @@ mod tests {
         );
         assert!(matches!(res, CheckPermissionResult::Ok));
     }
-    
+
     #[test]
     fn test_check_permission_none() {
-        let res = check_permission(
-            &Permissions::new(vec![]),
-            &Permissions::new(vec![]),
-        );
+        let res = check_permission(&Permissions::new(vec![]), &Permissions::new(vec![]));
         assert!(matches!(res, CheckPermissionResult::Ok));
     }
 }

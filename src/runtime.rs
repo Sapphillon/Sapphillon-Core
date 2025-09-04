@@ -19,8 +19,10 @@
 #![warn(clippy::field_reassign_with_default)]
 
 use crate::core::op_print_wrapper;
-use crate::permission::{Permissions, check_permission, CheckPermissionResult};
-use crate::error::{Error as SapphillonError, WorkflowRuntimeError, WorkflowRuntimeErrorType, PermissionDeniedError};
+use crate::error::{
+    Error as SapphillonError, PermissionDeniedError, WorkflowRuntimeError, WorkflowRuntimeErrorType,
+};
+use crate::permission::{CheckPermissionResult, Permissions, check_permission};
 
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
@@ -42,18 +44,23 @@ pub struct OpStateWorkflowData {
     result: Vec<WorkflowStdout>,
     capture_stdout: bool,
     allowed_permissions: Option<Permissions>,
-    require_permissions: Option<Permissions>
+    require_permissions: Option<Permissions>,
 }
 
 impl OpStateWorkflowData {
     /// Creates a new `OpStateWorkflowData` instance with the specified workflow ID and stdout capture flag.
-    pub fn new(workflow_id: &str, capture_stdout: bool, allowed_permissions: Option<Permissions>, require_permissions: Option<Permissions>) -> Self {
+    pub fn new(
+        workflow_id: &str,
+        capture_stdout: bool,
+        allowed_permissions: Option<Permissions>,
+        require_permissions: Option<Permissions>,
+    ) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
             result: Vec::new(),
             capture_stdout,
             allowed_permissions,
-            require_permissions
+            require_permissions,
         }
     }
 
@@ -98,7 +105,6 @@ impl OpStateWorkflowData {
     }
 }
 
-
 /// Executes a JavaScript script in a Deno `JsRuntime`.
 ///
 /// This function sets up a `JsRuntime` with a custom extension that provides the core functionalities
@@ -124,8 +130,6 @@ pub(crate) fn run_script(
     workflow_data: Option<Arc<Mutex<OpStateWorkflowData>>>,
     pre_script: Option<Vec<String>>,
 ) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<SapphillonError>> {
-
-
     // Register the extension with the provided operations
     let extension = Extension {
         name: "ext",
@@ -153,8 +157,8 @@ pub(crate) fn run_script(
             data = Arc::new(Mutex::new(OpStateWorkflowData::new(
                 "default_workflow",
                 false,
-                None, 
-                None
+                None,
+                None,
             )));
         }
     }
@@ -171,25 +175,28 @@ pub(crate) fn run_script(
             .clone()
             .unwrap_or_else(|| Permissions::new(vec![]))
     };
-    
+
     // Normalize required_permissions (shadowing the parameter) to a concrete Permissions.
     let required_permissions: Permissions = {
         let guard = data.lock().unwrap();
-        guard.clone()
+        guard
+            .clone()
             .get_required_permissions()
             .clone()
             .unwrap_or_else(|| Permissions::new(vec![]))
     };
 
     let perm_check_result = check_permission(&allowed_permissions, &required_permissions);
-    
+
     match perm_check_result {
-        CheckPermissionResult::Ok => {},
+        CheckPermissionResult::Ok => {}
         CheckPermissionResult::MissingPermission(missing) => {
-            return Err(Box::new(SapphillonError::PermissionDeniedError(PermissionDeniedError {
-                requested: required_permissions,
-                granted: allowed_permissions,
-            })));
+            return Err(Box::new(SapphillonError::PermissionDeniedError(
+                PermissionDeniedError {
+                    requested: required_permissions,
+                    granted: allowed_permissions,
+                },
+            )));
         }
     }
 
@@ -282,7 +289,7 @@ mod tests {
             result: vec![],
             capture_stdout: false,
             allowed_permissions: None,
-            require_permissions: None
+            require_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -328,7 +335,7 @@ mod tests {
             result: vec![WorkflowStdout::Stdout("Initial stdout".to_string())],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None
+            require_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -372,8 +379,7 @@ mod tests {
             result: vec![],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None
-            
+            require_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -411,7 +417,7 @@ mod tests {
             result: vec![],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None
+            require_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "");
     }
@@ -423,7 +429,7 @@ mod tests {
             result: vec![WorkflowStdout::Stdout("Hello".to_string())],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None
+            require_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "Hello");
     }
@@ -439,7 +445,7 @@ mod tests {
             ],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None
+            require_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "One\nTwo\nThree");
     }
@@ -452,8 +458,8 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
-            allowed_permissions: None, 
-            require_permissions: None
+            allowed_permissions: None,
+            require_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -490,8 +496,8 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
-            allowed_permissions: None, 
-            require_permissions: None
+            allowed_permissions: None,
+            require_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -537,7 +543,7 @@ mod tests {
         use std::sync::{Arc, Mutex};
 
         // Prepare workflow_data that captures stdout
-        let workflow_data = OpStateWorkflowData::new("wid_simple", true, None,  None);
+        let workflow_data = OpStateWorkflowData::new("wid_simple", true, None, None);
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
         // Pre-script lines (will be joined with "\n")
@@ -571,7 +577,7 @@ mod tests {
     fn test_run_script_no_pre_script_simple() {
         use std::sync::{Arc, Mutex};
 
-        let workflow_data = OpStateWorkflowData::new("wid_no_pre", true, None,  None);
+        let workflow_data = OpStateWorkflowData::new("wid_no_pre", true, None, None);
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
         let script = r#"console.log('only workflow');"#;
