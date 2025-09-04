@@ -130,7 +130,6 @@ impl CoreWorkflowCode {
             ops,
             Some(Arc::new(Mutex::new(opstate_workflow_data))),
             pre_run_js,
-            self.required_permissions.clone()
         );
 
         let (description, result, result_type, exit_code) = match result {

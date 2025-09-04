@@ -21,9 +21,7 @@
 use crate::core::op_print_wrapper;
 use crate::permission::{Permissions, check_permission, CheckPermissionResult};
 use crate::error::{Error as SapphillonError, WorkflowRuntimeError, WorkflowRuntimeErrorType, PermissionDeniedError};
-use crate::proto::sapphillon::v1::Permission;
 
-use deno_core::Op;
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
 use std::sync::{Arc, Mutex};
@@ -125,7 +123,6 @@ pub(crate) fn run_script(
     ext_func: Vec<OpDecl>,
     workflow_data: Option<Arc<Mutex<OpStateWorkflowData>>>,
     pre_script: Option<Vec<String>>,
-    required_permissions: Option<Permissions>,
 ) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<SapphillonError>> {
 
 
@@ -176,8 +173,13 @@ pub(crate) fn run_script(
     };
     
     // Normalize required_permissions (shadowing the parameter) to a concrete Permissions.
-    let required_permissions: Permissions = required_permissions
-        .unwrap_or_else(|| Permissions::new(vec![]));
+    let required_permissions: Permissions = {
+        let guard = data.lock().unwrap();
+        guard.clone()
+            .get_required_permissions()
+            .clone()
+            .unwrap_or_else(|| Permissions::new(vec![]))
+    };
 
     let perm_check_result = check_permission(&allowed_permissions, &required_permissions);
     
@@ -241,7 +243,7 @@ mod tests {
         console.log("Sum of [1, 2, 3, 4, 5]", Deno.core.ops.test_op([1, 2, 3, 4, 5]));
         "#;
 
-        let result = run_script(script, vec![test_op()], None, None, None);
+        let result = run_script(script, vec![test_op()], None, None);
         println!("[test_extension] result: {result:?}");
     }
 
@@ -249,14 +251,14 @@ mod tests {
     fn test_run_script() {
         let script = "1 + 1;";
 
-        let result = run_script(script, vec![], None, None, None);
+        let result = run_script(script, vec![], None, None);
         assert!(result.is_ok(), "Script should run successfully");
     }
     #[test]
     fn test_run_script_hello() {
         let script = "a = 1 + 1; console.log('Hello, world!');console.log(a);";
 
-        let result = run_script(script, vec![], None, None, None);
+        let result = run_script(script, vec![], None, None);
         assert!(result.is_ok(), "Script should run successfully");
     }
 
@@ -298,7 +300,6 @@ mod tests {
             vec![get_workflow_id()],
             Some(workflow_data_arc),
             None,
-            None
         );
         assert!(
             result.is_ok(),
@@ -341,7 +342,6 @@ mod tests {
             vec![add_stdout()],
             Some(workflow_data_arc.clone()),
             None,
-            None
         );
         assert!(
             result.is_ok(),
@@ -383,7 +383,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-        let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None, None);
+        let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -463,7 +463,7 @@ mod tests {
             console.log("Test stdout");
         "#;
 
-        let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None, None);
+        let result = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
         assert!(
             result.is_ok(),
             "workflow_id should be accessible from opstate"
@@ -514,7 +514,6 @@ mod tests {
             vec![],
             Some(workflow_data_arc.clone()),
             Some(vec![pre_script_1, pre_script_2]),
-            None
         );
         assert!(
             result.is_ok(),
@@ -555,7 +554,6 @@ mod tests {
             vec![],
             Some(workflow_data_arc.clone()),
             Some(vec![pre1, pre2]),
-            None
         );
         assert!(
             res.is_ok(),
@@ -578,7 +576,7 @@ mod tests {
 
         let script = r#"console.log('only workflow');"#;
 
-        let res = run_script(script, vec![], Some(workflow_data_arc.clone()), None, None);
+        let res = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
         assert!(
             res.is_ok(),
             "Expected run_script to succeed when only workflow runs"
@@ -598,7 +596,7 @@ mod tests {
         let bad_pre = "function() {".to_string();
         let script = r#"console.log('should not run');"#;
 
-        let res = run_script(script, vec![], None, Some(vec![bad_pre]), None);
+        let res = run_script(script, vec![], None, Some(vec![bad_pre]));
         match res {
             Err(e) => match *e {
                 SapphillonError::WorkflowRuntimeError(wr) => {
@@ -630,7 +628,7 @@ mod tests {
         // Invalid workflow script (syntax error)
         let bad_workflow = "var = ;".to_string();
 
-        let res = run_script(&bad_workflow, vec![], None, Some(vec![pre]), None);
+        let res = run_script(&bad_workflow, vec![], None, Some(vec![pre]));
         match res {
             Err(e) => match *e {
                 SapphillonError::WorkflowRuntimeError(wr) => {
