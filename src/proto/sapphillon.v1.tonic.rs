@@ -443,6 +443,112 @@ pub mod workflow_service_client {
                 .insert(GrpcMethod::new("sapphillon.v1.WorkflowService", "RunWorkflow"));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn get_workflow(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetWorkflowRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetWorkflowResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/sapphillon.v1.WorkflowService/GetWorkflow",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("sapphillon.v1.WorkflowService", "GetWorkflow"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn list_workflows(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ListWorkflowsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ListWorkflowsResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/sapphillon.v1.WorkflowService/ListWorkflows",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("sapphillon.v1.WorkflowService", "ListWorkflows"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn update_workflow(
+            &mut self,
+            request: impl tonic::IntoRequest<super::UpdateWorkflowRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::UpdateWorkflowResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/sapphillon.v1.WorkflowService/UpdateWorkflow",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("sapphillon.v1.WorkflowService", "UpdateWorkflow"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn delete_workflow(
+            &mut self,
+            request: impl tonic::IntoRequest<super::DeleteWorkflowRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::DeleteWorkflowResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/sapphillon.v1.WorkflowService/DeleteWorkflow",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("sapphillon.v1.WorkflowService", "DeleteWorkflow"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -486,6 +592,34 @@ pub mod workflow_service_server {
             request: tonic::Request<super::RunWorkflowRequest>,
         ) -> std::result::Result<
             tonic::Response<super::RunWorkflowResponse>,
+            tonic::Status,
+        >;
+        async fn get_workflow(
+            &self,
+            request: tonic::Request<super::GetWorkflowRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetWorkflowResponse>,
+            tonic::Status,
+        >;
+        async fn list_workflows(
+            &self,
+            request: tonic::Request<super::ListWorkflowsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ListWorkflowsResponse>,
+            tonic::Status,
+        >;
+        async fn update_workflow(
+            &self,
+            request: tonic::Request<super::UpdateWorkflowRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::UpdateWorkflowResponse>,
+            tonic::Status,
+        >;
+        async fn delete_workflow(
+            &self,
+            request: tonic::Request<super::DeleteWorkflowRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::DeleteWorkflowResponse>,
             tonic::Status,
         >;
     }
@@ -689,6 +823,189 @@ pub mod workflow_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = RunWorkflowSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/sapphillon.v1.WorkflowService/GetWorkflow" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetWorkflowSvc<T: WorkflowService>(pub Arc<T>);
+                    impl<
+                        T: WorkflowService,
+                    > tonic::server::UnaryService<super::GetWorkflowRequest>
+                    for GetWorkflowSvc<T> {
+                        type Response = super::GetWorkflowResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetWorkflowRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as WorkflowService>::get_workflow(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = GetWorkflowSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/sapphillon.v1.WorkflowService/ListWorkflows" => {
+                    #[allow(non_camel_case_types)]
+                    struct ListWorkflowsSvc<T: WorkflowService>(pub Arc<T>);
+                    impl<
+                        T: WorkflowService,
+                    > tonic::server::UnaryService<super::ListWorkflowsRequest>
+                    for ListWorkflowsSvc<T> {
+                        type Response = super::ListWorkflowsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ListWorkflowsRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as WorkflowService>::list_workflows(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = ListWorkflowsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/sapphillon.v1.WorkflowService/UpdateWorkflow" => {
+                    #[allow(non_camel_case_types)]
+                    struct UpdateWorkflowSvc<T: WorkflowService>(pub Arc<T>);
+                    impl<
+                        T: WorkflowService,
+                    > tonic::server::UnaryService<super::UpdateWorkflowRequest>
+                    for UpdateWorkflowSvc<T> {
+                        type Response = super::UpdateWorkflowResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::UpdateWorkflowRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as WorkflowService>::update_workflow(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = UpdateWorkflowSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/sapphillon.v1.WorkflowService/DeleteWorkflow" => {
+                    #[allow(non_camel_case_types)]
+                    struct DeleteWorkflowSvc<T: WorkflowService>(pub Arc<T>);
+                    impl<
+                        T: WorkflowService,
+                    > tonic::server::UnaryService<super::DeleteWorkflowRequest>
+                    for DeleteWorkflowSvc<T> {
+                        type Response = super::DeleteWorkflowResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::DeleteWorkflowRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as WorkflowService>::delete_workflow(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = DeleteWorkflowSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

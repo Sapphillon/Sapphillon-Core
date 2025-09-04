@@ -19,6 +19,11 @@
 #![warn(clippy::field_reassign_with_default)]
 
 use crate::core::op_print_wrapper;
+use crate::error::{
+    Error as SapphillonError, PermissionDeniedError, WorkflowRuntimeError, WorkflowRuntimeErrorType,
+};
+use crate::permission::{CheckPermissionResult, Permissions, check_permission};
+
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
 use std::sync::{Arc, Mutex};
@@ -38,15 +43,24 @@ pub struct OpStateWorkflowData {
     workflow_id: String,
     result: Vec<WorkflowStdout>,
     capture_stdout: bool,
+    allowed_permissions: Option<Permissions>,
+    require_permissions: Option<Permissions>,
 }
 
 impl OpStateWorkflowData {
     /// Creates a new `OpStateWorkflowData` instance with the specified workflow ID and stdout capture flag.
-    pub fn new(workflow_id: &str, capture_stdout: bool) -> Self {
+    pub fn new(
+        workflow_id: &str,
+        capture_stdout: bool,
+        allowed_permissions: Option<Permissions>,
+        require_permissions: Option<Permissions>,
+    ) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
             result: Vec::new(),
             capture_stdout,
+            allowed_permissions,
+            require_permissions,
         }
     }
 
@@ -82,6 +96,13 @@ impl OpStateWorkflowData {
             .collect::<Vec<String>>()
             .join("\n")
     }
+    pub fn get_allowed_permissions(&self) -> &Option<Permissions> {
+        &self.allowed_permissions
+    }
+
+    pub fn get_required_permissions(self) -> Option<Permissions> {
+        self.require_permissions
+    }
 }
 
 /// Executes a JavaScript script in a Deno `JsRuntime`.
@@ -108,7 +129,7 @@ pub(crate) fn run_script(
     ext_func: Vec<OpDecl>,
     workflow_data: Option<Arc<Mutex<OpStateWorkflowData>>>,
     pre_script: Option<Vec<String>>,
-) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<JsError>> {
+) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<SapphillonError>> {
     // Register the extension with the provided operations
     let extension = Extension {
         name: "ext",
@@ -136,18 +157,77 @@ pub(crate) fn run_script(
             data = Arc::new(Mutex::new(OpStateWorkflowData::new(
                 "default_workflow",
                 false,
+                None,
+                None,
             )));
         }
     }
     runtime.op_state().borrow_mut().put(data.clone());
 
+    // Check Permission
+    // Use the workflow data that was placed into `op_state` above (`data`) to determine
+    // what permissions are allowed for this runtime. Avoid using the original
+    // `workflow_data` variable because it was moved into `data`.
+    let allowed_permissions: Permissions = {
+        let guard = data.lock().unwrap();
+        guard
+            .get_allowed_permissions()
+            .clone()
+            .unwrap_or_else(|| Permissions::new(vec![]))
+    };
+
+    // Normalize required_permissions (shadowing the parameter) to a concrete Permissions.
+    let required_permissions: Permissions = {
+        let guard = data.lock().unwrap();
+        guard
+            .clone()
+            .get_required_permissions()
+            .clone()
+            .unwrap_or_else(|| Permissions::new(vec![]))
+    };
+
+    let perm_check_result = check_permission(&allowed_permissions, &required_permissions);
+
+    match perm_check_result {
+        CheckPermissionResult::Ok => {}
+        CheckPermissionResult::MissingPermission(missing) => {
+            return Err(Box::new(SapphillonError::PermissionDeniedError(
+                PermissionDeniedError {
+                    requested: required_permissions,
+                    granted: allowed_permissions,
+                },
+            )));
+        }
+    }
+
+    // Execute pre-run scripts if provided from core plugins
     if let Some(scripts) = pre_script {
         let pre_run_script = scripts.join("\n");
-        runtime.execute_script("pre_script.js", pre_run_script)?;
+        runtime
+            .execute_script("pre_script.js", pre_run_script)
+            .map_err(|e: JsError| {
+                Box::new(SapphillonError::WorkflowRuntimeError(
+                    WorkflowRuntimeError {
+                        message: "Failed to execute pre_script".to_string(),
+                        error_type: WorkflowRuntimeErrorType::CorePluginPrepareError,
+                        js_error: e,
+                    },
+                ))
+            })?;
     }
 
     // Execute the provided script in the runtime
-    let result = runtime.execute_script("workflow.js", script.to_string())?;
+    runtime
+        .execute_script("workflow.js", script.to_string())
+        .map_err(|e: JsError| {
+            Box::new(SapphillonError::WorkflowRuntimeError(
+                WorkflowRuntimeError {
+                    message: "Failed to execute workflow script".to_string(),
+                    error_type: WorkflowRuntimeErrorType::WorkflowScriptExecuteError,
+                    js_error: e,
+                },
+            ))
+        })?;
 
     Ok(data)
 }
@@ -208,6 +288,8 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: false,
+            allowed_permissions: None,
+            require_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -252,6 +334,8 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![WorkflowStdout::Stdout("Initial stdout".to_string())],
             capture_stdout: true,
+            allowed_permissions: None,
+            require_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -294,6 +378,8 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
+            allowed_permissions: None,
+            require_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -330,6 +416,8 @@ mod tests {
             workflow_id: "w".to_string(),
             result: vec![],
             capture_stdout: true,
+            allowed_permissions: None,
+            require_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "");
     }
@@ -340,6 +428,8 @@ mod tests {
             workflow_id: "w".to_string(),
             result: vec![WorkflowStdout::Stdout("Hello".to_string())],
             capture_stdout: true,
+            allowed_permissions: None,
+            require_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "Hello");
     }
@@ -354,6 +444,8 @@ mod tests {
                 WorkflowStdout::Stdout("Three".to_string()),
             ],
             capture_stdout: true,
+            allowed_permissions: None,
+            require_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "One\nTwo\nThree");
     }
@@ -366,6 +458,8 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
+            allowed_permissions: None,
+            require_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -402,6 +496,8 @@ mod tests {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
+            allowed_permissions: None,
+            require_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -441,5 +537,124 @@ mod tests {
             &expected,
             "Results should match expected output"
         );
+    }
+    #[test]
+    fn test_run_script_with_pre_and_workflow_success_simple() {
+        use std::sync::{Arc, Mutex};
+
+        // Prepare workflow_data that captures stdout
+        let workflow_data = OpStateWorkflowData::new("wid_simple", true, None, None);
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        // Pre-script lines (will be joined with "\n")
+        let pre1 = "console.log('pre-run');".to_string();
+        let pre2 = "globalThis._val = 123;".to_string();
+
+        // Workflow script uses value set by pre-script
+        let script = r#"
+            console.log(globalThis._val);
+        "#;
+
+        let res = run_script(
+            script,
+            vec![],
+            Some(workflow_data_arc.clone()),
+            Some(vec![pre1, pre2]),
+        );
+        assert!(
+            res.is_ok(),
+            "Expected run_script to succeed when pre and workflow are valid"
+        );
+
+        let results = res.unwrap().lock().unwrap().get_results().clone();
+        // Expect pre-run output first, then workflow output
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0], WorkflowStdout::Stdout("pre-run\n".to_string()));
+        assert_eq!(results[1], WorkflowStdout::Stdout("123\n".to_string()));
+    }
+
+    #[test]
+    fn test_run_script_no_pre_script_simple() {
+        use std::sync::{Arc, Mutex};
+
+        let workflow_data = OpStateWorkflowData::new("wid_no_pre", true, None, None);
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        let script = r#"console.log('only workflow');"#;
+
+        let res = run_script(script, vec![], Some(workflow_data_arc.clone()), None);
+        assert!(
+            res.is_ok(),
+            "Expected run_script to succeed when only workflow runs"
+        );
+
+        let results = res.unwrap().lock().unwrap().get_results().clone();
+        assert_eq!(results.len(), 1);
+        assert_eq!(
+            results[0],
+            WorkflowStdout::Stdout("only workflow\n".to_string())
+        );
+    }
+
+    #[test]
+    fn test_run_script_pre_script_failure_maps_error() {
+        // Invalid JS in pre_script to force a JsError (syntax error)
+        let bad_pre = "function() {".to_string();
+        let script = r#"console.log('should not run');"#;
+
+        let res = run_script(script, vec![], None, Some(vec![bad_pre]));
+        match res {
+            Err(e) => match *e {
+                SapphillonError::WorkflowRuntimeError(wr) => {
+                    assert_eq!(wr.message, "Failed to execute pre_script");
+                    match wr.error_type {
+                        WorkflowRuntimeErrorType::CorePluginPrepareError => {}
+                        _ => panic!("unexpected error_type for pre_script failure"),
+                    }
+                    // js_error should contain a syntax error message
+                    let s = format!("{}", wr.js_error);
+                    assert!(
+                        s.to_lowercase().contains("syntax")
+                            || s.to_lowercase().contains("unexpected"),
+                        "js_error should indicate a syntax/unexpected token error, got: {s}"
+                    );
+                }
+                SapphillonError::PermissionDeniedError(_) => {
+                    panic!("unexpected PermissionDeniedError when testing pre_script failure")
+                }
+            },
+            Ok(_) => panic!("expected an error when pre_script is invalid"),
+        }
+    }
+
+    #[test]
+    fn test_run_script_workflow_failure_maps_error() {
+        // Valid pre-script
+        let pre = "console.log('pre ok');".to_string();
+        // Invalid workflow script (syntax error)
+        let bad_workflow = "var = ;".to_string();
+
+        let res = run_script(&bad_workflow, vec![], None, Some(vec![pre]));
+        match res {
+            Err(e) => match *e {
+                SapphillonError::WorkflowRuntimeError(wr) => {
+                    assert_eq!(wr.message, "Failed to execute workflow script");
+                    match wr.error_type {
+                        WorkflowRuntimeErrorType::WorkflowScriptExecuteError => {}
+                        _ => panic!("unexpected error_type for workflow failure"),
+                    }
+                    let s = format!("{}", wr.js_error);
+                    assert!(
+                        s.to_lowercase().contains("syntax")
+                            || s.to_lowercase().contains("unexpected"),
+                        "js_error should indicate a syntax/unexpected token error, got: {s}"
+                    );
+                }
+                SapphillonError::PermissionDeniedError(_) => {
+                    panic!("unexpected PermissionDeniedError when testing workflow failure")
+                }
+            },
+            Ok(_) => panic!("expected an error when workflow script is invalid"),
+        }
     }
 }
