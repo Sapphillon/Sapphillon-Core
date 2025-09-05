@@ -15,7 +15,7 @@ use url::Url;
 /// Returned vector contains the normalized, ordered segments.
 ///
 /// JA: セグメントのレキシカル正規化（"." を除去し、".." で一つ戻す）
-pub fn normalize_segments<I>(segments: I) -> Vec<String>
+fn normalize_segments<I>(segments: I) -> Vec<String>
 where
     I: IntoIterator<Item = String>,
 {
@@ -44,7 +44,7 @@ where
 /// semantics needed for coverage checks.
 ///
 /// JA: Url から比較用オリジンキーを作成（scheme, host, port_or_default）
-pub fn origin_key(u: &Url) -> Option<(String, String, u16)> {
+fn origin_key(u: &Url) -> Option<(String, String, u16)> {
     let scheme = u.scheme().to_ascii_lowercase();
     let host = u.host_str()?.to_ascii_lowercase();
     let port = u.port_or_known_default()?; // 既定ポートを補完
@@ -62,7 +62,7 @@ pub fn origin_key(u: &Url) -> Option<(String, String, u16)> {
 /// Used as a canonical representation for prefix (ancestor) comparisons.
 ///
 /// JA: URL の正規化済みパスセグメントを取得（cannot-be-a-base は None）
-pub fn url_segments(u: &Url) -> Option<Vec<String>> {
+fn url_segments(u: &Url) -> Option<Vec<String>> {
     let segs = u
         .path_segments()?
         .map(|s| s.to_string())
