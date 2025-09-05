@@ -771,7 +771,6 @@ mod per_plugin_permission_tests {
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
         let res = run_script("console.log('x');", vec![], Some(workflow_data_arc), None);
-        println!("[test] res: {res:?}");
         assert!(
             res.is_err(),
             "Expected PermissionDeniedError when allowed entry missing for plugin_function_id"
