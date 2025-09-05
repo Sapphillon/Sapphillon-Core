@@ -16,12 +16,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use crate::permission::Permissions;
 use crate::plugin::CorePluginPackage;
 use crate::proto::google::protobuf::Timestamp;
 use crate::proto::sapphillon;
 use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
 use crate::runtime::{OpStateWorkflowData, run_script};
+use crate::permission::PluginFunctionPermissions;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -36,8 +36,8 @@ pub struct CoreWorkflowCode {
 
     pub code_revision: i32,
     pub result: Vec<sapphillon::v1::WorkflowResult>,
-    pub allowed_permissions: Option<Permissions>,
-    pub required_permissions: Option<Permissions>,
+    pub allowed_permissions: Option<PluginFunctionPermissions>,
+    pub required_permissions: Option<PluginFunctionPermissions>,
 }
 
 impl CoreWorkflowCode {
@@ -54,8 +54,8 @@ impl CoreWorkflowCode {
         code: String,
         plugin_packages: Vec<CorePluginPackage>,
         code_revision: i32,
-        allowed_permissions: Option<Permissions>,
-        required_permissions: Option<Permissions>,
+        allowed_permissions: Option<PluginFunctionPermissions>,
+        required_permissions: Option<PluginFunctionPermissions>,
     ) -> Self {
         Self {
             id,
@@ -173,8 +173,8 @@ impl CoreWorkflowCode {
     pub fn new_from_proto(
         workflow_code: &sapphillon::v1::WorkflowCode,
         plugin_packages: Vec<CorePluginPackage>,
-        required_permissions: Option<Permissions>,
-        allowed_permissions: Option<Permissions>,
+        required_permissions: Option<PluginFunctionPermissions>,
+        allowed_permissions: Option<PluginFunctionPermissions>,
     ) -> Self {
         Self {
             id: workflow_code.id.clone(),
@@ -391,7 +391,7 @@ mod permission_tests {
     //! These tests collectively ensure logical correctness, merge behavior, and
     //! diagnostic clarity of the permission system.
     use super::CoreWorkflowCode;
-    use crate::permission::Permissions;
+    use crate::permission::{Permissions, PluginFunctionPermissions};
     use crate::proto::sapphillon;
     use crate::proto::sapphillon::v1::{Permission, PermissionType};
 
@@ -416,8 +416,8 @@ mod permission_tests {
             script.to_string(),
             vec![], // no plugin packages needed
             1,
-            Some(Permissions::new(allowed)),
-            Some(Permissions::new(required)),
+            Some(PluginFunctionPermissions{plugin_function_id: "id".to_string(), permissions: Permissions::new(allowed)}),
+            Some(PluginFunctionPermissions{plugin_function_id: "id".to_string(), permissions: Permissions::new(required)}),
         );
         code.run();
         code
