@@ -43,8 +43,9 @@ pub struct OpStateWorkflowData {
     workflow_id: String,
     result: Vec<WorkflowStdout>,
     capture_stdout: bool,
-    allowed_permissions: Option<PluginFunctionPermissions>,
-    require_permissions: Option<PluginFunctionPermissions>,
+    // Support multiple plugin-function permission entries for allowed/required.
+    allowed_permissions: Option<Vec<PluginFunctionPermissions>>,
+    require_permissions: Option<Vec<PluginFunctionPermissions>>,
 }
 
 impl OpStateWorkflowData {
@@ -52,8 +53,8 @@ impl OpStateWorkflowData {
     pub fn new(
         workflow_id: &str,
         capture_stdout: bool,
-        allowed_permissions: Option<PluginFunctionPermissions>,
-        require_permissions: Option<PluginFunctionPermissions>,
+        allowed_permissions: Option<Vec<PluginFunctionPermissions>>,
+        require_permissions: Option<Vec<PluginFunctionPermissions>>,
     ) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
@@ -96,12 +97,12 @@ impl OpStateWorkflowData {
             .collect::<Vec<String>>()
             .join("\n")
     }
-    pub fn get_allowed_permissions(&self) -> &Option<PluginFunctionPermissions> {
+    pub fn get_allowed_permissions(&self) -> &Option<Vec<PluginFunctionPermissions>> {
         &self.allowed_permissions
     }
-
-    pub fn get_required_permissions(self) -> Option<PluginFunctionPermissions> {
-        self.require_permissions
+ 
+    pub fn get_required_permissions(&self) -> &Option<Vec<PluginFunctionPermissions>> {
+        &self.require_permissions
     }
 }
 
@@ -168,37 +169,64 @@ pub(crate) fn run_script(
     // Use the workflow data that was placed into `op_state` above (`data`) to determine
     // what permissions are allowed for this runtime. Avoid using the original
     // `workflow_data` variable because it was moved into `data`.
-    let allowed_permissions: Permissions = {
+    // Build allowed and required lists (per plugin-function) from opstate.
+    let allowed_list: Vec<PluginFunctionPermissions> = {
         let guard = data.lock().unwrap();
         guard
             .get_allowed_permissions()
             .clone()
-            .unwrap_or_else(|| Permissions::new(vec![]))
+            .unwrap_or_else(|| vec![])
     };
-
-    // Normalize required_permissions (shadowing the parameter) to a concrete Permissions.
-    let required_permissions: Permissions = {
+ 
+    let required_list: Vec<PluginFunctionPermissions> = {
         let guard = data.lock().unwrap();
         guard
-            .clone()
             .get_required_permissions()
             .clone()
-            .unwrap_or_else(|| Permissions::new(vec![]))
+            .unwrap_or_else(|| vec![])
     };
-
-    let perm_check_result = check_permission(&allowed_permissions, &required_permissions);
-
-    match perm_check_result {
-        CheckPermissionResult::Ok => {}
-        CheckPermissionResult::MissingPermission(missing) => {
+ 
+    // For each required plugin-function, merge all allowed entries with the same id
+    // and perform a permission check. If no allowed entries exist for a required id,
+    // treat it as missing permission (no fallback).
+    for req in required_list.iter() {
+        // collect allowed entries matching the plugin_function_id
+        let matched_allowed: Vec<PluginFunctionPermissions> = allowed_list
+            .iter()
+            .filter(|a| a.plugin_function_id == req.plugin_function_id)
+            .cloned()
+            .collect();
+ 
+        if matched_allowed.is_empty() {
             return Err(Box::new(SapphillonError::PermissionDeniedError(
                 PermissionDeniedError {
-                    requested: required_permissions,
-                    granted: allowed_permissions,
+                    requested: req.permissions.clone(),
+                    granted: Permissions::new(vec![]),
                 },
             )));
         }
+ 
+        // Merge the permissions from matched_allowed into a single Permissions value
+        let mut merged_vec: Vec<_> = Vec::new();
+        for a in matched_allowed {
+            merged_vec.extend(a.permissions.permissions.clone());
+        }
+        let merged_allowed = Permissions::new(merged_vec);
+ 
+        let perm_check_result = check_permission(&merged_allowed, &req.permissions);
+        match perm_check_result {
+            CheckPermissionResult::Ok => {}
+            CheckPermissionResult::MissingPermission(_missing) => {
+                return Err(Box::new(SapphillonError::PermissionDeniedError(
+                    PermissionDeniedError {
+                        requested: req.permissions.clone(),
+                        granted: merged_allowed,
+                    },
+                )));
+            }
+        }
     }
+
 
     // Execute pre-run scripts if provided from core plugins
     if let Some(scripts) = pre_script {
@@ -655,6 +683,103 @@ mod tests {
                 }
             },
             Ok(_) => panic!("expected an error when workflow script is invalid"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod per_plugin_permission_tests {
+    use super::*;
+    use std::sync::{Arc, Mutex};
+
+    #[test]
+    fn test_run_script_per_plugin_merge_allowed_success() {
+        use crate::proto::sapphillon::v1 as sapphillon_v1;
+        use crate::permission::{PluginFunctionPermissions, Permissions};
+
+        // Two allowed entries for the same plugin_function_id ("pf.id"),
+        // one grants /data/a and the other grants /data/project — they should be merged.
+        let allowed1 = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/data/a".to_string()],
+            ..Default::default()
+        };
+        let allowed2 = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/data/project".to_string()],
+            ..Default::default()
+        };
+
+        // Required path is under /data/project, so the merged allowed should satisfy it.
+        let required = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/data/project/src/main.rs".to_string()],
+            ..Default::default()
+        };
+
+        let allowed_pf1 = PluginFunctionPermissions {
+            plugin_function_id: "pf.id".to_string(),
+            permissions: Permissions::new(vec![allowed1]),
+        };
+        let allowed_pf2 = PluginFunctionPermissions {
+            plugin_function_id: "pf.id".to_string(),
+            permissions: Permissions::new(vec![allowed2]),
+        };
+        let required_pf = PluginFunctionPermissions {
+            plugin_function_id: "pf.id".to_string(),
+            permissions: Permissions::new(vec![required]),
+        };
+
+        let workflow_data = OpStateWorkflowData::new(
+            "wid_merge",
+            false,
+            Some(vec![allowed_pf1, allowed_pf2]),
+            Some(vec![required_pf]),
+        );
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        let res = run_script("console.log('ok');", vec![], Some(workflow_data_arc), None);
+        assert!(res.is_ok(), "Expected merged allowed permissions to satisfy required");
+    }
+
+    #[test]
+    fn test_run_script_per_plugin_allowed_missing() {
+        use crate::proto::sapphillon::v1 as sapphillon_v1;
+        use crate::permission::{PluginFunctionPermissions, Permissions};
+
+        // Required permission targets plugin function id "pf.id"
+        let required = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::Execute as i32,
+            resource: vec![],
+            ..Default::default()
+        };
+        let required_pf = PluginFunctionPermissions {
+            plugin_function_id: "pf.id".to_string(),
+            permissions: Permissions::new(vec![required]),
+        };
+
+        // Allowed contains only an entry for a different plugin_function_id -> should fail
+        let allowed_pf_other = PluginFunctionPermissions {
+            plugin_function_id: "other.id".to_string(),
+            permissions: Permissions::new(vec![]),
+        };
+
+        let workflow_data = OpStateWorkflowData::new(
+            "wid_missing",
+            false,
+            Some(vec![allowed_pf_other]),
+            Some(vec![required_pf]),
+        );
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        let res = run_script("console.log('x');", vec![], Some(workflow_data_arc), None);
+        println!("[test] res: {res:?}");
+        assert!(res.is_err(), "Expected PermissionDeniedError when allowed entry missing for plugin_function_id");
+
+        let err = res.err().unwrap();
+        match *err {
+            SapphillonError::PermissionDeniedError(_) => {}
+            _ => panic!("expected PermissionDeniedError"),
         }
     }
 }

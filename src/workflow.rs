@@ -126,8 +126,10 @@ impl CoreWorkflowCode {
         let opstate_workflow_data = OpStateWorkflowData::new(
             &self.id,
             true,
-            self.allowed_permissions.clone(),
-            self.required_permissions.clone(),
+            // Convert existing single-entry Option<PluginFunctionPermissions> into
+            // the new Option<Vec<PluginFunctionPermissions>> expected by OpStateWorkflowData.
+            self.allowed_permissions.clone().map(|p| vec![p]),
+            self.required_permissions.clone().map(|p| vec![p]),
         );
         let result = run_script(
             &self.code,
