@@ -16,12 +16,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use crate::permission::PluginFunctionPermissions;
 use crate::plugin::CorePluginPackage;
 use crate::proto::google::protobuf::Timestamp;
 use crate::proto::sapphillon;
 use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
 use crate::runtime::{OpStateWorkflowData, run_script};
-use crate::permission::PluginFunctionPermissions;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -418,8 +418,14 @@ mod permission_tests {
             script.to_string(),
             vec![], // no plugin packages needed
             1,
-            Some(PluginFunctionPermissions{plugin_function_id: "id".to_string(), permissions: Permissions::new(allowed)}),
-            Some(PluginFunctionPermissions{plugin_function_id: "id".to_string(), permissions: Permissions::new(required)}),
+            Some(PluginFunctionPermissions {
+                plugin_function_id: "id".to_string(),
+                permissions: Permissions::new(allowed),
+            }),
+            Some(PluginFunctionPermissions {
+                plugin_function_id: "id".to_string(),
+                permissions: Permissions::new(required),
+            }),
         );
         code.run();
         code
