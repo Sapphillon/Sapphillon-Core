@@ -36,6 +36,25 @@ impl std::fmt::Display for sapphillon_v1::Permission {
     }
 }
 
+/// Associates a plugin function identifier with a set of permissions.
+///
+/// Typically used to describe the permissions that a plugin function requires
+/// (or is granted) so the runtime can check access before invocation.
+///
+/// Example:
+/// ```rust
+/// # use crate::permission::Permissions;
+/// let pfp = PluginFunctionPermissions {
+///     plugin_function_id: "com.example.plugin.do_work".to_string(),
+///     permissions: Permissions::new(vec![]),
+/// };
+/// ```
+#[derive(Debug, Clone)]
+pub struct PluginFunctionPermissions {
+    pub plugin_function_id: String,
+    pub permissions: Permissions,
+}
+
 /// A collection wrapper around protobuf permissions.
 ///
 /// `Permissions` holds a vector of [`sapphillon_v1::Permission`] messages and
@@ -49,8 +68,28 @@ impl std::fmt::Display for sapphillon_v1::Permission {
 /// - The underlying permissions are the canonical protobuf message type used
 ///   across the codebase; this wrapper focuses on convenience helpers.
 ///
+/// Merge semantics:
+/// - `display_name` and `description` from merged entries are concatenated with
+///   ", " (preserving both inputs).
+/// - `resource` vectors are concatenated, preserving all entries from inputs.
+/// - `permission_level` becomes the maximum of the merged entries.
+///
 /// Example:
-/// let perms = Permissions::new(vec![...]);
+/// ```rust
+/// # use crate::proto::sapphillon::v1 as sapphillon_v1;
+/// # use crate::permission::Permissions;
+/// let p1 = sapphillon_v1::Permission {
+///     permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+///     resource: vec!["/tmp/a".to_string()],
+///     ..Default::default()
+/// };
+/// let p2 = sapphillon_v1::Permission {
+///     permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+///     resource: vec!["/tmp/b".to_string()],
+///     ..Default::default()
+/// };
+/// let merged = Permissions::new(vec![p1, p2]).merge();
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct Permissions {
     pub permissions: Vec<sapphillon_v1::Permission>,

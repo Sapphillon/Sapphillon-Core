@@ -18,7 +18,7 @@ use std::path::{Component, Path, PathBuf};
 /// Returns a PathBuf representing the normalized path.
 ///
 /// Original (JA): 可能なら canonicalize、失敗したらレキシカルに . と .. を畳み込む簡易正規化
-pub fn normalize_forgiving(p: &Path) -> PathBuf {
+fn normalize_forgiving(p: &Path) -> PathBuf {
     if let Ok(abs) = std::fs::canonicalize(p) {
         return abs;
     }
