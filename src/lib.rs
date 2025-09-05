@@ -25,4 +25,5 @@ pub mod permission;
 pub mod plugin;
 pub mod proto;
 pub mod runtime;
+pub mod utils;
 pub mod workflow;
