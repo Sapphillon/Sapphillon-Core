@@ -22,7 +22,7 @@ use crate::core::op_print_wrapper;
 use crate::error::{
     Error as SapphillonError, PermissionDeniedError, WorkflowRuntimeError, WorkflowRuntimeErrorType,
 };
-use crate::permission::{CheckPermissionResult, Permissions, check_permission};
+use crate::permission::{CheckPermissionResult, Permissions, check_permission, PluginFunctionPermissions};
 
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
@@ -43,8 +43,8 @@ pub struct OpStateWorkflowData {
     workflow_id: String,
     result: Vec<WorkflowStdout>,
     capture_stdout: bool,
-    allowed_permissions: Option<Permissions>,
-    require_permissions: Option<Permissions>,
+    allowed_permissions: Option<PluginFunctionPermissions>,
+    require_permissions: Option<PluginFunctionPermissions>,
 }
 
 impl OpStateWorkflowData {
@@ -52,8 +52,8 @@ impl OpStateWorkflowData {
     pub fn new(
         workflow_id: &str,
         capture_stdout: bool,
-        allowed_permissions: Option<Permissions>,
-        require_permissions: Option<Permissions>,
+        allowed_permissions: Option<PluginFunctionPermissions>,
+        require_permissions: Option<PluginFunctionPermissions>,
     ) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
@@ -96,11 +96,11 @@ impl OpStateWorkflowData {
             .collect::<Vec<String>>()
             .join("\n")
     }
-    pub fn get_allowed_permissions(&self) -> &Option<Permissions> {
+    pub fn get_allowed_permissions(&self) -> &Option<PluginFunctionPermissions> {
         &self.allowed_permissions
     }
 
-    pub fn get_required_permissions(self) -> Option<Permissions> {
+    pub fn get_required_permissions(self) -> Option<PluginFunctionPermissions> {
         self.require_permissions
     }
 }

@@ -49,6 +49,7 @@ impl std::fmt::Display for sapphillon_v1::Permission {
 ///     permissions: Permissions::new(vec![]),
 /// };
 /// ```
+#[derive(Debug, Clone)]
 pub struct PluginFunctionPermissions {
     pub plugin_function_id: String,
     pub permissions: Permissions,
