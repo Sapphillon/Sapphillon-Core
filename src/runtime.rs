@@ -47,7 +47,7 @@ pub struct OpStateWorkflowData {
     capture_stdout: bool,
     // Support multiple plugin-function permission entries for allowed/required.
     allowed_permissions: Option<Vec<PluginFunctionPermissions>>,
-    require_permissions: Option<Vec<PluginFunctionPermissions>>,
+    required_permissions: Option<Vec<PluginFunctionPermissions>>,
 }
 
 impl OpStateWorkflowData {
@@ -56,14 +56,14 @@ impl OpStateWorkflowData {
         workflow_id: &str,
         capture_stdout: bool,
         allowed_permissions: Option<Vec<PluginFunctionPermissions>>,
-        require_permissions: Option<Vec<PluginFunctionPermissions>>,
+        required_permissions: Option<Vec<PluginFunctionPermissions>>,
     ) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
             result: Vec::new(),
             capture_stdout,
             allowed_permissions,
-            require_permissions,
+            required_permissions,
         }
     }
 
@@ -104,7 +104,7 @@ impl OpStateWorkflowData {
     }
 
     pub fn get_required_permissions(&self) -> &Option<Vec<PluginFunctionPermissions>> {
-        &self.require_permissions
+        &self.required_permissions
     }
 }
 
@@ -312,7 +312,7 @@ mod tests {
             result: vec![],
             capture_stdout: false,
             allowed_permissions: None,
-            require_permissions: None,
+            required_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -358,7 +358,7 @@ mod tests {
             result: vec![WorkflowStdout::Stdout("Initial stdout".to_string())],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None,
+            required_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -402,7 +402,7 @@ mod tests {
             result: vec![],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None,
+            required_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -440,7 +440,7 @@ mod tests {
             result: vec![],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None,
+            required_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "");
     }
@@ -452,7 +452,7 @@ mod tests {
             result: vec![WorkflowStdout::Stdout("Hello".to_string())],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None,
+            required_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "Hello");
     }
@@ -468,7 +468,7 @@ mod tests {
             ],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None,
+            required_permissions: None,
         };
         assert_eq!(data.stdout_to_string(), "One\nTwo\nThree");
     }
@@ -482,7 +482,7 @@ mod tests {
             result: vec![],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None,
+            required_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -520,7 +520,7 @@ mod tests {
             result: vec![],
             capture_stdout: true,
             allowed_permissions: None,
-            require_permissions: None,
+            required_permissions: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
