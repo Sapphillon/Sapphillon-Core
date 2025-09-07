@@ -47,11 +47,7 @@ where
 fn canonical_port(p: u16) -> u16 {
     // Treat default web ports (80, 443) as equivalent by mapping them to a
     // canonical sentinel (0). Non-default ports are preserved.
-    if p == 80 || p == 443 {
-        0
-    } else {
-        p
-    }
+    if p == 80 || p == 443 { 0 } else { p }
 }
 
 /// Parse a possibly scheme-less URL string. If the input contains "://"
@@ -61,7 +57,7 @@ fn parse_with_default_scheme(s: &str) -> Result<Url, url::ParseError> {
     if s.contains("://") {
         Url::parse(s)
     } else {
-        Url::parse(&format!("https://{}", s))
+        Url::parse(&format!("https://{s}"))
     }
 }
 
@@ -473,41 +469,41 @@ mod tests {
         let b = vec!["https://example.com/a", "https://example.com/b"];
         assert!(!urls_cover_as_set(&a, &b));
     }
-// Additional tests for scheme-less inputs and port handling
-#[test]
-fn test_urls_cover_by_ancestor_scheme_less_input() {
-    // scheme-less target should be treated as https and match https base
-    let a = vec!["https://example.com/base"];
-    let b = vec!["example.com/base/x"];
-    assert!(urls_cover_by_ancestor(&a, &b));
+    // Additional tests for scheme-less inputs and port handling
+    #[test]
+    fn test_urls_cover_by_ancestor_scheme_less_input() {
+        // scheme-less target should be treated as https and match https base
+        let a = vec!["https://example.com/base"];
+        let b = vec!["example.com/base/x"];
+        assert!(urls_cover_by_ancestor(&a, &b));
 
-    // scheme-less base is parsed as https; http target should still match because scheme is ignored
-    let a2 = vec!["example.com/base"];
-    let b2 = vec!["http://example.com/base/x"];
-    assert!(urls_cover_by_ancestor(&a2, &b2));
-}
+        // scheme-less base is parsed as https; http target should still match because scheme is ignored
+        let a2 = vec!["example.com/base"];
+        let b2 = vec!["http://example.com/base/x"];
+        assert!(urls_cover_by_ancestor(&a2, &b2));
+    }
 
-#[test]
-fn test_urls_cover_by_ancestor_port_80_443_equivalence() {
-    // explicit 80 and 443 should be treated equivalent
-    let a = vec!["http://example.com:80/base"];
-    let b = vec!["https://example.com:443/base/x"];
-    assert!(urls_cover_by_ancestor(&a, &b));
-}
+    #[test]
+    fn test_urls_cover_by_ancestor_port_80_443_equivalence() {
+        // explicit 80 and 443 should be treated equivalent
+        let a = vec!["http://example.com:80/base"];
+        let b = vec!["https://example.com:443/base/x"];
+        assert!(urls_cover_by_ancestor(&a, &b));
+    }
 
-#[test]
-fn test_urls_cover_by_ancestor_same_nondefault_port_across_scheme() {
-    // same non-default port (8080) should match across schemes
-    let a = vec!["http://example.com:8080/base"];
-    let b = vec!["https://example.com:8080/base/x"];
-    assert!(urls_cover_by_ancestor(&a, &b));
-}
+    #[test]
+    fn test_urls_cover_by_ancestor_same_nondefault_port_across_scheme() {
+        // same non-default port (8080) should match across schemes
+        let a = vec!["http://example.com:8080/base"];
+        let b = vec!["https://example.com:8080/base/x"];
+        assert!(urls_cover_by_ancestor(&a, &b));
+    }
 
-#[test]
-fn test_urls_cover_by_ancestor_different_nondefault_ports_not_equal() {
-    // different non-default ports must not match
-    let a = vec!["http://example.com:8080/base"];
-    let b = vec!["https://example.com:9090/base/x"];
-    assert!(!urls_cover_by_ancestor(&a, &b));
-}
+    #[test]
+    fn test_urls_cover_by_ancestor_different_nondefault_ports_not_equal() {
+        // different non-default ports must not match
+        let a = vec!["http://example.com:8080/base"];
+        let b = vec!["https://example.com:9090/base/x"];
+        assert!(!urls_cover_by_ancestor(&a, &b));
+    }
 }
