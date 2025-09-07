@@ -44,11 +44,34 @@ where
 /// semantics needed for coverage checks.
 ///
 /// JA: Url から比較用オリジンキーを作成（scheme, host, port_or_default）
-fn origin_key(u: &Url) -> Option<(String, String, u16)> {
-    let scheme = u.scheme().to_ascii_lowercase();
+fn canonical_port(p: u16) -> u16 {
+    // Treat default web ports (80, 443) as equivalent by mapping them to a
+    // canonical sentinel (0). Non-default ports are preserved.
+    if p == 80 || p == 443 { 0 } else { p }
+}
+
+/// Parse a possibly scheme-less URL string. If the input contains "://"
+/// we parse it as-is; otherwise we prepend "https://" (scheme-less is treated
+/// as HTTPS by default per specification).
+fn parse_with_default_scheme(s: &str) -> Result<Url, url::ParseError> {
+    if s.contains("://") {
+        Url::parse(s)
+    } else {
+        Url::parse(&format!("https://{s}"))
+    }
+}
+
+/// Construct a comparison origin key from a Url consisting of:
+/// (lowercased host, canonicalized port).
+///
+/// We intentionally IGNORE scheme so that http/https are considered equivalent
+/// for matching. Ports 80 and 443 are treated as equivalent by mapping them to
+/// the sentinel port 0; other explicit ports remain distinct. Returns None if
+/// host or default port is unavailable (opaque URLs).
+fn origin_key(u: &Url) -> Option<(String, u16)> {
     let host = u.host_str()?.to_ascii_lowercase();
-    let port = u.port_or_known_default()?; // 既定ポートを補完
-    Some((scheme, host, port))
+    let port = u.port_or_known_default()?;
+    Some((host, canonical_port(port)))
 }
 
 /// Return the normalized (lexically collapsed) path segments of the given URL.
@@ -97,10 +120,10 @@ fn url_segments(u: &Url) -> Option<Vec<String>> {
 /// JA: a のどれかのベース URL が b の各 URL を「同一オリジンかつパスの前方一致」で包含しているか
 pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
     // オリジンごとに最小集合のベースセグメントを持つ
-    let mut bases: HashMap<(String, String, u16), Vec<Vec<String>>> = HashMap::new();
+    let mut bases: HashMap<(String, u16), Vec<Vec<String>>> = HashMap::new();
 
     for s in a {
-        let Ok(url) = Url::parse(s.as_ref()) else {
+        let Ok(url) = parse_with_default_scheme(s.as_ref()) else {
             continue;
         };
         let Some(key) = origin_key(&url) else {
@@ -122,7 +145,7 @@ pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) ->
     }
 
     for s in b {
-        let Ok(url) = Url::parse(s.as_ref()) else {
+        let Ok(url) = parse_with_default_scheme(s.as_ref()) else {
             return false;
         };
         let Some(key) = origin_key(&url) else {
@@ -160,11 +183,11 @@ pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) ->
 pub fn urls_cover_as_set<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
     let set_a: HashSet<String> = a
         .iter()
-        .filter_map(|s| Url::parse(s.as_ref()).ok())
+        .filter_map(|s| parse_with_default_scheme(s.as_ref()).ok())
         .map(|u| u.to_string()) // 既定ポートはシリアライズに出ない
         .collect();
     b.iter()
-        .filter_map(|s| Url::parse(s.as_ref()).ok())
+        .filter_map(|s| parse_with_default_scheme(s.as_ref()).ok())
         .all(|u| set_a.contains(&u.to_string()))
 }
 
@@ -276,7 +299,7 @@ mod tests {
         let u2 = Url::parse("http://example.com:80/").unwrap();
         let k1 = origin_key(&u1).unwrap();
         let k2 = origin_key(&u2).unwrap();
-        assert_eq!(k1, ("http".into(), "example.com".into(), 80));
+        assert_eq!(k1, ("example.com".into(), 0));
         assert_eq!(k1, k2);
     }
 
@@ -284,14 +307,8 @@ mod tests {
     fn test_origin_key_non_default_and_https() {
         let u1 = Url::parse("http://example.com:8080/").unwrap();
         let u2 = Url::parse("https://example.com/").unwrap();
-        assert_eq!(
-            origin_key(&u1).unwrap(),
-            ("http".into(), "example.com".into(), 8080)
-        );
-        assert_eq!(
-            origin_key(&u2).unwrap(),
-            ("https".into(), "example.com".into(), 443)
-        );
+        assert_eq!(origin_key(&u1).unwrap(), ("example.com".into(), 8080));
+        assert_eq!(origin_key(&u2).unwrap(), ("example.com".into(), 0));
     }
 
     #[test]
@@ -306,10 +323,7 @@ mod tests {
     fn test_origin_key_ipv6() {
         let u = Url::parse("http://[2001:db8::1]/").unwrap();
         // url::Url::host_str() returns the bracketed form for IPv6; keep as-is.
-        assert_eq!(
-            origin_key(&u).unwrap(),
-            ("http".into(), "[2001:db8::1]".into(), 80)
-        );
+        assert_eq!(origin_key(&u).unwrap(), ("[2001:db8::1]".into(), 0));
     }
 
     // url_segments
@@ -377,7 +391,7 @@ mod tests {
     fn test_urls_cover_by_ancestor_scheme_mismatch() {
         let a = vec!["http://example.com/base"];
         let b = vec!["https://example.com/base/x"];
-        assert!(!urls_cover_by_ancestor(&a, &b));
+        assert!(urls_cover_by_ancestor(&a, &b));
     }
 
     #[test]
@@ -454,5 +468,42 @@ mod tests {
         let a = vec!["https://example.com/a"];
         let b = vec!["https://example.com/a", "https://example.com/b"];
         assert!(!urls_cover_as_set(&a, &b));
+    }
+    // Additional tests for scheme-less inputs and port handling
+    #[test]
+    fn test_urls_cover_by_ancestor_scheme_less_input() {
+        // scheme-less target should be treated as https and match https base
+        let a = vec!["https://example.com/base"];
+        let b = vec!["example.com/base/x"];
+        assert!(urls_cover_by_ancestor(&a, &b));
+
+        // scheme-less base is parsed as https; http target should still match because scheme is ignored
+        let a2 = vec!["example.com/base"];
+        let b2 = vec!["http://example.com/base/x"];
+        assert!(urls_cover_by_ancestor(&a2, &b2));
+    }
+
+    #[test]
+    fn test_urls_cover_by_ancestor_port_80_443_equivalence() {
+        // explicit 80 and 443 should be treated equivalent
+        let a = vec!["http://example.com:80/base"];
+        let b = vec!["https://example.com:443/base/x"];
+        assert!(urls_cover_by_ancestor(&a, &b));
+    }
+
+    #[test]
+    fn test_urls_cover_by_ancestor_same_nondefault_port_across_scheme() {
+        // same non-default port (8080) should match across schemes
+        let a = vec!["http://example.com:8080/base"];
+        let b = vec!["https://example.com:8080/base/x"];
+        assert!(urls_cover_by_ancestor(&a, &b));
+    }
+
+    #[test]
+    fn test_urls_cover_by_ancestor_different_nondefault_ports_not_equal() {
+        // different non-default ports must not match
+        let a = vec!["http://example.com:8080/base"];
+        let b = vec!["https://example.com:9090/base/x"];
+        assert!(!urls_cover_by_ancestor(&a, &b));
     }
 }
