@@ -205,6 +205,10 @@ pub fn check_permission(
     // For each required permission, ensure at least one granted permission covers it.
     'req_loop: for req in &merged_required.permissions {
         for perm in &merged_permissions.permissions {
+            if perm.permission_type == sapphillon_v1::PermissionType::AllowAll as i32 {
+                return CheckPermissionResult::Ok;
+            }
+
             if perm.permission_type != req.permission_type {
                 continue;
             }
@@ -487,6 +491,25 @@ mod tests {
     #[test]
     fn test_check_permission_none() {
         let res = check_permission(&Permissions::new(vec![]), &Permissions::new(vec![]));
+        assert!(matches!(res, CheckPermissionResult::Ok));
+    }
+
+    #[test]
+    fn test_check_permission_allow_all() {
+        let granted = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::AllowAll as i32,
+            ..Default::default()
+        };
+        let required = sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/some/file".to_string()],
+            ..Default::default()
+        };
+
+        let res = check_permission(
+            &Permissions::new(vec![granted]),
+            &Permissions::new(vec![required]),
+        );
         assert!(matches!(res, CheckPermissionResult::Ok));
     }
 }
