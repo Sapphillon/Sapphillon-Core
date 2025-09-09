@@ -25,7 +25,7 @@ use crate::runtime::{OpStateWorkflowData, run_script};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CoreWorkflowCode {
     /// Unique ID of the workflow code
     pub id: String,

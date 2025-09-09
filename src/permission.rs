@@ -159,6 +159,7 @@ impl Permissions {
 /// - `Ok` indicates all required permissions are satisfied by the granted set.
 /// - `MissingPermission` contains a `Permissions` value listing the required
 ///   permissions that were not covered by the granted permissions.
+#[derive(Debug)]
 pub enum CheckPermissionResult {
     Ok,
     MissingPermission(Permissions),
