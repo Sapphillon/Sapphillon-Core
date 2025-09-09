@@ -53,6 +53,9 @@ fn normalize_forgiving(p: &Path) -> PathBuf {
 ///
 /// Original (JA): a のどれかが b の各要素の祖先（ディレクトリ包含）か
 pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> bool {
+    if a.len() == 1 && a[0].as_ref() == Path::new("*") {
+        return true;
+    }
     // Normalize base paths
     let mut bases: Vec<PathBuf> = a.iter().map(|p| normalize_forgiving(p.as_ref())).collect();
 
@@ -93,6 +96,9 @@ pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B])
 ///
 /// Original (JA intent): 集合として a が b を（正規化後に）包含するか
 pub fn paths_cover_as_set<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> bool {
+    if a.len() == 1 && a[0].as_ref() == Path::new("*") {
+        return true;
+    }
     let set_a: HashSet<PathBuf> = a.iter().map(|p| normalize_forgiving(p.as_ref())).collect();
     b.iter()
         .all(|p| set_a.contains(&normalize_forgiving(p.as_ref())))
@@ -200,5 +206,19 @@ mod tests {
             paths_cover_as_set(&a, &b),
             "duplicates in b should not affect set coverage"
         );
+    }
+
+    #[test]
+    fn test_paths_cover_by_ancestor_wildcard() {
+        let a = pvec(&["*"]);
+        let b = pvec(&["a/file.txt", "a/b/c", "x/y/z"]);
+        assert!(paths_cover_by_ancestor(&a, &b));
+    }
+
+    #[test]
+    fn test_paths_cover_as_set_wildcard() {
+        let a = pvec(&["*"]);
+        let b = pvec(&["a/b", "c/e"]);
+        assert!(paths_cover_as_set(&a, &b));
     }
 }

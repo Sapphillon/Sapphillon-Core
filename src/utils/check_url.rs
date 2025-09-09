@@ -119,6 +119,9 @@ fn url_segments(u: &Url) -> Option<Vec<String>> {
 ///
 /// JA: a のどれかのベース URL が b の各 URL を「同一オリジンかつパスの前方一致」で包含しているか
 pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
+    if a.len() == 1 && a[0].as_ref() == "*" {
+        return true;
+    }
     // オリジンごとに最小集合のベースセグメントを持つ
     let mut bases: HashMap<(String, u16), Vec<Vec<String>>> = HashMap::new();
 
@@ -181,6 +184,9 @@ pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) ->
 ///
 /// JA: 完全一致の集合包含（URL のシリアライズ表現で比較）
 pub fn urls_cover_as_set<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
+    if a.len() == 1 && a[0].as_ref() == "*" {
+        return true;
+    }
     let set_a: HashSet<String> = a
         .iter()
         .filter_map(|s| parse_with_default_scheme(s.as_ref()).ok())
@@ -505,5 +511,23 @@ mod tests {
         let a = vec!["http://example.com:8080/base"];
         let b = vec!["https://example.com:9090/base/x"];
         assert!(!urls_cover_by_ancestor(&a, &b));
+    }
+
+    #[test]
+    fn test_urls_cover_by_ancestor_wildcard() {
+        let a = vec!["*"];
+        let b = vec![
+            "https://example.com/project/src/lib/mod.rs",
+            "https://data.example.com/data/input/file.csv?part=1",
+            "http://example.com/base/child",
+        ];
+        assert!(urls_cover_by_ancestor(&a, &b));
+    }
+
+    #[test]
+    fn test_urls_cover_as_set_wildcard() {
+        let a = vec!["*"];
+        let b = vec!["https://example.com/api", "https://example.com/"];
+        assert!(urls_cover_as_set(&a, &b));
     }
 }
