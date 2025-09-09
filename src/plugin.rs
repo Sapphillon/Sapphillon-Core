@@ -36,6 +36,18 @@ pub struct CorePluginFunction {
     pub pre_run_js: Option<String>,
 }
 
+impl std::fmt::Debug for CorePluginFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CorePluginFunction")
+            .field("id", &self.id)
+            .field("name", &self.name)
+            .field("func", &"<OpDecl>")
+            .field("description", &self.description)
+            .field("pre_run_js", &self.pre_run_js)
+            .finish()
+    }
+}
+
 impl CorePluginFunction {
     /// Creates a new `CorePluginFunction`.
     ///
@@ -81,7 +93,7 @@ impl CorePluginFunction {
 
 /// Core representation of a plugin package.
 /// Holds the package ID, name, and a list of functions.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CorePluginPackage {
     /// Unique ID of the package
     pub id: String,
