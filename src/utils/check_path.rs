@@ -280,15 +280,24 @@ mod tests {
         // Note: representation may vary between platforms. On Windows components will
         // include a Prefix; on Unix the drive letter may appear as a Normal component
         // like "C:". We'll accept either form.
-        let comps: Vec<String> = out.components().map(|c| format!("{:?}", c)).collect();
+        let comps: Vec<String> = out.components().map(|c| format!("{c:?}")).collect();
         // Accept either a Prefix component (Windows) or a Normal component that
         // contains "C:" (common representation on non-Windows hosts for drive-like inputs).
         let has_prefix = comps.iter().any(|s| s.contains("Prefix"));
         let has_drive_normal = comps.iter().any(|s| s.contains("C:"));
-        assert!(has_prefix || has_drive_normal, "expected prefix or C: drive component, got: {:?}", comps);
+        assert!(
+            has_prefix || has_drive_normal,
+            "expected prefix or C: drive component, got: {comps:?}"
+        );
         // Ensure dir and file components survived normalization
-        assert!(comps.iter().any(|s| s.contains("dir")), "expected component dir in {:?}", comps);
-        assert!(comps.iter().any(|s| s.contains("file.txt")), "expected component file.txt in {:?}", comps);
+        assert!(
+            comps.iter().any(|s| s.contains("dir")),
+            "expected component dir in {comps:?}"
+        );
+        assert!(
+            comps.iter().any(|s| s.contains("file.txt")),
+            "expected component file.txt in {comps:?}"
+        );
     }
 
     #[test]
@@ -297,9 +306,13 @@ mod tests {
         // and that '..' collapses correctly.
         let input = Path::new("C:\\dir\\sub\\..\\file.txt");
         let out = normalize_forgiving(input);
-        let comps: Vec<String> = out.components().map(|c| format!("{:?}", c)).collect();
+        let comps: Vec<String> = out.components().map(|c| format!("{c:?}")).collect();
         // Should preserve drive/prefix or at least the 'C:' component and include dir and file
-        assert!(comps.iter().any(|s| s.contains("C:") || s.contains("Prefix")));
+        assert!(
+            comps
+                .iter()
+                .any(|s| s.contains("C:") || s.contains("Prefix"))
+        );
         assert!(comps.iter().any(|s| s.contains("dir")));
         assert!(comps.iter().any(|s| s.contains("file.txt")));
     }
@@ -310,5 +323,66 @@ mod tests {
         let bases = pvec(&["C:\\project\\src", "C:\\other"]);
         let targets = pvec(&["C:\\project\\src\\main.rs", "C:/project/src/lib.rs"]);
         assert!(paths_cover_by_ancestor(&bases, &targets));
+    }
+
+    #[test]
+    fn test_absolute_parent_on_absolute_path() {
+        // An absolute path that starts with '..' should not pop past root.
+        let input = Path::new("/../etc/passwd");
+        let out = normalize_forgiving(input);
+        // Should normalize to '/etc/passwd' on unix-like systems
+        assert!(out.ends_with("etc/passwd") || out == PathBuf::from("etc/passwd"));
+    }
+
+    #[test]
+    fn test_redundant_separators_collapsed() {
+        let input = Path::new("a//b///c");
+        let out = normalize_forgiving(input);
+        assert_eq!(out, PathBuf::from("a/b/c"));
+    }
+
+    #[test]
+    fn test_paths_cover_as_set_backslashes() {
+        let a = pvec(&["C:\\a\\b", "D:/x/y"]);
+        let b = pvec(&["C:/a/b", "D:\\x\\y"]);
+        assert!(paths_cover_as_set(&a, &b));
+    }
+
+    #[test]
+    fn test_unc_like_input() {
+        // UNC-like inputs (\\server\\share\path) should be treated sensibly;
+        // normalization will convert backslashes and keep the prefix-like segments.
+        let base = Path::new("\\\\server\\share\\dir");
+        let target = Path::new("\\\\server\\share\\dir\\file.txt");
+        assert!(paths_cover_by_ancestor(&[base], &[target]));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_canonicalize_resolved_when_exists() {
+        // Create a tiny temporary dir and a symlink to test canonicalize path takeover.
+        // Avoid pulling in the `tempfile` crate by using a timestamped directory under
+        // the platform temp dir.
+        let td_base = std::env::temp_dir();
+        let uniq = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let td = td_base.join(format!("sapphillon_test_{uniq}"));
+        let _ = std::fs::create_dir_all(&td);
+        let dir = td.join("sub");
+        std::fs::create_dir(&dir).unwrap();
+        let target = dir.join("file.txt");
+        std::fs::write(&target, "hi").unwrap();
+        let link = td.join("link_to_sub");
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&dir, &link).unwrap();
+
+        // canonicalize should resolve the symlink; normalize_forgiving will prefer canonicalize
+        let resolved = normalize_forgiving(&link);
+        assert!(resolved.exists());
+
+        // Try to clean up; ignore errors if cleanup fails.
+        let _ = std::fs::remove_dir_all(&td);
     }
 }
