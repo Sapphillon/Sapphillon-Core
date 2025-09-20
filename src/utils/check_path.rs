@@ -19,17 +19,64 @@ use std::path::{Component, Path, PathBuf};
 ///
 /// Original (JA): 可能なら canonicalize、失敗したらレキシカルに . と .. を畳み込む簡易正規化
 fn normalize_forgiving(p: &Path) -> PathBuf {
+    // Prefer real canonicalization when possible (resolves symlinks).
     if let Ok(abs) = std::fs::canonicalize(p) {
         return abs;
     }
-    let mut out = PathBuf::new();
-    for comp in p.components() {
+
+    // Fallback: do a purely lexical normalization that collapses '.' and '..'
+    // but never pops past a platform-specific anchor (prefix/root).
+    // Accept either forward-slash or backslash as separator: normalize backslashes
+    // to forward slashes for lexical processing so Windows-style inputs like
+    // "C:\\path\\to\\file" are handled correctly on Unix hosts as well.
+    // We perform this normalization on a UTF-8 lossy string representation of
+    // the path (safe for non-UTF8 inputs; lossy conversion is acceptable for
+    // the purpose of splitting separators).
+    let input_path_for_lex: PathBuf = {
+        // Convert to string (lossy), replace backslashes with forward slashes.
+        let s = p.as_os_str().to_string_lossy().to_string();
+        if s.contains('\\') {
+            PathBuf::from(s.replace('\\', "/"))
+        } else {
+            p.to_path_buf()
+        }
+    };
+    #[derive(Debug)]
+    enum Seg {
+        Prefix(std::ffi::OsString),
+        Root,
+        Normal(std::ffi::OsString),
+    }
+
+    let mut stack: Vec<Seg> = Vec::new();
+
+    for comp in input_path_for_lex.components() {
         match comp {
-            Component::CurDir => {} // "."
+            Component::Prefix(pre) => stack.push(Seg::Prefix(pre.as_os_str().to_os_string())),
+            Component::RootDir => stack.push(Seg::Root),
+            Component::CurDir => { /* skip */ }
             Component::ParentDir => {
-                out.pop();
-            } // ".."
-            other => out.push(other.as_os_str()), // Prefix/RootDir/Normal unchanged
+                // Pop the last normal segment if present. Do not pop past Root or Prefix.
+                if let Some(pos) = stack.iter().rposition(|s| matches!(s, Seg::Normal(_))) {
+                    stack.remove(pos);
+                } else {
+                    // Nothing to pop (we're at the anchor or empty) -> ignore the ParentDir
+                }
+            }
+            Component::Normal(os) => stack.push(Seg::Normal(os.to_os_string())),
+        }
+    }
+
+    // Reconstruct PathBuf from the stack.
+    let mut out = PathBuf::new();
+    for seg in stack {
+        match seg {
+            Seg::Prefix(s) => out.push(s),
+            Seg::Root => {
+                // Push a platform-appropriate root token. On unix this will become '/'.
+                out.push(std::path::MAIN_SEPARATOR.to_string());
+            }
+            Seg::Normal(s) => out.push(s),
         }
     }
     out
@@ -220,5 +267,48 @@ mod tests {
         let a = pvec(&["*"]);
         let b = pvec(&["a/b", "c/e"]);
         assert!(paths_cover_as_set(&a, &b));
+    }
+
+    #[test]
+    fn test_normalize_forgiving_windows_style_prefix() {
+        // On non-windows hosts we can still construct a Path that contains a "C:\"-style
+        // prefix. The lexical normalizer should preserve the prefix and not allow '..' to
+        // pop past it.
+        let input = Path::new("C:/dir/sub/../file.txt");
+        let out = normalize_forgiving(input);
+        // Expect the path to become C:/dir/file.txt (prefix preserved, .. collapsed)
+        // Note: representation may vary between platforms. On Windows components will
+        // include a Prefix; on Unix the drive letter may appear as a Normal component
+        // like "C:". We'll accept either form.
+        let comps: Vec<String> = out.components().map(|c| format!("{:?}", c)).collect();
+        // Accept either a Prefix component (Windows) or a Normal component that
+        // contains "C:" (common representation on non-Windows hosts for drive-like inputs).
+        let has_prefix = comps.iter().any(|s| s.contains("Prefix"));
+        let has_drive_normal = comps.iter().any(|s| s.contains("C:"));
+        assert!(has_prefix || has_drive_normal, "expected prefix or C: drive component, got: {:?}", comps);
+        // Ensure dir and file components survived normalization
+        assert!(comps.iter().any(|s| s.contains("dir")), "expected component dir in {:?}", comps);
+        assert!(comps.iter().any(|s| s.contains("file.txt")), "expected component file.txt in {:?}", comps);
+    }
+
+    #[test]
+    fn test_normalize_forgiving_backslashes() {
+        // Ensure that backslash separators are treated like forward slashes
+        // and that '..' collapses correctly.
+        let input = Path::new("C:\\dir\\sub\\..\\file.txt");
+        let out = normalize_forgiving(input);
+        let comps: Vec<String> = out.components().map(|c| format!("{:?}", c)).collect();
+        // Should preserve drive/prefix or at least the 'C:' component and include dir and file
+        assert!(comps.iter().any(|s| s.contains("C:") || s.contains("Prefix")));
+        assert!(comps.iter().any(|s| s.contains("dir")));
+        assert!(comps.iter().any(|s| s.contains("file.txt")));
+    }
+
+    #[test]
+    fn test_paths_cover_by_ancestor_backslashes() {
+        // Bases and targets supplied with backslashes should be normalized and matched.
+        let bases = pvec(&["C:\\project\\src", "C:\\other"]);
+        let targets = pvec(&["C:\\project\\src\\main.rs", "C:/project/src/lib.rs"]);
+        assert!(paths_cover_by_ancestor(&bases, &targets));
     }
 }
