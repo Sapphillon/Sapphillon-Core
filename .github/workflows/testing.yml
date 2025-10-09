@@ -10,21 +10,29 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    name: Test
+  test-linux:
+    name: Test on Linux
+    runs-on: ubuntu-latest
+    container: ghcr.io/walkmana-25/sapphillon-ci-image:latest
+    needs: ["check"]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+      - name: Test Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+
+  test-other-os:
+    name: Test on MacOS and Windows
     runs-on: ${{ matrix.os }}
     needs: ["check"]
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v5
-      
-      - name: Install Dependecies on Ubuntu
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
 
       - name: Install Dependencies on MacOS
         if: ${{ matrix.os == 'macos-latest' }}
