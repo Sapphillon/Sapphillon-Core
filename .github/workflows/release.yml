@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version_type:
-        description: 'The type of version bump to apply (major, minor, patch, or a specific version)'
+        description: 'The type of version bump to apply (major, minor, or patch)'
         required: true
         default: 'patch'
         type: choice
@@ -29,7 +29,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Set up Git
         run: |
@@ -42,6 +42,17 @@ jobs:
         with:
           version-type: ${{ github.event.inputs.version_type }}
           pre-release: ${{ github.event.inputs.prerelease }}
+
+      - name: Commit and push version change
+        run: |
+          git add Cargo.toml Cargo.lock || true
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }}" || true
+          git push
+
+      - name: Create and push tag
+        run: |
+          git tag "${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
 
       - name: Create Release
         env:
