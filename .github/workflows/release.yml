@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Git
         run: |
@@ -41,11 +43,12 @@ jobs:
         uses: tj-actions/cargo-bump@v3
         with:
           release_type: ${{ github.event.inputs.version_type }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ steps.version.outputs.tag }}
+          TAG_NAME: ${{ steps.version.outputs.new_tag }}
         run: |
           PRERELEASE_FLAG=""
           if [[ "${{ github.event.inputs.prerelease }}" == "true" ]]; then
