@@ -45,15 +45,21 @@ jobs:
           release_type: ${{ github.event.inputs.version_type }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(grep -m 1 '^version = ' Cargo.toml | cut -d '"' -f 2)
+          echo "new_version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Commit and push changes
         run: |
-          git commit -am "chore: bump version to ${{ steps.version.outputs.new_version }}"
+          git commit -am "chore: bump version to ${{ steps.get_version.outputs.new_version }}"
           git push
 
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: v${{ steps.version.outputs.new_version }}
+          TAG_NAME: v${{ steps.get_version.outputs.new_version }}
         run: |
           PRERELEASE_FLAG=""
           if [[ "${{ github.event.inputs.prerelease }}" == "true" ]]; then
