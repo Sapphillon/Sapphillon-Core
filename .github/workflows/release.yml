@@ -29,7 +29,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -45,10 +45,15 @@ jobs:
           release_type: ${{ github.event.inputs.version_type }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Commit and push changes
+        run: |
+          git commit -am "chore: bump version to ${{ steps.version.outputs.new_version }}"
+          git push
+
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ steps.version.outputs.new_tag }}
+          TAG_NAME: v${{ steps.version.outputs.new_version }}
         run: |
           PRERELEASE_FLAG=""
           if [[ "${{ github.event.inputs.prerelease }}" == "true" ]]; then
