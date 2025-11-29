@@ -1,5 +1,5 @@
 // Sapphillon-Core
-// Copyright 2025 Yuta Takahashi
+// SPDX-FileCopyrightText: 2025 Yuta Takahashi
 //
 // This file is part of Sapphillon-Core
 //
