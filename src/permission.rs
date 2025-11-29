@@ -1,8 +1,5 @@
 // Sapphillon-Core
 // SPDX-FileCopyrightText: 2025 Yuta Takahashi
-//
-// This file is part of Sapphillon-Core
-//
 // SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
 
 use crate::proto::sapphillon::v1 as sapphillon_v1;
