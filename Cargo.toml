@@ -21,7 +21,7 @@ prost = { version = "0.13.1", default-features = false, features = ["std"] }
 prost-types = { version = "0.13.1", default-features = false }
 async-trait = "0.1"
 deno_core = { version = "0.355.0", default-features = false }
-deno_error = "0.7.0"
+deno_error = "0.7.1"
 unescaper = "0.1.6"
 thiserror = "2.0.17"
 url = "2.5.7"
