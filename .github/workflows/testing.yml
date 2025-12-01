@@ -16,12 +16,12 @@ jobs:
     needs: ["check"]
     strategy:
       matrix:
-        os: [blacksmith-4vcpu-ubuntu-2404, macos-latest, windows-latest]
+        os: [blacksmith-2vcpu-ubuntu-2404, macos-latest, blacksmith-4vcpu-windows-2025]
     steps:
       - uses: actions/checkout@v5
       
       - name: Install Dependecies on Ubuntu
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.os == 'blacksmith-2vcpu-ubuntu-2404' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler
@@ -32,7 +32,7 @@ jobs:
           brew install protobuf
 
       - name: Install Dependencies on Windows
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'blacksmith-4vcpu-windows-2025' }}
         run: |
           choco install protoc
           choco install nasm
