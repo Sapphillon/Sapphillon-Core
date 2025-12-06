@@ -8,3 +8,5 @@ anyhow.workspace = true
 deno_runtime.workspace = true
 deno_core.workspace = true
 sys_traits.workspace = true
+deno_lib.workspace = true
+deno_web.workspace = true
