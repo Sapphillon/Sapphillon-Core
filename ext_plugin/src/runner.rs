@@ -15,5 +15,31 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// 
+use deno_runtime::worker::{
+    MainWorker, WorkerOptions,
+};
+use deno_runtime::deno_permissions::{PermissionsContainer, PermissionDescriptorParser};
+use deno_core::ModuleSpecifier;
+use std::sync::Arc;
 
-mod runner;
+async fn run(script: String) -> anyhow::Result<()> {
+
+    let options = WorkerOptions {
+        ..Default::default()
+    };
+    let main_module = deno_core::resolve_url_or_path("./main.js", std::path::Path::new("."))?;
+    let main_worker_service_option = deno_runtime::worker::MainWorkerServiceOption {
+        ..Default::default()
+    };
+    
+
+    
+    let main_worker = MainWorker::bootstrap_from_options(
+        &main_module,
+        main_worker_service_option,
+        options,
+    );
+
+    Ok(())
+}
