@@ -16,6 +16,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub mod runner;
+use std::env;
 
-pub use runner::run;
+#[tokio::main]
+async fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    let script_path = if args.len() > 1 {
+        &args[1]
+    } else {
+        // Default to test.js in the ext_plugin directory
+        "ext_plugin/test.js"
+    };
+
+    println!("Running JavaScript file: {script_path}");
+
+    match ext_plugin::run(script_path).await {
+        Ok(_) => println!("\nScript execution completed successfully."),
+        Err(e) => eprintln!("Error executing script: {e}"),
+    }
+}
