@@ -26,6 +26,8 @@ use deno_core::FsModuleLoader;
 use std::sync::Arc;
 use deno_runtime::deno_fs::RealFs;
 use deno_runtime::permissions::RuntimePermissionDescriptorParser;
+use deno_runtime::deno_permissions::Permissions;
+
 
 async fn run(script: String) -> anyhow::Result<()> {
 
@@ -36,7 +38,14 @@ async fn run(script: String) -> anyhow::Result<()> {
     let main_worker_service_option = deno_runtime::worker::WorkerServiceOptions {
         deno_rt_native_addon_loader: None,
         module_loader: Rc::new(FsModuleLoader),
-        permissions: PermissionsContainer::allow_all(),
+        permissions: PermissionsContainer::new(
+            Arc::new(
+                RuntimePermissionDescriptorParser::new(sys_traits::impls::RealSys::default())
+            ),
+            Permissions::none_without_prompt()
+            
+
+        ),
         blob_store: Default::default(),
         broadcast_channel: Default::default(),
         feature_checker: Default::default(),

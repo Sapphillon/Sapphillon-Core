@@ -2689,6 +2689,7 @@ dependencies = [
  "anyhow",
  "deno_core",
  "deno_runtime",
+ "sys_traits",
 ]
 
 [[package]]
