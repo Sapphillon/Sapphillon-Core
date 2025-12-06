@@ -30,3 +30,29 @@ thiserror = "2.0.17"
 url = "2.5.7"
 deno_runtime = "0.222.0"
 
+[package]
+name = "sapphillon_core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+tokio.workspace = true
+log.workspace = true
+chrono.workspace = true
+env_logger.workspace = true
+tonic.workspace = true
+prost.workspace = true
+prost-types.workspace = true
+async-trait.workspace = true
+deno_core.workspace = true
+deno_error.workspace = true
+unescaper.workspace = true
+thiserror.workspace = true
+url.workspace = true
+deno_runtime.workspace = true
