@@ -95,7 +95,7 @@ impl std::fmt::Display for WorkflowRuntimeErrorType {
 /// let err = WorkflowRuntimeError {
 ///     message: "evaluation failed".into(),
 ///     error_type: WorkflowRuntimeErrorType::WorkflowScriptExecuteError,
-///     js_error: /* deno_core::error::JsError value here */ unimplemented!(),
+///     js_error: /* deno_core::error::CoreError value here */ unimplemented!(),
 /// };
 /// assert_eq!(err.error_type.to_string(), "Workflow script execute error");
 /// ```
@@ -121,7 +121,7 @@ pub struct WorkflowRuntimeError {
     /// details. It is interpolated into the struct's `Display` message but is
     /// not declared with `#[source]` here; callers that need source chaining
     /// should examine `js_error` directly.
-    pub js_error: deno_core::error::JsError,
+    pub js_error: deno_core::error::CoreError,
 }
 
 #[derive(Error, Debug)]
