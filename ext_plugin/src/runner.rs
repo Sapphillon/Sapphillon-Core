@@ -17,18 +17,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-use deno_lib::worker::{
-    LibMainWorker,LibMainWorkerFactory,LibMainWorkerOptions
-};
 use anyhow::Result;
+use deno_runtime::FeatureChecker;
+use deno_web::BlobStore;
+use std::sync::Arc;
+use deno_lib::worker::LibMainWorkerFactory;
 
 
-async fn run() ->  Result<()> {
-    let blob_store = deno_lib::blob::BlobStore::default();
-    
+async fn run() -> Result<()> {
+    let blob_store = BlobStore::default();
+    let code_cache = None;
+    let deno_rt_native_addon_loader = None;
+    let feature_checker = Arc::new({
+        let mut checker = FeatureChecker::default();
+        
+    });
 
-
-    
     Ok(())
-
 }
