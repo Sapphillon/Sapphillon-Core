@@ -29,6 +29,7 @@ unescaper = "0.1.6"
 thiserror = "2.0.17"
 url = "2.5.7"
 deno_runtime = "0.222.0"
+sys_traits = "0.1.17"
 
 [package]
 name = "sapphillon_core"
