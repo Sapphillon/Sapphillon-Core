@@ -121,7 +121,7 @@ pub struct WorkflowRuntimeError {
     /// details. It is interpolated into the struct's `Display` message but is
     /// not declared with `#[source]` here; callers that need source chaining
     /// should examine `js_error` directly.
-    pub js_error: deno_core::error::CoreError,
+    pub js_error: Box<deno_core::error::JsError>,
 }
 
 #[derive(Error, Debug)]

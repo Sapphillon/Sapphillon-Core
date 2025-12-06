@@ -29,7 +29,7 @@ unescaper = "0.1.6"
 thiserror = "2.0.17"
 url = "2.5.7"
 
-sys_traits = "0.1.16"
+sys_traits = "0.1.17"
 deno_lib = "0.39.0"
 deno_web = "0.252.0"
 deno_error = "0.7.0"
@@ -62,3 +62,8 @@ thiserror.workspace = true
 url.workspace = true
 deno_runtime.workspace = true
 deno_lib.workspace = true
+
+# Patch to fix temporal_rs 0.0.11 and timezone_provider version mismatch
+# temporal_rs 0.0.11 requires timezone_provider ~0.0.11, but deno_lib brings in 0.0.16
+[patch.crates-io]
+timezone_provider = { git = "https://github.com/boa-dev/temporal", tag = "v0.0.11" }
