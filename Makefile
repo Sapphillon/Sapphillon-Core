@@ -9,13 +9,13 @@ buf_generate:
 rust_test:
 	@echo "Run Rust Tests"
 	@echo "----------------------------------------------------------"
-	cargo test --lib
+	RUST_TEST_THREADS=1 cargo test --lib --workspace --all-features
 	@echo "----------------------------------------------------------"
 
 rust_build:
 	@echo "Build Rust Project"
 	@echo "----------------------------------------------------------"
-	cargo build
+	cargo build --workspace --all-features
 	@echo "----------------------------------------------------------"
 
 rust_check_format:
@@ -23,7 +23,7 @@ rust_check_format:
 	@echo "----------------------------------------------------------"
 	cargo fmt --check || true
 	@echo "----------------------------------------------------------"
-	cargo clippy || true
+	cargo clippy --workspace || true
 	@echo "----------------------------------------------------------"
 
 rust_fix_format:
@@ -31,6 +31,6 @@ rust_fix_format:
 	@echo "----------------------------------------------------------"
 	cargo fmt || true
 	@echo "----------------------------------------------------------"
-	cargo clippy --fix --allow-dirty || true
+	cargo clippy --workspace --fix --allow-dirty || true
 	@echo "----------------------------------------------------------"
 

@@ -1,9 +1,9 @@
 [workspace.package]
-name = "sapphillon_core"
+# name = "sapphillon_core"
 version = "0.5.5"
 edition = "2024"
 authors = ["Yuta Takahashi <y.highbridge04@gmail.com>"]
-license-file = "LICENSE"
+license = "MPL-2.0 OR GPL-3.0-or-later"
 readme = "README.md"
 description = "Core library for Sapphillon, a Rust-based Workflow runtime."
 repository = "https://github.com/Walkmana-25/Sapphillon-Core"
@@ -30,3 +30,29 @@ thiserror = "2.0.16"
 url = "2.5.7"
 deno_runtime = "0.222.0"
 
+[package]
+name = "sapphillon_core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+tokio.workspace = true
+log.workspace = true
+chrono.workspace = true
+env_logger.workspace = true
+tonic.workspace = true
+prost.workspace = true
+prost-types.workspace = true
+async-trait.workspace = true
+deno_core.workspace = true
+deno_error.workspace = true
+unescaper.workspace = true
+thiserror.workspace = true
+url.workspace = true
+deno_runtime.workspace = true
