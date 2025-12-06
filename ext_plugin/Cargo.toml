@@ -5,3 +5,4 @@ edition.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+deno_runtime.workspace = true
