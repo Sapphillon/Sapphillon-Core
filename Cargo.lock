@@ -2687,6 +2687,7 @@ name = "ext_plugin"
 version = "0.5.5"
 dependencies = [
  "anyhow",
+ "deno_core",
  "deno_runtime",
 ]
 
