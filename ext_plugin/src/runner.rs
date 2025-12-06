@@ -16,3 +16,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
+
+use deno_lib::worker::{
+    LibMainWorker,LibMainWorkerFactory,LibMainWorkerOptions
+};
+use anyhow::Result;
+
+
+async fn run() ->  Result<()> {
+    let blob_store = deno_lib::blob::BlobStore::default();
+    
+
+
+    
+    Ok(())
+
+}
