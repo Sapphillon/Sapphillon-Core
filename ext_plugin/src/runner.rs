@@ -19,6 +19,7 @@
 
 use anyhow::Result;
 use deno_error::JsErrorBox;
+use deno_lib::args::get_root_cert_store;
 use deno_runtime::FeatureChecker;
 use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
 use deno_runtime::deno_core::{
@@ -30,8 +31,10 @@ use deno_runtime::deno_web::BlobStore;
 use deno_runtime::permissions::RuntimePermissionDescriptorParser;
 use deno_runtime::worker::{MainWorker, WorkerOptions, WorkerServiceOptions};
 use deno_tls::RootCertStoreProvider;
+use deno_tls::rustls::RootCertStore;
 use node_resolver::errors::{PackageFolderResolveError, PackageNotFoundError};
 use node_resolver::{InNpmPackageChecker, NpmPackageFolderResolver, UrlOrPathRef};
+use once_cell::sync::OnceCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -49,6 +52,25 @@ pub struct NoopInNpmPackageChecker;
 impl InNpmPackageChecker for NoopInNpmPackageChecker {
     fn in_npm_package(&self, _specifier: &Url) -> bool {
         false
+    }
+}
+
+struct SapphillonRootCertStoreProvider {
+    cell: OnceCell<RootCertStore>,
+}
+
+impl SapphillonRootCertStoreProvider {
+    pub fn new() -> Self {
+        Self {
+            cell: Default::default(),
+        }
+    }
+}
+impl RootCertStoreProvider for SapphillonRootCertStoreProvider {
+    fn get_or_try_init(&self) -> Result<&RootCertStore, JsErrorBox> {
+        self.cell
+            .get_or_try_init(|| get_root_cert_store(None, None, None))
+            .map_err(JsErrorBox::from_err)
     }
 }
 
@@ -145,6 +167,8 @@ pub fn create_main_worker() -> Result<MainWorker> {
     // Create a dummy main module URL (required but not used for execute_script)
     let main_module = ModuleSpecifier::parse("file:///main.js")?;
 
+    let root_cert_store_provider = Arc::new(SapphillonRootCertStoreProvider::new());
+
     // Create services with minimal configuration
     let services = WorkerServiceOptions::<
         NoopInNpmPackageChecker,
@@ -166,7 +190,7 @@ pub fn create_main_worker() -> Result<MainWorker> {
             )),
             Permissions::allow_all(),
         ),
-        root_cert_store_provider: None,
+        root_cert_store_provider: Some(root_cert_store_provider as Arc<dyn RootCertStoreProvider>),
         fetch_dns_resolver: Default::default(),
         shared_array_buffer_store: None,
         compiled_wasm_module_store: None,
