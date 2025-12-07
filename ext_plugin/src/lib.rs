@@ -16,4 +16,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+mod cert_store;
+mod module_loader;
+mod npm;
+mod worker;
+
 pub mod runner;
