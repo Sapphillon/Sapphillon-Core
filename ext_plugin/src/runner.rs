@@ -29,6 +29,7 @@ use deno_runtime::deno_permissions::{Permissions, PermissionsContainer};
 use deno_runtime::deno_web::BlobStore;
 use deno_runtime::permissions::RuntimePermissionDescriptorParser;
 use deno_runtime::worker::{MainWorker, WorkerOptions, WorkerServiceOptions};
+use deno_tls::RootCertStoreProvider;
 use node_resolver::errors::{PackageFolderResolveError, PackageNotFoundError};
 use node_resolver::{InNpmPackageChecker, NpmPackageFolderResolver, UrlOrPathRef};
 use std::path::PathBuf;
@@ -116,9 +117,6 @@ impl<T> Default for Deferred<T> {
         Self(once_cell::unsync::OnceCell::default())
     }
 }
-
-/// Root Certificate Store Provider
-struct sap_root_cert_store_provider {}
 
 // ==============================================================================
 // Main JavaScript execution environment
