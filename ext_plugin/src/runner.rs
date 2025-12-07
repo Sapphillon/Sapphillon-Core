@@ -167,8 +167,10 @@ pub fn create_main_worker() -> Result<MainWorker> {
     };
 
     // Create worker options with the pre-generated snapshot
-    let mut options = WorkerOptions::default();
-    options.startup_snapshot = Some(RUNTIME_SNAPSHOT);
+    let options = WorkerOptions {
+        startup_snapshot: Some(RUNTIME_SNAPSHOT),
+        ..Default::default()
+    };
 
     // Bootstrap the worker with the snapshot
     let worker = MainWorker::bootstrap_from_options(&main_module, services, options);
