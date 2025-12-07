@@ -41,7 +41,6 @@ impl ModuleLoaderFactory for NoopModuleLoaderFactory {
 }
 
 // Dummy NodeResolver
-use std::sync::Arc;
 
 // --------------------------- Adjust these imports ---------------------------
 // The module paths below reflect the structure used in recent Deno trees but may

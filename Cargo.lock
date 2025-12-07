@@ -3021,8 +3021,10 @@ dependencies = [
  "anyhow",
  "deno_core",
  "deno_lib",
+ "deno_resolver",
  "deno_runtime",
  "deno_web",
+ "node_resolver",
  "sys_traits",
 ]
 
@@ -6111,9 +6113,11 @@ dependencies = [
  "deno_core",
  "deno_error",
  "deno_lib",
+ "deno_resolver",
  "deno_runtime",
  "env_logger",
  "log",
+ "node_resolver",
  "prost",
  "prost-types",
  "thiserror 2.0.17",
