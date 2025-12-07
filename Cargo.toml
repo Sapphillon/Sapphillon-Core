@@ -32,7 +32,7 @@ sys_traits = "0.1.17"
 deno_lib = "0.39.0"
 deno_web = "0.252.0"
 deno_error = "0.7.0"
-deno_runtime = "0.229.0"
+deno_runtime = { version = "0.229.0", features = ["snapshot"] }
 deno_permissions = "0.80.0"
 deno_fs = "0.131.0"
 deno_broadcast_channel = "0.215.0"
