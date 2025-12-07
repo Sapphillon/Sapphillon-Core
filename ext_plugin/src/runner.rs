@@ -18,38 +18,27 @@
 //
 
 use anyhow::Result;
-use deno_lib::worker::{CreateModuleLoaderResult, ModuleLoaderFactory};
-use deno_runtime::{FeatureChecker, deno_permissions::PermissionsContainer};
-use deno_web::BlobStore;
-use std::sync::Arc;
-
-// Dummy ModuleLoaderFactory implementation
-struct NoopModuleLoaderFactory;
-impl ModuleLoaderFactory for NoopModuleLoaderFactory {
-    fn create_for_main(&self, _root_permissions: PermissionsContainer) -> CreateModuleLoaderResult {
-        // TODO: implement a proper module loader
-        unimplemented!()
-    }
-
-    fn create_for_worker(
-        &self,
-        _parent_permissions: PermissionsContainer,
-        _permissions: PermissionsContainer,
-    ) -> CreateModuleLoaderResult {
-        unimplemented!()
-    }
-}
-
-// Dummy NodeResolver implementation using node_resolver's native traits
-use node_resolver::{
-    DenoIsBuiltInNodeModuleChecker, InNpmPackageChecker, NodeResolver, NodeResolverOptions,
-    NodeResolverSys, NpmPackageFolderResolver, PackageJsonResolver, PackageJsonResolverRc,
-    UrlOrPathRef,
-    cache::NodeResolutionSys,
-    errors::{PackageFolderResolveError, PackageNotFoundError},
+use deno_error::JsErrorBox;
+use deno_runtime::FeatureChecker;
+use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
+use deno_runtime::deno_core::{
+    ModuleLoadResponse, ModuleLoader, ModuleSpecifier, RequestedModuleType, ResolutionKind,
 };
+use deno_runtime::deno_fs::RealFs;
+use deno_runtime::deno_permissions::{Permissions, PermissionsContainer};
+use deno_runtime::deno_web::BlobStore;
+use deno_runtime::permissions::RuntimePermissionDescriptorParser;
+use deno_runtime::worker::{MainWorker, WorkerOptions, WorkerServiceOptions};
+use node_resolver::errors::{PackageFolderResolveError, PackageNotFoundError};
+use node_resolver::{InNpmPackageChecker, NpmPackageFolderResolver, UrlOrPathRef};
 use std::path::PathBuf;
+use std::rc::Rc;
+use std::sync::Arc;
 use url::Url;
+
+// ==============================================================================
+// Dummy implementations for npm-related traits (not used in this environment)
+// ==============================================================================
 
 /// A dummy InNpmPackageChecker that always returns false
 /// (indicating no specifier is inside an npm package).
@@ -72,7 +61,7 @@ impl NpmPackageFolderResolver for NoopNpmPackageFolderResolver {
         &self,
         specifier: &str,
         referrer: &UrlOrPathRef,
-    ) -> Result<PathBuf, PackageFolderResolveError> {
+    ) -> std::result::Result<PathBuf, PackageFolderResolveError> {
         Err(PackageNotFoundError {
             package_name: specifier.to_string(),
             referrer: referrer.display(),
@@ -82,62 +71,208 @@ impl NpmPackageFolderResolver for NoopNpmPackageFolderResolver {
     }
 }
 
-/// Build a dummy NodeResolver that doesn't support npm packages.
-/// This is useful for testing or when npm resolution is not needed.
-pub fn build_dummy_node_resolver<TSys>(
-    sys: TSys,
-) -> Arc<
-    NodeResolver<
-        NoopInNpmPackageChecker,
-        DenoIsBuiltInNodeModuleChecker,
-        NoopNpmPackageFolderResolver,
-        TSys,
-    >,
->
-where
-    TSys: NodeResolverSys + Clone + Send + Sync + 'static,
-{
-    // 1) In-npm package checker - always returns false
-    let in_npm_checker = NoopInNpmPackageChecker;
+/// A dummy ExtNodeSys implementation using the real filesystem.
+/// This is needed for MainWorker but we don't support Node.js features.
+pub type NoopExtNodeSys = sys_traits::impls::RealSys;
 
-    // 2) Built-in node module checker - use Deno's default implementation
-    let is_built_in_checker = DenoIsBuiltInNodeModuleChecker;
+// ==============================================================================
+// Dummy ModuleLoader that doesn't support ES module imports
+// ==============================================================================
 
-    // 3) Npm package folder resolver - returns errors for all npm requests
-    let npm_pkg_folder_resolver = NoopNpmPackageFolderResolver;
+/// A module loader that doesn't support loading any modules.
+/// Only inline script execution via `execute_script` is supported.
+struct NoopModuleLoader;
 
-    // 4) Package.json resolver
-    let pkg_json_resolver: PackageJsonResolverRc<TSys> =
-        Arc::new(PackageJsonResolver::new(sys.clone(), None));
+impl ModuleLoader for NoopModuleLoader {
+    fn resolve(
+        &self,
+        specifier: &str,
+        _referrer: &str,
+        _kind: ResolutionKind,
+    ) -> std::result::Result<ModuleSpecifier, JsErrorBox> {
+        // Return the specifier as-is if it's a valid URL
+        ModuleSpecifier::parse(specifier)
+            .map_err(|e| JsErrorBox::generic(format!("Module resolution not supported: {e}")))
+    }
 
-    // 5) Node resolution sys wrapper
-    let node_resolution_sys = NodeResolutionSys::new(sys, None);
-
-    // 6) Node resolver options - conservative defaults
-    let node_options = NodeResolverOptions::default();
-
-    // 7) Construct NodeResolver
-    let node_resolver = NodeResolver::new(
-        in_npm_checker,
-        is_built_in_checker,
-        npm_pkg_folder_resolver,
-        pkg_json_resolver,
-        node_resolution_sys,
-        node_options,
-    );
-
-    Arc::new(node_resolver)
+    fn load(
+        &self,
+        module_specifier: &ModuleSpecifier,
+        _maybe_referrer: Option<&deno_runtime::deno_core::ModuleLoadReferrer>,
+        _is_dyn_import: bool,
+        _requested_module_type: RequestedModuleType,
+    ) -> ModuleLoadResponse {
+        let specifier = module_specifier.clone();
+        ModuleLoadResponse::Sync(Err(JsErrorBox::generic(format!(
+            "Module loading not supported: {specifier}"
+        ))))
+    }
 }
 
-#[allow(dead_code)]
-async fn run() -> Result<()> {
-    let blob_store = BlobStore::default();
-    let _feature_checker = Arc::new(FeatureChecker::default());
-    // Use RealSys directly, not Arc<RealSys>, since NodeResolverSys is implemented for RealSys
-    let fs = sys_traits::impls::RealSys;
-    let _module_loader_factory = Box::new(NoopModuleLoaderFactory);
-    let _node_resolver = build_dummy_node_resolver(fs);
-    let _ = blob_store;
+// ==============================================================================
+// Main JavaScript execution environment
+// ==============================================================================
+
+/// Creates a MainWorker configured for simple JavaScript execution.
+///
+/// This worker has access to Deno's built-in APIs like:
+/// - `console.log`, `console.error`, etc.
+/// - `fetch` (for HTTP requests)
+/// - `Deno.readTextFile`, `Deno.writeTextFile` (filesystem operations)
+/// - `setTimeout`, `setInterval`
+/// - And other Deno runtime APIs
+///
+/// Note: ES module imports are NOT supported. Only inline script execution works.
+
+/// The runtime snapshot generated at build time.
+/// This contains the pre-compiled Deno runtime JavaScript/TypeScript code.
+static RUNTIME_SNAPSHOT: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/EXT_PLUGIN_SNAPSHOT.bin"));
+
+pub fn create_main_worker() -> Result<MainWorker> {
+    // Initialize rustls crypto provider for TLS/HTTPS support (required for fetch)
+    // Use ring as the crypto backend (ignore error if already installed)
+    let _ = deno_runtime::deno_tls::rustls::crypto::ring::default_provider().install_default();
+
+    // Create a dummy main module URL (required but not used for execute_script)
+    let main_module = ModuleSpecifier::parse("file:///main.js")?;
+
+    // Create services with minimal configuration
+    let services = WorkerServiceOptions::<
+        NoopInNpmPackageChecker,
+        NoopNpmPackageFolderResolver,
+        NoopExtNodeSys,
+    > {
+        blob_store: Arc::new(BlobStore::default()),
+        broadcast_channel: InMemoryBroadcastChannel::default(),
+        deno_rt_native_addon_loader: None,
+        feature_checker: Arc::new(FeatureChecker::default()),
+        fs: Arc::new(RealFs),
+        module_loader: Rc::new(NoopModuleLoader), // No module loading support
+        node_services: None,                      // No Node.js compatibility
+        npm_process_state_provider: None,
+        // Create permission descriptor parser and permissions container
+        permissions: PermissionsContainer::new(
+            Arc::new(RuntimePermissionDescriptorParser::new(
+                sys_traits::impls::RealSys,
+            )),
+            Permissions::allow_all(),
+        ),
+        root_cert_store_provider: None,
+        fetch_dns_resolver: Default::default(),
+        shared_array_buffer_store: None,
+        compiled_wasm_module_store: None,
+        v8_code_cache: None,
+        bundle_provider: None,
+    };
+
+    // Create worker options with the pre-generated snapshot
+    let mut options = WorkerOptions::default();
+    options.startup_snapshot = Some(RUNTIME_SNAPSHOT);
+
+    // Bootstrap the worker with the snapshot
+    let worker = MainWorker::bootstrap_from_options(&main_module, services, options);
+
+    Ok(worker)
+}
+
+/// Executes JavaScript code using Deno's MainWorker.
+///
+/// This provides access to Deno's built-in APIs like `console`, `fetch`,
+/// filesystem operations, etc.
+///
+/// # Arguments
+/// * `script` - The JavaScript code to execute
+///
+/// # Returns
+/// * `Ok(())` on successful execution
+/// * `Err(...)` if the script fails to execute
+///
+/// # Example
+/// ```rust,ignore
+/// let result = run_js("console.log('Hello from Deno!')").await;
+/// ```
+pub async fn run_js(script: &str) -> Result<()> {
+    let mut worker = create_main_worker()?;
+
+    // Execute the script
+    worker.execute_script("[ext_plugin]", script.to_string().into())?;
+
+    // Run the event loop to completion (handles async operations like fetch)
+    worker.run_event_loop(false).await?;
 
     Ok(())
+}
+
+/// Executes JavaScript code and returns the exit code.
+///
+/// Similar to `run_js` but also handles the full worker lifecycle including
+/// dispatching load/unload events.
+pub async fn run_js_with_events(script: &str) -> Result<i32> {
+    let mut worker = create_main_worker()?;
+
+    // Execute the script
+    worker.execute_script("[ext_plugin]", script.to_string().into())?;
+
+    // Dispatch load event
+    worker.dispatch_load_event()?;
+
+    // Run event loop
+    loop {
+        worker.run_event_loop(false).await?;
+
+        let web_continue = worker.dispatch_beforeunload_event()?;
+        if !web_continue {
+            break;
+        }
+    }
+
+    // Dispatch unload event
+    worker.dispatch_unload_event()?;
+
+    Ok(worker.exit_code())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_run_js_console_log() {
+        let result = run_js("console.log('Hello from Deno MainWorker!')").await;
+        assert!(result.is_ok(), "Should be able to run console.log");
+    }
+
+    #[tokio::test]
+    async fn test_run_js_simple_calculation() {
+        let result = run_js("const x = 1 + 1; console.log('1 + 1 =', x);").await;
+        assert!(result.is_ok(), "Should be able to run simple calculations");
+    }
+
+    #[tokio::test]
+    async fn test_run_js_with_events() {
+        let result = run_js_with_events("console.log('With events!')").await;
+        assert!(result.is_ok(), "Should be able to run with events");
+        assert_eq!(result.unwrap(), 0, "Exit code should be 0");
+    }
+
+    #[tokio::test]
+    async fn test_run_js_fetch() {
+        let result = run_js(
+            r#"
+            (async () => {
+                const response = await fetch('https://httpbin.org/get');
+                console.log('Fetch status:', response.status);
+                const data = await response.json();
+                console.log('Fetch origin:', data.origin);
+            })();
+            "#,
+        )
+        .await;
+        assert!(
+            result.is_ok(),
+            "Should be able to run fetch: {:?}",
+            result.err()
+        );
+    }
 }
