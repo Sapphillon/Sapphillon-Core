@@ -3150,6 +3150,7 @@ dependencies = [
  "deno_lib",
  "deno_resolver",
  "deno_runtime",
+ "deno_tls",
  "deno_web",
  "node_resolver",
  "once_cell",
