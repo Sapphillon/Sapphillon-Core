@@ -18,20 +18,36 @@
 //
 
 use anyhow::Result;
-use deno_runtime::FeatureChecker;
+use deno_runtime::{FeatureChecker, deno_permissions::PermissionsContainer};
 use deno_web::BlobStore;
 use std::sync::Arc;
-use deno_lib::worker::LibMainWorkerFactory;
+use deno_lib::worker::{CreateModuleLoaderResult, LibMainWorkerFactory, ModuleLoaderFactory};
 
+struct NoopModuleLoaderFactory;
+impl ModuleLoaderFactory for NoopModuleLoaderFactory {
+    fn create_for_main(&self, _root_permissions: PermissionsContainer) -> CreateModuleLoaderResult{
+        // TODO: implement a proper module loader
+        unimplemented!()
+    }
+    
+    fn create_for_worker(
+        &self,
+        _parent_permissions: PermissionsContainer,
+        _permissions: PermissionsContainer,
+      ) -> CreateModuleLoaderResult {
+        unimplemented!()
+    }
+}
 
 async fn run() -> Result<()> {
     let blob_store = BlobStore::default();
-    let code_cache = None;
-    let deno_rt_native_addon_loader = None;
     let feature_checker = Arc::new({
         let mut checker = FeatureChecker::default();
-        
     });
+    let fs = Arc::new(sys_traits::impls::RealSys);
+    let module_loader_factory = Box::new(NoopModuleLoaderFactory);
+    
+    
 
     Ok(())
 }
