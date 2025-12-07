@@ -109,6 +109,17 @@ impl ModuleLoader for NoopModuleLoader {
     }
 }
 
+/// A deferred value that is initialized later.
+struct Deferred<T>(once_cell::unsync::OnceCell<T>);
+impl<T> Default for Deferred<T> {
+    fn default() -> Self {
+        Self(once_cell::unsync::OnceCell::default())
+    }
+}
+
+/// Root Certificate Store Provider
+struct sap_root_cert_store_provider {}
+
 // ==============================================================================
 // Main JavaScript execution environment
 // ==============================================================================
