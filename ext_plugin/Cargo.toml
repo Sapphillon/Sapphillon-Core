@@ -12,3 +12,4 @@ deno_lib.workspace = true
 deno_web.workspace = true
 deno_resolver.workspace = true
 node_resolver.workspace = true
+url.workspace = true
