@@ -123,7 +123,6 @@ impl ModuleLoader for NoopModuleLoader {
 /// - And other Deno runtime APIs
 ///
 /// Note: ES module imports are NOT supported. Only inline script execution works.
-
 /// The runtime snapshot generated at build time.
 /// This contains the pre-compiled Deno runtime JavaScript/TypeScript code.
 static RUNTIME_SNAPSHOT: &[u8] =
@@ -181,36 +180,21 @@ pub fn create_main_worker() -> Result<MainWorker> {
 /// Executes JavaScript code using Deno's MainWorker.
 ///
 /// This provides access to Deno's built-in APIs like `console`, `fetch`,
-/// filesystem operations, etc.
+/// filesystem operations, etc. Handles the full worker lifecycle including
+/// dispatching load/beforeunload/unload events.
 ///
 /// # Arguments
 /// * `script` - The JavaScript code to execute
 ///
 /// # Returns
-/// * `Ok(())` on successful execution
+/// * `Ok(exit_code)` on successful execution
 /// * `Err(...)` if the script fails to execute
 ///
 /// # Example
 /// ```rust,ignore
-/// let result = run_js("console.log('Hello from Deno!')").await;
+/// let exit_code = run_js("console.log('Hello from Deno!')").await?;
 /// ```
-pub async fn run_js(script: &str) -> Result<()> {
-    let mut worker = create_main_worker()?;
-
-    // Execute the script
-    worker.execute_script("[ext_plugin]", script.to_string().into())?;
-
-    // Run the event loop to completion (handles async operations like fetch)
-    worker.run_event_loop(false).await?;
-
-    Ok(())
-}
-
-/// Executes JavaScript code and returns the exit code.
-///
-/// Similar to `run_js` but also handles the full worker lifecycle including
-/// dispatching load/unload events.
-pub async fn run_js_with_events(script: &str) -> Result<i32> {
+pub async fn run_js(script: &str) -> Result<i32> {
     let mut worker = create_main_worker()?;
 
     // Execute the script
@@ -243,18 +227,13 @@ mod tests {
     async fn test_run_js_console_log() {
         let result = run_js("console.log('Hello from Deno MainWorker!')").await;
         assert!(result.is_ok(), "Should be able to run console.log");
+        assert_eq!(result.unwrap(), 0, "Exit code should be 0");
     }
 
     #[tokio::test]
     async fn test_run_js_simple_calculation() {
         let result = run_js("const x = 1 + 1; console.log('1 + 1 =', x);").await;
         assert!(result.is_ok(), "Should be able to run simple calculations");
-    }
-
-    #[tokio::test]
-    async fn test_run_js_with_events() {
-        let result = run_js_with_events("console.log('With events!')").await;
-        assert!(result.is_ok(), "Should be able to run with events");
         assert_eq!(result.unwrap(), 0, "Exit code should be 0");
     }
 
