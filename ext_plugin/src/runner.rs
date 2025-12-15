@@ -69,21 +69,36 @@ pub async fn run_js(script: &str) -> Result<i32> {
 
 /// Executes a JavaScript function `(string) -> string` with the provided string argument.
 ///
-/// `function_source` must be a JavaScript expression that evaluates to a function.
-/// For example: `(s) => s.toUpperCase()`
+/// **What this does (high level)**
+/// 1. Boot a Deno `MainWorker` (with snapshot)
+/// 2. Evaluate `function_source` to obtain a JS function
+/// 3. Convert the function and argument into V8 handles (`v8::Global`)
+/// 4. Call the function from Rust; if it returns a Promise, drive the event loop until resolved
+/// 5. Convert the return value into a Rust `String`
+/// 6. Run Deno unload lifecycle hooks and return
+///
+/// **Input contract**
+/// - `function_source` must be a JavaScript *expression* that evaluates to a function.
+///   Examples:
+///   - `(s) => s.toUpperCase()`
+///   - `async (s) => { await new Promise(r => setTimeout(r, 10)); return s + "!"; }`
+/// - The function must return a string (or `String` object). Returning `null/undefined` is an error.
 pub async fn run_js_with_string_arg(function_source: &str, arg: &str) -> Result<String> {
     let mut worker = create_main_worker()?;
 
-    // Evaluate the function expression and get the resulting function value.
+    // 1) Evaluate the function expression. We wrap in parentheses so that arrow functions / function
+    // expressions parse as an expression (not a statement) and the evaluated result becomes the
+    // return value of `execute_script`.
     let function_value = worker.execute_script(
         "[ext_plugin]",
         format!("({function_source})").into(),
     )?;
 
-    // Dispatch load event (Deno lifecycle)
+    // 2) Dispatch the Deno "load" event. This mirrors `run_js` and lets runtime init hooks run.
     worker.dispatch_load_event()?;
 
-    // Convert evaluated value to a Function handle.
+    // 3) Convert the evaluated value into a `v8::Function` handle.
+    //    We promote locals to `v8::Global` so they remain valid outside this V8 scope.
     let function_global = {
         deno_runtime::deno_core::scope!(scope, &mut worker.js_runtime);
         v8::tc_scope!(tc_scope, scope);
@@ -97,7 +112,7 @@ pub async fn run_js_with_string_arg(function_source: &str, arg: &str) -> Result<
         v8::Global::new(tc_scope, local_fn)
     };
 
-    // Create the argument value.
+    // 4) Create the string argument as a V8 value and promote it to `v8::Global<v8::Value>`.
     let arg_global = {
         deno_runtime::deno_core::scope!(scope, &mut worker.js_runtime);
         v8::tc_scope!(tc_scope, scope);
@@ -107,7 +122,10 @@ pub async fn run_js_with_string_arg(function_source: &str, arg: &str) -> Result<
         v8::Global::<v8::Value>::new(tc_scope, arg_value)
     };
 
-    // Call the function and drive the event loop until it resolves (supports Promise return).
+    // 5) Call the function.
+    //    - If it returns a normal value, this completes quickly.
+    //    - If it returns a Promise (e.g. async function), we must drive Deno's event loop until
+    //      the Promise settles.
     let call_fut = worker
         .js_runtime
         .call_with_args(&function_global, &[arg_global]);
@@ -116,7 +134,7 @@ pub async fn run_js_with_string_arg(function_source: &str, arg: &str) -> Result<
         .with_event_loop_promise(Box::pin(call_fut), PollEventLoopOptions::default())
         .await?;
 
-    // Convert result to Rust String.
+    // 6) Convert the returned JS value to a Rust `String`.
     let result_string = {
         deno_runtime::deno_core::scope!(scope, &mut worker.js_runtime);
         v8::tc_scope!(tc_scope, scope);
@@ -134,7 +152,7 @@ pub async fn run_js_with_string_arg(function_source: &str, arg: &str) -> Result<
         v8_str.to_rust_string_lossy(tc_scope)
     };
 
-    // Drain and unload like `run_js`.
+    // 7) Drain pending tasks and run unload lifecycle hooks, like `run_js`.
     loop {
         worker.run_event_loop(false).await?;
         let web_continue = worker.dispatch_beforeunload_event()?;
