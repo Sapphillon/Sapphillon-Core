@@ -19,7 +19,7 @@
 
 //! JavaScript execution with Deno's MainWorker
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result, anyhow, bail};
 use deno_runtime::deno_core::PollEventLoopOptions;
 use deno_runtime::deno_core::v8;
 
@@ -89,10 +89,8 @@ pub async fn run_js_with_string_arg(function_source: &str, arg: &str) -> Result<
     // 1) Evaluate the function expression. We wrap in parentheses so that arrow functions / function
     // expressions parse as an expression (not a statement) and the evaluated result becomes the
     // return value of `execute_script`.
-    let function_value = worker.execute_script(
-        "[ext_plugin]",
-        format!("({function_source})").into(),
-    )?;
+    let function_value =
+        worker.execute_script("[ext_plugin]", format!("({function_source})").into())?;
 
     // 2) Dispatch the Deno "load" event. This mirrors `run_js` and lets runtime init hooks run.
     worker.dispatch_load_event()?;
@@ -185,16 +183,29 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_js_fetch() {
-        let result = run_js(
+        use httpmock::{Method::GET, MockServer};
+
+        let server = MockServer::start_async().await;
+        let _mock = server
+            .mock_async(|when, then| {
+                when.method(GET).path("/get");
+                then.status(200)
+                    .header("content-type", "application/json")
+                    .body(r#"{"origin":"127.0.0.1"}"#);
+            })
+            .await;
+
+        let url = format!("{}/get", server.base_url());
+        let result = run_js(&format!(
             r#"
-            (async () => {
-                const response = await fetch('https://httpbin.org/get');
+            (async () => {{
+                const response = await fetch('{url}');
                 console.log('Fetch status:', response.status);
                 const data = await response.json();
                 console.log('Fetch origin:', data.origin);
-            })();
-            "#,
-        )
+            }})();
+            "#
+        ))
         .await;
         assert!(
             result.is_ok(),
@@ -220,7 +231,11 @@ mod tests {
             "ok",
         )
         .await;
-        assert!(result.is_ok(), "Should resolve async function: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Should resolve async function: {:?}",
+            result.err()
+        );
         assert_eq!(result.unwrap(), "ok!");
     }
 }
