@@ -170,14 +170,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_js_console_log() {
-        let result = run_js("console.log('Hello from Deno MainWorker!')").await;
+        let result = run_js("console.log('Hello from Deno MainWorker!')", &None).await;
         assert!(result.is_ok(), "Should be able to run console.log");
         assert_eq!(result.unwrap(), 0, "Exit code should be 0");
     }
 
     #[tokio::test]
     async fn test_run_js_simple_calculation() {
-        let result = run_js("const x = 1 + 1; console.log('1 + 1 =', x);").await;
+        let result = run_js("const x = 1 + 1; console.log('1 + 1 =', x);", &None).await;
         assert!(result.is_ok(), "Should be able to run simple calculations");
         assert_eq!(result.unwrap(), 0, "Exit code should be 0");
     }
@@ -197,6 +197,16 @@ mod tests {
             .await;
 
         let url = format!("{}/get", server.base_url());
+        // Allow network access to the mock server for this test
+        let mut permissions = PermissionsOptions::default();
+        // Grant network access to the mock server (host:port). Strip scheme.
+        let host = server
+            .base_url()
+            .trim_start_matches("http://")
+            .trim_start_matches("https://")
+            .to_string();
+        permissions.allow_net = Some(vec![host]);
+
         let result = run_js(&format!(
             r#"
             (async () => {{
@@ -206,7 +216,7 @@ mod tests {
                 console.log('Fetch origin:', data.origin);
             }})();
             "#
-        ))
+        ), &Some(permissions))
         .await;
         assert!(
             result.is_ok(),
@@ -217,7 +227,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_js_with_string_arg_sync() {
-        let result = run_js_with_string_arg("(s) => s.toUpperCase()", "hello").await;
+        let result = run_js_with_string_arg("(s) => s.toUpperCase()", "hello", &None).await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "HELLO");
     }
@@ -230,6 +240,7 @@ mod tests {
                 return s + "!";
             }"#,
             "ok",
+            &None,
         )
         .await;
         assert!(
