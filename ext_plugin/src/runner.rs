@@ -19,12 +19,21 @@
 
 //! JavaScript execution with Deno's MainWorker
 
-use anyhow::{Result, anyhow, bail};
+use deno_error::JsErrorBox;
 use deno_permissions::PermissionsOptions;
 use deno_runtime::deno_core::PollEventLoopOptions;
 use deno_runtime::deno_core::v8;
 
 use crate::worker::create_main_worker;
+
+#[allow(non_camel_case_types)]
+pub type Js_Error = JsErrorBox;
+
+type JsResult<T> = std::result::Result<T, Js_Error>;
+
+fn to_js_error<E: std::fmt::Display>(err: E) -> Js_Error {
+    JsErrorBox::generic(err.to_string())
+}
 
 /// Executes JavaScript code using Deno's MainWorker.
 ///
@@ -43,27 +52,34 @@ use crate::worker::create_main_worker;
 /// ```rust,ignore
 /// let exit_code = run_js("console.log('Hello from Deno!')").await?;
 /// ```
-pub async fn run_js(script: &str, permissions_options: &Option<PermissionsOptions>) -> Result<i32> {
-    let mut worker = create_main_worker(permissions_options)?;
+pub async fn run_js(script: &str, permissions_options: &Option<PermissionsOptions>) -> JsResult<i32> {
+    let mut worker = create_main_worker(permissions_options).map_err(to_js_error)?;
 
     // Execute the script
-    worker.execute_script("[ext_plugin]", script.to_string().into())?;
+    worker
+        .execute_script("[ext_plugin]", script.to_string().into())
+        .map_err(to_js_error)?;
 
     // Dispatch load event
-    worker.dispatch_load_event()?;
+    worker.dispatch_load_event().map_err(to_js_error)?;
 
     // Run event loop
     loop {
-        worker.run_event_loop(false).await?;
+        worker
+            .run_event_loop(false)
+            .await
+            .map_err(to_js_error)?;
 
-        let web_continue = worker.dispatch_beforeunload_event()?;
+        let web_continue = worker
+            .dispatch_beforeunload_event()
+            .map_err(to_js_error)?;
         if !web_continue {
             break;
         }
     }
 
     // Dispatch unload event
-    worker.dispatch_unload_event()?;
+    worker.dispatch_unload_event().map_err(to_js_error)?;
 
     Ok(worker.exit_code())
 }
@@ -77,14 +93,16 @@ pub async fn run_js_with_string_arg(
     script: &str,
     arg: &str,
     permissions_options: &Option<PermissionsOptions>,
-) -> Result<String> {
-    let mut worker = create_main_worker(permissions_options)?;
+) -> JsResult<String> {
+    let mut worker = create_main_worker(permissions_options).map_err(to_js_error)?;
 
     // 1) Execute the script so it can define `globalThis.entrypoint`.
-    worker.execute_script("[ext_plugin]", script.to_string().into())?;
+    worker
+        .execute_script("[ext_plugin]", script.to_string().into())
+        .map_err(to_js_error)?;
 
     // 2) Dispatch the Deno "load" event. This mirrors `run_js` and lets runtime init hooks run.
-    worker.dispatch_load_event()?;
+    worker.dispatch_load_event().map_err(to_js_error)?;
 
     // 3) Resolve `globalThis.entrypoint` and convert it into a `v8::Function` handle.
     //    We promote locals to `v8::Global` so they remain valid outside this V8 scope.
@@ -95,18 +113,20 @@ pub async fn run_js_with_string_arg(
         let context = tc_scope.get_current_context();
         let global_obj = context.global(tc_scope);
         let key = v8::String::new(tc_scope, "entrypoint")
-            .ok_or_else(|| anyhow!("failed to allocate V8 string"))?;
+            .ok_or_else(|| JsErrorBox::generic("failed to allocate V8 string"))?;
         let local_value = global_obj
             .get(tc_scope, key.into())
-            .ok_or_else(|| anyhow!("failed to read globalThis.entrypoint"))?;
+            .ok_or_else(|| JsErrorBox::generic("failed to read globalThis.entrypoint"))?;
 
         if !local_value.is_function() {
-            bail!("globalThis.entrypoint is not a function");
+            return Err(JsErrorBox::generic(
+                "globalThis.entrypoint is not a function",
+            ));
         }
 
         let local_fn: v8::Local<v8::Function> = local_value
             .try_into()
-            .map_err(|_| anyhow!("failed to convert entrypoint to Function"))?;
+            .map_err(|_| JsErrorBox::generic("failed to convert entrypoint to Function"))?;
         v8::Global::new(tc_scope, local_fn)
     };
 
@@ -115,7 +135,7 @@ pub async fn run_js_with_string_arg(
         deno_runtime::deno_core::scope!(scope, &mut worker.js_runtime);
         v8::tc_scope!(tc_scope, scope);
         let v8_str = v8::String::new(tc_scope, arg)
-            .ok_or_else(|| anyhow!("failed to allocate V8 string"))?;
+            .ok_or_else(|| JsErrorBox::generic("failed to allocate V8 string"))?;
         let arg_value: v8::Local<v8::Value> = v8_str.into();
         v8::Global::<v8::Value>::new(tc_scope, arg_value)
     };
@@ -130,7 +150,8 @@ pub async fn run_js_with_string_arg(
     let result_value = worker
         .js_runtime
         .with_event_loop_promise(Box::pin(call_fut), PollEventLoopOptions::default())
-        .await?;
+        .await
+        .map_err(to_js_error)?;
 
     // 6) Convert the returned JS value to a Rust `String`.
     let result_string = {
@@ -138,37 +159,45 @@ pub async fn run_js_with_string_arg(
         v8::tc_scope!(tc_scope, scope);
         let local_value = v8::Local::new(tc_scope, result_value);
         if local_value.is_null_or_undefined() {
-            bail!("JS function returned null/undefined");
+            return Err(JsErrorBox::generic("JS function returned null/undefined"));
         }
         // Accept both primitive string and String object.
         if !(local_value.is_string() || local_value.is_string_object()) {
-            bail!("JS function returned a non-string value");
+            return Err(JsErrorBox::generic(
+                "JS function returned a non-string value",
+            ));
         }
         let v8_str = local_value
             .to_string(tc_scope)
-            .ok_or_else(|| anyhow!("failed to convert JS value to string"))?;
+            .ok_or_else(|| JsErrorBox::generic("failed to convert JS value to string"))?;
         v8_str.to_rust_string_lossy(tc_scope)
     };
 
     // 7) Drain pending tasks and run unload lifecycle hooks, like `run_js`.
     loop {
-        worker.run_event_loop(false).await?;
-        let web_continue = worker.dispatch_beforeunload_event()?;
+        worker
+            .run_event_loop(false)
+            .await
+            .map_err(to_js_error)?;
+        let web_continue = worker
+            .dispatch_beforeunload_event()
+            .map_err(to_js_error)?;
         if !web_continue {
             break;
         }
     }
-    worker.dispatch_unload_event()?;
+    worker.dispatch_unload_event().map_err(to_js_error)?;
 
     Ok(result_string)
 }
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use tempfile::tempdir;
 
-    fn assert_permission_denied(err: &anyhow::Error, expected: &[&str]) {
+    fn assert_permission_denied(err: &Js_Error, expected: &[&str]) {
         let msg = err.to_string().to_lowercase();
         // Deno commonly uses "PermissionDenied" or "NotCapable" errors.
         assert!(
@@ -238,8 +267,8 @@ mod tests {
         .await;
         assert!(
             result.is_ok(),
-            "Should be able to run fetch: {:?}",
-            result.err()
+            "Should be able to run fetch: {}",
+            result.err().map(|e| e.to_string()).unwrap_or_default()
         );
     }
 
