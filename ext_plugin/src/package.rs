@@ -23,44 +23,44 @@ use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
 pub struct SapphillonPackage {
-    meta: Meta,
-    functions: HashMap<String, FunctionSchema>,
+    pub meta: Meta,
+    pub functions: HashMap<String, FunctionSchema>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Meta {
-    name: String,
-    version: String,
-    description: String,
-    package_id: String,
+    pub name: String,
+    pub version: String,
+    pub description: String,
+    pub package_id: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct FunctionSchema {
-    permissions: Vec<Permission>,
-    description: String,
-    parameters: Vec<Parameter>,
-    returns: Vec<ReturnInfo>,
+    pub permissions: Vec<Permission>,
+    pub description: String,
+    pub parameters: Vec<Parameter>,
+    pub returns: Vec<ReturnInfo>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Permission {
     #[serde(rename = "type")]
-    perm_type: String,
-    resource: String,
+    pub perm_type: String,
+    pub resource: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Parameter {
-    name: String,
+    pub name: String,
     #[serde(rename = "type")]
-    param_type: String,
-    description: String,
+    pub param_type: String,
+    pub description: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ReturnInfo {
     #[serde(rename = "type")]
-    return_type: String,
-    description: String,
+    pub return_type: String,
+    pub description: String,
 }
