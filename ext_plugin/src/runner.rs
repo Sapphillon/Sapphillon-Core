@@ -22,6 +22,7 @@
 use anyhow::{Result, anyhow, bail};
 use deno_runtime::deno_core::PollEventLoopOptions;
 use deno_runtime::deno_core::v8;
+use deno_permissions::PermissionsOptions;
 
 use crate::worker::create_main_worker;
 
@@ -42,8 +43,8 @@ use crate::worker::create_main_worker;
 /// ```rust,ignore
 /// let exit_code = run_js("console.log('Hello from Deno!')").await?;
 /// ```
-pub async fn run_js(script: &str) -> Result<i32> {
-    let mut worker = create_main_worker()?;
+pub async fn run_js(script: &str, permissions_options: &Option<PermissionsOptions>) -> Result<i32> {
+    let mut worker = create_main_worker(permissions_options)?;
 
     // Execute the script
     worker.execute_script("[ext_plugin]", script.to_string().into())?;
@@ -83,8 +84,8 @@ pub async fn run_js(script: &str) -> Result<i32> {
 ///   - `(s) => s.toUpperCase()`
 ///   - `async (s) => { await new Promise(r => setTimeout(r, 10)); return s + "!"; }`
 /// - The function must return a string (or `String` object). Returning `null/undefined` is an error.
-pub async fn run_js_with_string_arg(function_source: &str, arg: &str) -> Result<String> {
-    let mut worker = create_main_worker()?;
+pub async fn run_js_with_string_arg(function_source: &str, arg: &str, permissions_options: &Option<PermissionsOptions>) -> Result<String> {
+    let mut worker = create_main_worker(permissions_options)?;
 
     // 1) Evaluate the function expression. We wrap in parentheses so that arrow functions / function
     // expressions parse as an expression (not a statement) and the evaluated result becomes the
