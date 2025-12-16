@@ -16,7 +16,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! Parse Package Infomation
+//! Parse package information from a JavaScript package script.
+//!
+//! The package script is expected to populate `Sapphillon.Package` on the JS
+//! global object. This module executes the script in a `deno_core::JsRuntime`
+//! and deserializes the resulting object into `SapphillonPackage`.
 
 use anyhow::Result;
 use crate::package::SapphillonPackage;
@@ -26,6 +30,11 @@ use deno_core::{
 use deno_core::scope;
 
 
+/// Execute a package script and deserialize `Sapphillon.Package`.
+///
+/// # Expected input
+/// The provided `package_script` must set `Sapphillon.Package` to a plain JS
+/// object compatible with the `SapphillonPackage` schema.
 pub async fn parse_package_info(package_script: &str) -> Result<SapphillonPackage> {
     let package_script = format!("{package_script}\nSapphillon.Package;");
 
@@ -51,7 +60,7 @@ mod tests {
         let meta = Meta {
             name: "math-plugin".to_string(),
             version: "1.0.0".to_string(),
-            description: "".to_string(),
+            description: "desc".to_string(),
             package_id: "com.example".to_string(),
         };
 
@@ -120,6 +129,7 @@ mod tests {
             .await
             .expect("parse_package_info should succeed");
         let expected = expected_test_package();
+        println!("{expected}");
         assert_eq!(actual, expected);
     }
 }

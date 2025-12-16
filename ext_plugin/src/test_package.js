@@ -30,7 +30,7 @@ Sapphillon.Package =  {
   meta: {
     name: "math-plugin",
     version: "1.0.0",
-    description: "",
+    description: "desc",
     package_id: "com.example"
   },
   // Schema information generated from JSDoc
