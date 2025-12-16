@@ -18,3 +18,23 @@
 
 //! Parse Package Infomation
 
+use anyhow::Result;
+use crate::package::SapphillonPackage;
+use deno_core::{
+    v8, JsRuntime, RuntimeOptions, serde_v8
+};
+use deno_core::scope;
+
+
+pub async fn parse_package_info(package_script: &str) -> Result<SapphillonPackage> {
+    let package_script = format!("{package_script}\nSapphillon.Package;");
+
+    let mut runtime = JsRuntime::new(RuntimeOptions::default());
+    let output = runtime.execute_script("<init>", package_script)?;
+
+    // Use the runtime's handle scope (returns a pinned HandleScope reference)
+    scope!(scope, &mut runtime);
+    let local = v8::Local::new(scope, output);
+    let package: SapphillonPackage = serde_v8::from_v8(scope, local)?;
+    Ok(package)
+}

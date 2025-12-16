@@ -20,10 +20,9 @@
 
 use serde::Deserialize;
 use std::collections::HashMap;
-use deno_core::serde_v8;
 
 #[derive(Debug, Deserialize)]
-pub struct Package {
+pub struct SapphillonPackage {
     meta: Meta,
     functions: HashMap<String, FunctionSchema>,
 }
