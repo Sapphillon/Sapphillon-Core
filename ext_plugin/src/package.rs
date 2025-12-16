@@ -163,7 +163,11 @@ impl fmt::Display for Permission {
 
 impl fmt::Display for Parameter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{} ({})", self.name, self.param_type, self.description)
+        write!(
+            f,
+            "{}:{} ({})",
+            self.name, self.param_type, self.description
+        )
     }
 }
 

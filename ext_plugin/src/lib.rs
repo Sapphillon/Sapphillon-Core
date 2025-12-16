@@ -19,9 +19,9 @@
 mod cert_store;
 mod module_loader;
 mod npm;
+mod package;
+mod parse_package;
 mod permissions;
 mod worker;
-mod parse_package;
-mod package;
 
 pub mod runner;

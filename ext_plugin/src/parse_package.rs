@@ -22,19 +22,17 @@
 //! global object. This module executes the script in a `deno_core::JsRuntime`
 //! and deserializes the resulting object into `SapphillonPackage`.
 
-use anyhow::Result;
 use crate::package::SapphillonPackage;
-use deno_core::{
-    v8, JsRuntime, RuntimeOptions, serde_v8
-};
+use anyhow::Result;
 use deno_core::scope;
-
+use deno_core::{JsRuntime, RuntimeOptions, serde_v8, v8};
 
 /// Execute a package script and deserialize `Sapphillon.Package`.
 ///
 /// # Expected input
 /// The provided `package_script` must set `Sapphillon.Package` to a plain JS
 /// object compatible with the `SapphillonPackage` schema.
+#[allow(dead_code)]
 pub async fn parse_package_info(package_script: &str) -> Result<SapphillonPackage> {
     let package_script = format!("{package_script}\nSapphillon.Package;");
 
@@ -122,9 +120,8 @@ mod tests {
     #[tokio::test]
     async fn parse_package_info_parses_test_package_js() {
         let fixture = include_str!("test_package.js");
-        let package_script = format!(
-            "globalThis.Sapphillon = globalThis.Sapphillon || {{}};\n{fixture}",
-        );
+        let package_script =
+            format!("globalThis.Sapphillon = globalThis.Sapphillon || {{}};\n{fixture}",);
         let actual = parse_package_info(&package_script)
             .await
             .expect("parse_package_info should succeed");
