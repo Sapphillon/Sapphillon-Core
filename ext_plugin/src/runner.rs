@@ -280,10 +280,7 @@ mod tests {
         let file_path = file_path.to_string_lossy();
 
         let result = run_js(
-            &format!(
-                r#"Deno.readTextFileSync({:?});"#,
-                file_path.as_ref()
-            ),
+            &format!(r#"Deno.readTextFileSync({:?});"#, file_path.as_ref()),
             &None,
         )
         .await;
@@ -312,7 +309,11 @@ mod tests {
         )
         .await;
 
-        assert!(result.is_ok(), "fs read should be allowed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "fs read should be allowed: {:?}",
+            result.err()
+        );
         assert_eq!(result.unwrap(), 0);
     }
 
@@ -323,7 +324,10 @@ mod tests {
         let file_path = file_path.to_string_lossy();
 
         let result = run_js(
-            &format!(r#"Deno.writeTextFileSync({:?}, 'nope');"#, file_path.as_ref()),
+            &format!(
+                r#"Deno.writeTextFileSync({:?}, 'nope');"#,
+                file_path.as_ref()
+            ),
             &None,
         )
         .await;
@@ -350,7 +354,11 @@ mod tests {
         )
         .await;
 
-        assert!(result.is_ok(), "fs write should be allowed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "fs write should be allowed: {:?}",
+            result.err()
+        );
         assert_eq!(result.unwrap(), 0);
         assert_eq!(std::fs::read_to_string(&file_path).unwrap(), "ok");
     }
@@ -401,7 +409,11 @@ mod tests {
         )
         .await;
 
-        assert!(result.is_ok(), "env access should be allowed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "env access should be allowed: {:?}",
+            result.err()
+        );
         assert_eq!(result.unwrap(), 0);
     }
 
