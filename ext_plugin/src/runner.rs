@@ -20,9 +20,9 @@
 //! JavaScript execution with Deno's MainWorker
 
 use anyhow::{Result, anyhow, bail};
+use deno_permissions::PermissionsOptions;
 use deno_runtime::deno_core::PollEventLoopOptions;
 use deno_runtime::deno_core::v8;
-use deno_permissions::PermissionsOptions;
 
 use crate::worker::create_main_worker;
 
@@ -68,46 +68,45 @@ pub async fn run_js(script: &str, permissions_options: &Option<PermissionsOption
     Ok(worker.exit_code())
 }
 
-/// Executes a JavaScript function `(string) -> string` with the provided string argument.
+/// Executes JavaScript code that defines `entrypoint` and then calls `entrypoint(string) -> string`.
 ///
-/// **What this does (high level)**
-/// 1. Boot a Deno `MainWorker` (with snapshot)
-/// 2. Evaluate `function_source` to obtain a JS function
-/// 3. Convert the function and argument into V8 handles (`v8::Global`)
-/// 4. Call the function from Rust; if it returns a Promise, drive the event loop until resolved
-/// 5. Convert the return value into a Rust `String`
-/// 6. Run Deno unload lifecycle hooks and return
-///
-/// **Input contract**
-/// - `function_source` must be a JavaScript *expression* that evaluates to a function.
-///   Examples:
-///   - `(s) => s.toUpperCase()`
-///   - `async (s) => { await new Promise(r => setTimeout(r, 10)); return s + "!"; }`
-/// - The function must return a string (or `String` object). Returning `null/undefined` is an error.
-pub async fn run_js_with_string_arg(function_source: &str, arg: &str, permissions_options: &Option<PermissionsOptions>) -> Result<String> {
+/// `script` must define `globalThis.entrypoint` (or a global `function entrypoint(...) {}`)
+/// that returns a string (or `String` object). If it returns a Promise, the worker event loop
+/// is driven until the Promise resolves.
+pub async fn run_js_with_string_arg(
+    script: &str,
+    arg: &str,
+    permissions_options: &Option<PermissionsOptions>,
+) -> Result<String> {
     let mut worker = create_main_worker(permissions_options)?;
 
-    // 1) Evaluate the function expression. We wrap in parentheses so that arrow functions / function
-    // expressions parse as an expression (not a statement) and the evaluated result becomes the
-    // return value of `execute_script`.
-    let function_value =
-        worker.execute_script("[ext_plugin]", format!("({function_source})").into())?;
+    // 1) Execute the script so it can define `globalThis.entrypoint`.
+    worker.execute_script("[ext_plugin]", script.to_string().into())?;
 
     // 2) Dispatch the Deno "load" event. This mirrors `run_js` and lets runtime init hooks run.
     worker.dispatch_load_event()?;
 
-    // 3) Convert the evaluated value into a `v8::Function` handle.
+    // 3) Resolve `globalThis.entrypoint` and convert it into a `v8::Function` handle.
     //    We promote locals to `v8::Global` so they remain valid outside this V8 scope.
     let function_global = {
         deno_runtime::deno_core::scope!(scope, &mut worker.js_runtime);
         v8::tc_scope!(tc_scope, scope);
-        let local_value = v8::Local::new(tc_scope, function_value);
+
+        let context = tc_scope.get_current_context();
+        let global_obj = context.global(tc_scope);
+        let key = v8::String::new(tc_scope, "entrypoint")
+            .ok_or_else(|| anyhow!("failed to allocate V8 string"))?;
+        let local_value = global_obj
+            .get(tc_scope, key.into())
+            .ok_or_else(|| anyhow!("failed to read globalThis.entrypoint"))?;
+
         if !local_value.is_function() {
-            bail!("function_source did not evaluate to a function");
+            bail!("globalThis.entrypoint is not a function");
         }
+
         let local_fn: v8::Local<v8::Function> = local_value
             .try_into()
-            .map_err(|_| anyhow!("failed to convert JS value to Function"))?;
+            .map_err(|_| anyhow!("failed to convert entrypoint to Function"))?;
         v8::Global::new(tc_scope, local_fn)
     };
 
@@ -207,8 +206,9 @@ mod tests {
             .to_string();
         permissions.allow_net = Some(vec![host]);
 
-        let result = run_js(&format!(
-            r#"
+        let result = run_js(
+            &format!(
+                r#"
             (async () => {{
                 const response = await fetch('{url}');
                 console.log('Fetch status:', response.status);
@@ -216,7 +216,9 @@ mod tests {
                 console.log('Fetch origin:', data.origin);
             }})();
             "#
-        ), &Some(permissions))
+            ),
+            &Some(permissions),
+        )
         .await;
         assert!(
             result.is_ok(),
@@ -227,22 +229,25 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_js_with_string_arg_sync() {
-        let result = run_js_with_string_arg("(s) => s.toUpperCase()", "hello", &None).await;
+        let script = r#"
+            function entrypoint(s) {
+                return s.toUpperCase();
+            }
+        "#;
+        let result = run_js_with_string_arg(script, "hello", &None).await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "HELLO");
     }
 
     #[tokio::test]
     async fn test_run_js_with_string_arg_async() {
-        let result = run_js_with_string_arg(
-            r#"async (s) => {
+        let script = r#"
+            globalThis.entrypoint = async (s) => {
                 await new Promise((r) => setTimeout(r, 10));
                 return s + "!";
-            }"#,
-            "ok",
-            &None,
-        )
-        .await;
+            };
+        "#;
+        let result = run_js_with_string_arg(script, "ok", &None).await;
         assert!(
             result.is_ok(),
             "Should resolve async function: {:?}",

@@ -20,6 +20,7 @@
 //! Main JavaScript execution environment - MainWorker creation
 
 use anyhow::Result;
+use deno_permissions::PermissionsOptions;
 use deno_runtime::FeatureChecker;
 use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
 use deno_runtime::deno_core::ModuleSpecifier;
@@ -27,7 +28,6 @@ use deno_runtime::deno_fs::RealFs;
 use deno_runtime::deno_permissions::PermissionsContainer;
 use deno_runtime::deno_web::BlobStore;
 use deno_runtime::worker::{MainWorker, WorkerOptions, WorkerServiceOptions};
-use deno_permissions::PermissionsOptions;
 use deno_tls::RootCertStoreProvider;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -78,7 +78,7 @@ pub fn create_main_worker(permissions_options: &Option<PermissionsOptions>) -> R
         // Create permission descriptor parser and permissions container
         permissions: PermissionsContainer::new(
             crate::permissions::create_descriptor_parser(),
-            crate::permissions::create_permissions(permissions_options)?
+            crate::permissions::create_permissions(permissions_options)?,
         ),
         root_cert_store_provider: Some(root_cert_store_provider as Arc<dyn RootCertStoreProvider>),
         fetch_dns_resolver: Default::default(),
