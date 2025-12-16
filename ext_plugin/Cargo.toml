@@ -19,6 +19,7 @@ once_cell.workspace = true
 deno_tls.workspace = true
 deno_permissions.workspace = true
 sapphillon_core = { path = ".." }
+serde = "1.0.228"
 
 [build-dependencies]
 deno_runtime.workspace = true
