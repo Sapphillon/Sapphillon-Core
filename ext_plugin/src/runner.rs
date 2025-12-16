@@ -52,7 +52,10 @@ fn to_js_error<E: std::fmt::Display>(err: E) -> Js_Error {
 /// ```rust,ignore
 /// let exit_code = run_js("console.log('Hello from Deno!')").await?;
 /// ```
-pub async fn run_js(script: &str, permissions_options: &Option<PermissionsOptions>) -> JsResult<i32> {
+pub async fn run_js(
+    script: &str,
+    permissions_options: &Option<PermissionsOptions>,
+) -> JsResult<i32> {
     let mut worker = create_main_worker(permissions_options).map_err(to_js_error)?;
 
     // Execute the script
@@ -65,14 +68,9 @@ pub async fn run_js(script: &str, permissions_options: &Option<PermissionsOption
 
     // Run event loop
     loop {
-        worker
-            .run_event_loop(false)
-            .await
-            .map_err(to_js_error)?;
+        worker.run_event_loop(false).await.map_err(to_js_error)?;
 
-        let web_continue = worker
-            .dispatch_beforeunload_event()
-            .map_err(to_js_error)?;
+        let web_continue = worker.dispatch_beforeunload_event().map_err(to_js_error)?;
         if !web_continue {
             break;
         }
@@ -175,13 +173,8 @@ pub async fn run_js_with_string_arg(
 
     // 7) Drain pending tasks and run unload lifecycle hooks, like `run_js`.
     loop {
-        worker
-            .run_event_loop(false)
-            .await
-            .map_err(to_js_error)?;
-        let web_continue = worker
-            .dispatch_beforeunload_event()
-            .map_err(to_js_error)?;
+        worker.run_event_loop(false).await.map_err(to_js_error)?;
+        let web_continue = worker.dispatch_beforeunload_event().map_err(to_js_error)?;
         if !web_continue {
             break;
         }
@@ -190,7 +183,6 @@ pub async fn run_js_with_string_arg(
 
     Ok(result_string)
 }
-
 
 #[cfg(test)]
 mod tests {
