@@ -38,3 +38,88 @@ pub async fn parse_package_info(package_script: &str) -> Result<SapphillonPackag
     let package: SapphillonPackage = serde_v8::from_v8(scope, local)?;
     Ok(package)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::parse_package_info;
+    use crate::package::{
+        FunctionSchema, Meta, Parameter, Permission, ReturnInfo, SapphillonPackage,
+    };
+    use std::collections::HashMap;
+
+    fn expected_test_package() -> SapphillonPackage {
+        let meta = Meta {
+            name: "math-plugin".to_string(),
+            version: "1.0.0".to_string(),
+            description: "".to_string(),
+            package_id: "com.example".to_string(),
+        };
+
+        let add = FunctionSchema {
+            permissions: vec![Permission {
+                perm_type: "FileSystemRead".to_string(),
+                resource: "/etc".to_string(),
+            }],
+            description: "Adds two numbers.".to_string(),
+            parameters: vec![
+                Parameter {
+                    name: "a".to_string(),
+                    param_type: "number".to_string(),
+                    description: "The number to be added to".to_string(),
+                },
+                Parameter {
+                    name: "b".to_string(),
+                    param_type: "number".to_string(),
+                    description: "The number to add".to_string(),
+                },
+            ],
+            returns: vec![ReturnInfo {
+                return_type: "number".to_string(),
+                description: "The sum".to_string(),
+            }],
+        };
+
+        let mul = FunctionSchema {
+            permissions: vec![Permission {
+                perm_type: "FileSystemRead".to_string(),
+                resource: "/etc".to_string(),
+            }],
+            description: "Multiplies two numbers.".to_string(),
+            parameters: vec![
+                Parameter {
+                    name: "a".to_string(),
+                    param_type: "number".to_string(),
+                    description: "The first factor".to_string(),
+                },
+                Parameter {
+                    name: "b".to_string(),
+                    param_type: "number".to_string(),
+                    description: "The second factor".to_string(),
+                },
+            ],
+            returns: vec![ReturnInfo {
+                return_type: "number".to_string(),
+                description: "The product".to_string(),
+            }],
+        };
+
+        let mut functions = HashMap::new();
+        functions.insert("add".to_string(), add);
+        functions.insert("mul".to_string(), mul);
+
+        SapphillonPackage { meta, functions }
+    }
+
+    #[tokio::test]
+    async fn parse_package_info_parses_test_package_js() {
+        let fixture = include_str!("test_package.js");
+        let package_script = format!(
+            "globalThis.Sapphillon = globalThis.Sapphillon || {{}};\n{fixture}",
+        );
+        let actual = parse_package_info(&package_script)
+            .await
+            .expect("parse_package_info should succeed");
+        let expected = expected_test_package();
+        assert_eq!(actual, expected);
+    }
+}

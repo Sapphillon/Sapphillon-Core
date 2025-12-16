@@ -21,13 +21,13 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct SapphillonPackage {
     pub meta: Meta,
     pub functions: HashMap<String, FunctionSchema>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct Meta {
     pub name: String,
     pub version: String,
@@ -35,7 +35,7 @@ pub struct Meta {
     pub package_id: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct FunctionSchema {
     pub permissions: Vec<Permission>,
     pub description: String,
@@ -43,14 +43,14 @@ pub struct FunctionSchema {
     pub returns: Vec<ReturnInfo>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct Permission {
     #[serde(rename = "type")]
     pub perm_type: String,
     pub resource: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct Parameter {
     pub name: String,
     #[serde(rename = "type")]
@@ -58,7 +58,7 @@ pub struct Parameter {
     pub description: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct ReturnInfo {
     #[serde(rename = "type")]
     pub return_type: String,
