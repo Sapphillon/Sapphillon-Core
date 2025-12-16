@@ -50,6 +50,6 @@ impl RootCertStoreProvider for SapphillonRootCertStoreProvider {
     fn get_or_try_init(&self) -> Result<&RootCertStore, JsErrorBox> {
         self.cell
             .get_or_try_init(|| get_root_cert_store(None, None, None))
-            .map_err(JsErrorBox::from_err)
+            .map_err(|e| JsErrorBox::generic(e.to_string()))
     }
 }
