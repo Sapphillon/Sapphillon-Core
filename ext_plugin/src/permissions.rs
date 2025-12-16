@@ -20,6 +20,8 @@
 
 use deno_runtime::permissions::RuntimePermissionDescriptorParser;
 use std::sync::Arc;
+use deno_permissions::{Permissions, PermissionsOptions};
+use anyhow::Result;
 
 pub(crate) fn create_descriptor_parser()
 -> Arc<RuntimePermissionDescriptorParser<sys_traits::impls::RealSys>> {
@@ -28,3 +30,8 @@ pub(crate) fn create_descriptor_parser()
     >::new(sys_traits::impls::RealSys))
 }
 
+#[allow(dead_code)]
+pub(crate) fn create_permissions(permissions_options: &Option<PermissionsOptions>) -> Result<Permissions> {
+    let parser = create_descriptor_parser();
+    Ok(Permissions::from_options(&*parser, &permissions_options.clone().unwrap_or_default())?)
+}
