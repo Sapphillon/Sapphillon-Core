@@ -24,9 +24,10 @@ use deno_runtime::FeatureChecker;
 use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
 use deno_runtime::deno_core::ModuleSpecifier;
 use deno_runtime::deno_fs::RealFs;
-use deno_runtime::deno_permissions::{Permissions, PermissionsContainer};
+use deno_runtime::deno_permissions::PermissionsContainer;
 use deno_runtime::deno_web::BlobStore;
 use deno_runtime::worker::{MainWorker, WorkerOptions, WorkerServiceOptions};
+use deno_permissions::PermissionsOptions;
 use deno_tls::RootCertStoreProvider;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -50,7 +51,7 @@ static RUNTIME_SNAPSHOT: &[u8] =
 /// - And other Deno runtime APIs
 ///
 /// Note: ES module imports are NOT supported. Only inline script execution works.
-pub fn create_main_worker() -> Result<MainWorker> {
+pub fn create_main_worker(permissions_options: &Option<PermissionsOptions>) -> Result<MainWorker> {
     // Initialize rustls crypto provider for TLS/HTTPS support (required for fetch)
     // Use ring as the crypto backend (ignore error if already installed)
     let _ = deno_runtime::deno_tls::rustls::crypto::ring::default_provider().install_default();
@@ -77,7 +78,7 @@ pub fn create_main_worker() -> Result<MainWorker> {
         // Create permission descriptor parser and permissions container
         permissions: PermissionsContainer::new(
             crate::permissions::create_descriptor_parser(),
-            Permissions::allow_all(),
+            crate::permissions::create_permissions(permissions_options)?
         ),
         root_cert_store_provider: Some(root_cert_store_provider as Arc<dyn RootCertStoreProvider>),
         fetch_dns_resolver: Default::default(),
