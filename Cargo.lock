@@ -3457,6 +3457,7 @@ dependencies = [
  "node_resolver",
  "once_cell",
  "sys_traits",
+ "tempfile",
  "tokio",
  "url",
 ]

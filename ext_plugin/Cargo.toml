@@ -24,3 +24,4 @@ deno_runtime.workspace = true
 
 [dev-dependencies]
 httpmock = "0.7"
+tempfile = "3"

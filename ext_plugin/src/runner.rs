@@ -166,6 +166,22 @@ pub async fn run_js_with_string_arg(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
+
+    fn assert_permission_denied(err: &anyhow::Error, expected: &[&str]) {
+        let msg = err.to_string().to_lowercase();
+        // Deno commonly uses "PermissionDenied" or "NotCapable" errors.
+        assert!(
+            msg.contains("permission") || msg.contains("notcapable"),
+            "expected permission-related error, got: {msg}"
+        );
+        for needle in expected {
+            assert!(
+                msg.contains(&needle.to_lowercase()),
+                "expected error to contain '{needle}', got: {msg}"
+            );
+        }
+    }
 
     #[tokio::test]
     async fn test_run_js_console_log() {
@@ -254,5 +270,175 @@ mod tests {
             result.err()
         );
         assert_eq!(result.unwrap(), "ok!");
+    }
+
+    #[tokio::test]
+    async fn test_permissions_fs_read_denied_by_default() {
+        let dir = tempdir().expect("create temp dir");
+        let file_path = dir.path().join("readme.txt");
+        std::fs::write(&file_path, "secret").expect("write temp file");
+        let file_path = file_path.to_string_lossy();
+
+        let result = run_js(
+            &format!(
+                r#"Deno.readTextFileSync({:?});"#,
+                file_path.as_ref()
+            ),
+            &None,
+        )
+        .await;
+
+        let err = result.expect_err("fs read should be denied without allow_read");
+        assert_permission_denied(&err, &["read"]);
+    }
+
+    #[tokio::test]
+    async fn test_permissions_fs_read_allowed_for_specific_path() {
+        let dir = tempdir().expect("create temp dir");
+        let file_path = dir.path().join("allowed.txt");
+        std::fs::write(&file_path, "ok").expect("write temp file");
+        let file_path_str = file_path.to_string_lossy().to_string();
+
+        let permissions = PermissionsOptions {
+            allow_read: Some(vec![file_path_str.clone()]),
+            ..Default::default()
+        };
+
+        let result = run_js(
+            &format!(
+                r#"const s = Deno.readTextFileSync({file_path_str:?}); if (s.trim() !== 'ok') throw new Error('unexpected');"#,
+            ),
+            &Some(permissions),
+        )
+        .await;
+
+        assert!(result.is_ok(), "fs read should be allowed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_permissions_fs_write_denied_by_default() {
+        let dir = tempdir().expect("create temp dir");
+        let file_path = dir.path().join("out.txt");
+        let file_path = file_path.to_string_lossy();
+
+        let result = run_js(
+            &format!(r#"Deno.writeTextFileSync({:?}, 'nope');"#, file_path.as_ref()),
+            &None,
+        )
+        .await;
+
+        let err = result.expect_err("fs write should be denied without allow_write");
+        assert_permission_denied(&err, &["write"]);
+    }
+
+    #[tokio::test]
+    async fn test_permissions_fs_write_allowed_for_directory() {
+        let dir = tempdir().expect("create temp dir");
+        let dir_str = dir.path().to_string_lossy().to_string();
+        let file_path = dir.path().join("out.txt");
+        let file_path_str = file_path.to_string_lossy().to_string();
+
+        let permissions = PermissionsOptions {
+            allow_write: Some(vec![dir_str]),
+            ..Default::default()
+        };
+
+        let result = run_js(
+            &format!(r#"Deno.writeTextFileSync({file_path_str:?}, 'ok');"#),
+            &Some(permissions),
+        )
+        .await;
+
+        assert!(result.is_ok(), "fs write should be allowed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+        assert_eq!(std::fs::read_to_string(&file_path).unwrap(), "ok");
+    }
+
+    #[tokio::test]
+    async fn test_permissions_net_denied_by_default() {
+        use httpmock::{Method::GET, MockServer};
+
+        let server = MockServer::start_async().await;
+        let _mock = server
+            .mock_async(|when, then| {
+                when.method(GET).path("/get");
+                then.status(200)
+                    .header("content-type", "application/json")
+                    .body(r#"{"ok":true}"#);
+            })
+            .await;
+
+        let url = format!("{}/get", server.base_url());
+        let result = run_js(
+            &format!(r#"(async () => {{ await fetch({url:?}); }})();"#),
+            &None,
+        )
+        .await;
+
+        let err = result.expect_err("fetch should be denied without allow_net");
+        assert_permission_denied(&err, &["net"]);
+    }
+
+    #[tokio::test]
+    async fn test_permissions_env_denied_by_default() {
+        // Use a commonly present variable to avoid relying on test-time env mutation.
+        let result = run_js("Deno.env.get('PATH');", &None).await;
+        let err = result.expect_err("env access should be denied without allow_env");
+        assert_permission_denied(&err, &["env"]);
+    }
+
+    #[tokio::test]
+    async fn test_permissions_env_allowed_for_specific_var() {
+        let permissions = PermissionsOptions {
+            allow_env: Some(vec!["PATH".to_string()]),
+            ..Default::default()
+        };
+
+        let result = run_js(
+            "const v = Deno.env.get('PATH'); if (typeof v !== 'string' || v.length === 0) throw new Error('unexpected');",
+            &Some(permissions),
+        )
+        .await;
+
+        assert!(result.is_ok(), "env access should be allowed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_permissions_run_denied_by_default() {
+        let result = run_js(
+            r#"
+                const cmd = new Deno.Command('/bin/sh', { args: ['-c', 'echo ok'], clearEnv: true });
+                cmd.outputSync();
+            "#,
+            &None,
+        )
+        .await;
+
+        let err = result.expect_err("run should be denied without allow_run");
+        assert_permission_denied(&err, &["run"]);
+    }
+
+    #[tokio::test]
+    async fn test_permissions_run_allowed_for_command() {
+        let permissions = PermissionsOptions {
+            allow_run: Some(vec!["/bin/sh".to_string()]),
+            ..Default::default()
+        };
+
+        let result = run_js(
+            r#"
+                const cmd = new Deno.Command('/bin/sh', { args: ['-c', 'printf ok'], clearEnv: true });
+                const out = cmd.outputSync();
+                const text = new TextDecoder().decode(out.stdout);
+                if (text !== 'ok') throw new Error('unexpected:' + text);
+            "#,
+            &Some(permissions),
+        )
+        .await;
+
+        assert!(result.is_ok(), "run should be allowed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
     }
 }
