@@ -131,11 +131,15 @@ mod tests {
 
     #[test]
     fn filesystem_read_maps_to_allow_read_and_dedupes() {
-        let options = permissions_options_from_sapphillon_permissions(&[
-            perm(PermissionType::FilesystemRead, vec!["/a", "/b", "/a"]),
-        ]);
+        let options = permissions_options_from_sapphillon_permissions(&[perm(
+            PermissionType::FilesystemRead,
+            vec!["/a", "/b", "/a"],
+        )]);
 
-        assert_eq!(options.allow_read, Some(vec!["/a".to_string(), "/b".to_string()]));
+        assert_eq!(
+            options.allow_read,
+            Some(vec!["/a".to_string(), "/b".to_string()])
+        );
         assert!(options.allow_write.is_none());
         assert!(options.allow_net.is_none());
         assert!(options.allow_run.is_none());
