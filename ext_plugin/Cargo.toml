@@ -17,6 +17,7 @@ tokio.workspace = true
 deno_error.workspace = true
 once_cell.workspace = true
 deno_tls.workspace = true
+deno_permissions.workspace = true
 
 [build-dependencies]
 deno_runtime.workspace = true

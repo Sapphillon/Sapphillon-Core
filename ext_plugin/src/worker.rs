@@ -26,7 +26,6 @@ use deno_runtime::deno_core::ModuleSpecifier;
 use deno_runtime::deno_fs::RealFs;
 use deno_runtime::deno_permissions::{Permissions, PermissionsContainer};
 use deno_runtime::deno_web::BlobStore;
-use deno_runtime::permissions::RuntimePermissionDescriptorParser;
 use deno_runtime::worker::{MainWorker, WorkerOptions, WorkerServiceOptions};
 use deno_tls::RootCertStoreProvider;
 use std::rc::Rc;
@@ -77,9 +76,7 @@ pub fn create_main_worker() -> Result<MainWorker> {
         npm_process_state_provider: None,
         // Create permission descriptor parser and permissions container
         permissions: PermissionsContainer::new(
-            Arc::new(RuntimePermissionDescriptorParser::new(
-                sys_traits::impls::RealSys,
-            )),
+            crate::permissions::create_descriptor_parser(),
             Permissions::allow_all(),
         ),
         root_cert_store_provider: Some(root_cert_store_provider as Arc<dyn RootCertStoreProvider>),

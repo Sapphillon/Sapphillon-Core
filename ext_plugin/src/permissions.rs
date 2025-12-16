@@ -16,10 +16,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod cert_store;
-mod module_loader;
-mod npm;
-mod permissions;
-mod worker;
+//! Permission Related Opration
 
-pub mod runner;
+use deno_runtime::permissions::RuntimePermissionDescriptorParser;
+use std::sync::Arc;
+
+pub(crate) fn create_descriptor_parser()
+-> Arc<RuntimePermissionDescriptorParser<sys_traits::impls::RealSys>> {
+    Arc::new(RuntimePermissionDescriptorParser::<
+        sys_traits::impls::RealSys,
+    >::new(sys_traits::impls::RealSys))
+}
+
