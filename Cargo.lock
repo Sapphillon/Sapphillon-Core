@@ -3456,6 +3456,7 @@ dependencies = [
  "httpmock",
  "node_resolver",
  "once_cell",
+ "sapphillon_core",
  "sys_traits",
  "tempfile",
  "tokio",
