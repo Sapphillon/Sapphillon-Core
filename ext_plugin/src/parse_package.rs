@@ -34,7 +34,14 @@ use deno_core::{JsRuntime, RuntimeOptions, serde_v8, v8};
 /// object compatible with the `SapphillonPackage` schema.
 #[allow(dead_code)]
 pub async fn parse_package_info(package_script: &str) -> Result<SapphillonPackage> {
-    let package_script = format!("{package_script}\nSapphillon.Package;");
+    // NOTE: The JS schema may include non-serializable values (e.g. `handler: function`).
+    // `serde_v8` cannot reliably deserialize function values, even if the field is
+    // otherwise ignored. To make package parsing robust, we project `Sapphillon.Package`
+    // into a plain-data object before deserializing.
+    let package_script = format!(
+        "{package_script}\n(() => {{\n  const pkg = Sapphillon.Package;\n  const functions = {{}};\n  for (const [name, schema] of Object.entries(pkg.functions || {{}})) {{\n    // Drop function-valued handler (and any other non-data fields we add later).
+    const {{ handler: _handler, ...rest }} = schema;\n    functions[name] = rest;\n  }}\n  return {{ meta: pkg.meta, functions }};\n}})();"
+    );
 
     let mut runtime = JsRuntime::new(RuntimeOptions::default());
     let output = runtime.execute_script("<init>", package_script)?;
@@ -70,17 +77,20 @@ mod tests {
             description: "Adds two numbers.".to_string(),
             parameters: vec![
                 Parameter {
+                    idx: 0,
                     name: "a".to_string(),
                     param_type: "number".to_string(),
                     description: "The number to be added to".to_string(),
                 },
                 Parameter {
+                    idx: 1,
                     name: "b".to_string(),
                     param_type: "number".to_string(),
                     description: "The number to add".to_string(),
                 },
             ],
             returns: vec![ReturnInfo {
+                idx: 0,
                 return_type: "number".to_string(),
                 description: "The sum".to_string(),
             }],
@@ -94,17 +104,20 @@ mod tests {
             description: "Multiplies two numbers.".to_string(),
             parameters: vec![
                 Parameter {
+                    idx: 0,
                     name: "a".to_string(),
                     param_type: "number".to_string(),
                     description: "The first factor".to_string(),
                 },
                 Parameter {
+                    idx: 1,
                     name: "b".to_string(),
                     param_type: "number".to_string(),
                     description: "The second factor".to_string(),
                 },
             ],
             returns: vec![ReturnInfo {
+                idx: 0,
                 return_type: "number".to_string(),
                 description: "The product".to_string(),
             }],
