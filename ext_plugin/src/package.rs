@@ -73,6 +73,12 @@ pub struct Permission {
 /// Function parameter entry.
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
 pub struct Parameter {
+    /// Parameter index (order).
+    ///
+    /// This is useful when the source schema is represented as an object/map
+    /// and ordering information must be preserved.
+    #[serde(default)]
+    pub idx: usize,
     /// Parameter name.
     pub name: String,
     #[serde(rename = "type")]
@@ -85,6 +91,9 @@ pub struct Parameter {
 /// Function return value entry.
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
 pub struct ReturnInfo {
+    /// Return value index (order).
+    #[serde(default)]
+    pub idx: usize,
     #[serde(rename = "type")]
     /// Return type string.
     pub return_type: String,
