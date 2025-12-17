@@ -35,12 +35,12 @@ use deno_core::{JsRuntime, RuntimeOptions, serde_v8, v8};
 #[allow(dead_code)]
 pub async fn parse_package_info(package_script: &str) -> Result<SapphillonPackage> {
     // NOTE: The JS schema may include non-serializable values (e.g. `handler: function`).
-        // `serde_v8` cannot reliably deserialize function values, even if the field is
-        // otherwise ignored. To make package parsing robust, we project `Sapphillon.Package`
-        // into a plain-data object before deserializing.
+    // `serde_v8` cannot reliably deserialize function values, even if the field is
+    // otherwise ignored. To make package parsing robust, we project `Sapphillon.Package`
+    // into a plain-data object before deserializing.
 
-        // Keep the projection IIFE in a separate, named string for clarity.
-        let package_init_script = r#"
+    // Keep the projection IIFE in a separate, named string for clarity.
+    let package_init_script = r#"
 (() => {
     const pkg = Sapphillon.Package;
     const functions = {};
@@ -53,8 +53,8 @@ pub async fn parse_package_info(package_script: &str) -> Result<SapphillonPackag
 })();
 "#;
 
-        // Concatenate the provided package script with the projection IIFE.
-        let package_script = format!("{package_script}\n{package_init_script}");
+    // Concatenate the provided package script with the projection IIFE.
+    let package_script = format!("{package_script}\n{package_init_script}");
 
     let mut runtime = JsRuntime::new(RuntimeOptions::default());
     let output = runtime.execute_script("<init>", package_script)?;
