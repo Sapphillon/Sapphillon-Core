@@ -113,8 +113,8 @@ impl CoreWorkflowCode {
         let opstate_workflow_data = OpStateWorkflowData::new(
             &self.id,
             true,
-            // Convert existing single-entry Option<PluginFunctionPermissions> into
-            // the new Option<Vec<PluginFunctionPermissions>> expected by OpStateWorkflowData.
+            // Convert Vec<PluginFunctionPermissions> fields into Option<Vec<PluginFunctionPermissions>>
+            // by mapping empty vectors to None and non-empty vectors to Some(vec).
             if self.allowed_permissions.is_empty() {
                 None
             } else {
