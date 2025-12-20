@@ -115,8 +115,16 @@ impl CoreWorkflowCode {
             true,
             // Convert existing single-entry Option<PluginFunctionPermissions> into
             // the new Option<Vec<PluginFunctionPermissions>> expected by OpStateWorkflowData.
-            if self.allowed_permissions.is_empty() {None} else {Some(self.allowed_permissions.clone())},
-            if self.required_permissions.is_empty() {None} else {Some(self.required_permissions.clone())},
+            if self.allowed_permissions.is_empty() {
+                None
+            } else {
+                Some(self.allowed_permissions.clone())
+            },
+            if self.required_permissions.is_empty() {
+                None
+            } else {
+                Some(self.required_permissions.clone())
+            },
         );
         let result = run_script(
             &self.code,
