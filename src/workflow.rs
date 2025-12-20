@@ -728,10 +728,7 @@ mod permission_tests {
         // Test where required has a plugin_function_id not present in allowed list
         let allowed = vec![PluginFunctionPermissions {
             plugin_function_id: "plugin.funcA".to_string(),
-            permissions: Permissions::new(vec![perm(
-                PermissionType::FilesystemRead,
-                &["/data"],
-            )]),
+            permissions: Permissions::new(vec![perm(PermissionType::FilesystemRead, &["/data"])]),
         }];
         let required = vec![
             PluginFunctionPermissions {
@@ -840,7 +837,8 @@ mod permission_tests {
                 )]),
             },
         ];
-        let code = run_with_multi_plugin_permissions(allowed, required, "console.log('composite');");
+        let code =
+            run_with_multi_plugin_permissions(allowed, required, "console.log('composite');");
         let res = &code.result[0];
         assert_eq!(res.exit_code, 0);
         assert_eq!(
