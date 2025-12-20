@@ -22,8 +22,9 @@ pub struct CoreWorkflowCode {
 
     pub code_revision: i32,
     pub result: Vec<sapphillon::v1::WorkflowResult>,
-    pub allowed_permissions: Option<PluginFunctionPermissions>,
-    pub required_permissions: Option<PluginFunctionPermissions>,
+
+    pub allowed_permissions: Vec<PluginFunctionPermissions>,
+    pub required_permissions: Vec<PluginFunctionPermissions>,
 }
 
 impl CoreWorkflowCode {
@@ -40,8 +41,8 @@ impl CoreWorkflowCode {
         code: String,
         plugin_packages: Vec<CorePluginPackage>,
         code_revision: i32,
-        allowed_permissions: Option<PluginFunctionPermissions>,
-        required_permissions: Option<PluginFunctionPermissions>,
+        allowed_permissions: Vec<PluginFunctionPermissions>,
+        required_permissions: Vec<PluginFunctionPermissions>,
     ) -> Self {
         Self {
             id,
@@ -114,8 +115,8 @@ impl CoreWorkflowCode {
             true,
             // Convert existing single-entry Option<PluginFunctionPermissions> into
             // the new Option<Vec<PluginFunctionPermissions>> expected by OpStateWorkflowData.
-            self.allowed_permissions.clone().map(|p| vec![p]),
-            self.required_permissions.clone().map(|p| vec![p]),
+            if self.allowed_permissions.is_empty() {None} else {Some(self.allowed_permissions.clone())},
+            if self.required_permissions.is_empty() {None} else {Some(self.required_permissions.clone())},
         );
         let result = run_script(
             &self.code,
@@ -161,8 +162,8 @@ impl CoreWorkflowCode {
     pub fn new_from_proto(
         workflow_code: &sapphillon::v1::WorkflowCode,
         plugin_packages: Vec<CorePluginPackage>,
-        required_permissions: Option<PluginFunctionPermissions>,
-        allowed_permissions: Option<PluginFunctionPermissions>,
+        required_permissions: Vec<PluginFunctionPermissions>,
+        allowed_permissions: Vec<PluginFunctionPermissions>,
     ) -> Self {
         Self {
             id: workflow_code.id.clone(),
@@ -239,8 +240,8 @@ mod tests {
             "console.log(1 + 1);".to_string(),
             vec![pkg],
             1,
-            None,
-            None,
+            vec![],
+            vec![],
         );
         code.run();
         assert_eq!(code.result.len(), 1);
@@ -261,8 +262,8 @@ mod tests {
             "console.log(1 + 1);".to_string(),
             vec![pkg],
             1,
-            None,
-            None,
+            vec![],
+            vec![],
         );
         code.run();
         assert_eq!(code.result.len(), 1);
@@ -283,8 +284,8 @@ mod tests {
             "throw new Error('fail');".to_string(),
             vec![pkg],
             1,
-            None,
-            None,
+            vec![],
+            vec![],
         );
         code.run();
         assert_eq!(code.result.len(), 1);
@@ -314,8 +315,8 @@ mod tests {
             r"\nconsole.log('test');".to_string(),
             vec![pkg],
             2,
-            None,
-            None,
+            vec![],
+            vec![],
         );
         assert_eq!(code.id, "wid");
         assert_eq!(code.code, "\nconsole.log('test');");
@@ -328,7 +329,7 @@ mod tests {
     fn test_core_workflow_code_new_from_proto() {
         let proto = dummy_proto_workflow_code();
         let pkg = dummy_plugin_package();
-        let code = CoreWorkflowCode::new_from_proto(&proto, vec![pkg], None, None);
+        let code = CoreWorkflowCode::new_from_proto(&proto, vec![pkg], vec![], vec![]);
         assert_eq!(code.id, proto.id);
         assert_eq!(code.code, proto.code);
         assert_eq!(code.plugin_packages.len(), 1);
@@ -344,8 +345,8 @@ mod tests {
             "console.log('test');".to_string(),
             vec![pkg],
             1,
-            None,
-            None,
+            vec![],
+            vec![],
         );
         assert!(code.result.is_empty(), "Initial results should be empty");
     }
@@ -404,14 +405,14 @@ mod permission_tests {
             script.to_string(),
             vec![], // no plugin packages needed
             1,
-            Some(PluginFunctionPermissions {
+            vec![PluginFunctionPermissions {
                 plugin_function_id: "id".to_string(),
                 permissions: Permissions::new(allowed),
-            }),
-            Some(PluginFunctionPermissions {
+            }],
+            vec![PluginFunctionPermissions {
                 plugin_function_id: "id".to_string(),
                 permissions: Permissions::new(required),
-            }),
+            }],
         );
         code.run();
         code
