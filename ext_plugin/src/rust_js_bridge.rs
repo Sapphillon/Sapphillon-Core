@@ -18,12 +18,12 @@
 
 //! Generate EntryPoint Function to run External Plugins
 
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use serde_json::{Value, to_string, from_str};
 use std::collections::HashMap;
 use anyhow::Result;
 
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct RsJsBridgeArgs {
     // Function Name
     pub func_name: String,
@@ -32,20 +32,32 @@ pub struct RsJsBridgeArgs {
 }
 
 impl RsJsBridgeArgs {
+    #[allow(dead_code)]
     pub fn new_from_str(s: &str) -> Result<Self> {
         Ok(from_str(s)?)
+    }
+    
+    #[allow(dead_code)]
+    pub fn to_string(&self) -> Result<String> {
+        Ok(to_string(self)?)
     }
 }
 
 
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct RsJsBridgeReturns {
     // Return data
     pub args: HashMap<String, Value>,
 }
 
 impl RsJsBridgeReturns {
+    #[allow(dead_code)]
     pub fn new_from_str(s: &str) -> Result<Self> {
         Ok(from_str(s)?)
+    }
+
+    #[allow(dead_code)]
+    pub fn to_string(&self) -> Result<String> {
+        Ok(to_string(self)?)
     }
 }
