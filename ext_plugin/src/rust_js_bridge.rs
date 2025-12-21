@@ -18,10 +18,10 @@
 
 //! Bridge types used to marshal arguments and return values for external plugins.
 
-use serde::{Serialize, Deserialize};
-use serde_json::{Value, to_string, from_str};
-use std::collections::HashMap;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, from_str, to_string};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct RsJsBridgeArgs {
@@ -43,7 +43,6 @@ impl RsJsBridgeArgs {
         Ok(to_string(self)?)
     }
 }
-
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct RsJsBridgeReturns {

@@ -22,7 +22,7 @@ mod npm;
 mod package;
 mod parse_package;
 mod permissions;
-mod worker;
 mod rust_js_bridge;
+mod worker;
 
 pub mod runner;

@@ -18,11 +18,11 @@
 
 //! Define Package info
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use serde_json::to_string as to_json_string;
 use std::collections::HashMap;
 use std::fmt;
-use serde_json::to_string as to_json_string;
-use anyhow::Result;
 
 /// Parsed plugin package schema.
 ///
@@ -123,31 +123,28 @@ impl fmt::Display for SapphillonPackage {
 }
 
 impl SapphillonPackage {
+    #[allow(dead_code)]
+    pub async fn new_async(package_script: &str) -> Result<SapphillonPackage> {
+        crate::parse_package::parse_package_info(package_script).await
+    }
 
-        #[allow(dead_code)]
-        pub async fn new_async(package_script: &str) -> Result<SapphillonPackage> {
-            crate::parse_package::parse_package_info(package_script).await
-        }
-        
-        #[allow(dead_code)]
-        pub fn new(package_script: &str) -> Result<SapphillonPackage> {
-            let rt = tokio::runtime::Runtime::new()?;
-            
-            rt.block_on(
-                crate::parse_package::parse_package_info(package_script)
-            )
-        }
+    #[allow(dead_code)]
+    pub fn new(package_script: &str) -> Result<SapphillonPackage> {
+        let rt = tokio::runtime::Runtime::new()?;
 
-        /// Generate JavaScript code that installs `globalThis.entrypoint`.
-        ///
-        /// The generated entrypoint accepts a JSON string of `RsJsBridgeArgs`,
-        /// routes the call to the corresponding `Sapphillon.Package` handler,
-        /// and returns a JSON string compatible with `RsJsBridgeReturns`.
-        #[allow(dead_code)]
-        pub fn entrypoint_script(&self) -> serde_json::Result<String> {
-                let schema_json = to_json_string(self)?;
-                // Keep the JS small and dependency-free; only rely on the already loaded package script.
-                const TEMPLATE: &str = r#"
+        rt.block_on(crate::parse_package::parse_package_info(package_script))
+    }
+
+    /// Generate JavaScript code that installs `globalThis.entrypoint`.
+    ///
+    /// The generated entrypoint accepts a JSON string of `RsJsBridgeArgs`,
+    /// routes the call to the corresponding `Sapphillon.Package` handler,
+    /// and returns a JSON string compatible with `RsJsBridgeReturns`.
+    #[allow(dead_code)]
+    pub fn entrypoint_script(&self) -> serde_json::Result<String> {
+        let schema_json = to_json_string(self)?;
+        // Keep the JS small and dependency-free; only rely on the already loaded package script.
+        const TEMPLATE: &str = r#"
 (() => {
     const __schema = __SCHEMA_JSON__;
 
@@ -211,8 +208,8 @@ impl SapphillonPackage {
 })();
 "#;
 
-                Ok(TEMPLATE.replace("__SCHEMA_JSON__", &schema_json))
-        }
+        Ok(TEMPLATE.replace("__SCHEMA_JSON__", &schema_json))
+    }
 }
 
 impl fmt::Display for Meta {
@@ -310,12 +307,9 @@ mod tests {
 
         let args = RsJsBridgeArgs {
             func_name: "add".to_string(),
-            args: vec![
-                ("a".to_string(), json!(2)),
-                ("b".to_string(), json!(3)),
-            ]
-            .into_iter()
-            .collect(),
+            args: vec![("a".to_string(), json!(2)), ("b".to_string(), json!(3))]
+                .into_iter()
+                .collect(),
         };
 
         let input = args.to_string().expect("serialize args");
