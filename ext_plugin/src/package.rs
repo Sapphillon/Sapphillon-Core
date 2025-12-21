@@ -128,6 +128,15 @@ impl SapphillonPackage {
         pub async fn new_async(package_script: &str) -> Result<SapphillonPackage> {
             crate::parse_package::parse_package_info(package_script).await
         }
+        
+        #[allow(dead_code)]
+        pub fn new(package_script: &str) -> Result<SapphillonPackage> {
+            let rt = tokio::runtime::Runtime::new()?;
+            
+            rt.block_on(
+                crate::parse_package::parse_package_info(package_script)
+            )
+        }
 
         /// Generate JavaScript code that installs `globalThis.entrypoint`.
         ///
