@@ -31,8 +31,21 @@ pub struct RsJsBridgeArgs {
     pub args: HashMap<String, Value>,
 }
 
+impl RsJsBridgeArgs {
+    pub fn new_from_str(s: &str) -> Result<Self> {
+        Ok(from_str(s)?)
+    }
+}
+
+
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
 pub struct RsJsBridgeReturns {
     // Return data
     pub args: HashMap<String, Value>,
+}
+
+impl RsJsBridgeReturns {
+    pub fn new_from_str(s: &str) -> Result<Self> {
+        Ok(from_str(s)?)
+    }
 }
