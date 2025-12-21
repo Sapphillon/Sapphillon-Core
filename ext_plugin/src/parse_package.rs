@@ -19,13 +19,12 @@
 //! Parse package information from a JavaScript package script.
 //!
 //! The package script is expected to populate `Sapphillon.Package` on the JS
-//! global object. This module executes the script in a `deno_core::JsRuntime`
+//! global object. This module executes the script in a `deno_runtime::deno_core::JsRuntime`
 //! and deserializes the resulting object into `SapphillonPackage`.
 
 use crate::package::SapphillonPackage;
 use anyhow::Result;
-use deno_core::scope;
-use deno_core::{JsRuntime, RuntimeOptions, serde_v8, v8};
+use deno_runtime::deno_core::{JsRuntime, RuntimeOptions, serde_v8, v8};
 
 /// Execute a package script and deserialize `Sapphillon.Package`.
 ///
@@ -60,7 +59,7 @@ pub async fn parse_package_info(package_script: &str) -> Result<SapphillonPackag
     let output = runtime.execute_script("<init>", package_script)?;
 
     // Use the runtime's handle scope (returns a pinned HandleScope reference)
-    scope!(scope, &mut runtime);
+    deno_runtime::deno_core::scope!(scope, &mut runtime);
     let local = v8::Local::new(scope, output);
     let package: SapphillonPackage = serde_v8::from_v8(scope, local)?;
     Ok(package)
