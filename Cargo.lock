@@ -712,7 +712,7 @@ dependencies = [
  "bitflags 2.10.0",
  "cexpr",
  "clang-sys",
- "itertools 0.13.0",
+ "itertools 0.11.0",
  "proc-macro2",
  "quote",
  "regex",
@@ -730,7 +730,7 @@ dependencies = [
  "bitflags 2.10.0",
  "cexpr",
  "clang-sys",
- "itertools 0.13.0",
+ "itertools 0.11.0",
  "log",
  "prettyplease",
  "proc-macro2",
@@ -3442,7 +3442,7 @@ dependencies = [
 
 [[package]]
 name = "ext_plugin"
-version = "0.5.5"
+version = "0.8.6"
 dependencies = [
  "anyhow",
  "deno_core",
@@ -3458,6 +3458,7 @@ dependencies = [
  "once_cell",
  "sapphillon_core",
  "serde",
+ "serde_json",
  "sys_traits",
  "tempfile",
  "tokio",
@@ -4446,7 +4447,7 @@ dependencies = [
  "hyper 1.8.1",
  "libc",
  "pin-project-lite",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -4765,15 +4766,6 @@ name = "itertools"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -6244,7 +6236,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.1",
  "rustls",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -6283,7 +6275,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "tracing",
  "windows-sys 0.60.2",
 ]
@@ -6812,7 +6804,7 @@ dependencies = [
 
 [[package]]
 name = "sapphillon_core"
-version = "0.5.5"
+version = "0.8.6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6820,7 +6812,6 @@ dependencies = [
  "deno_core",
  "deno_error",
  "deno_lib",
- "deno_permissions",
  "deno_resolver",
  "deno_runtime",
  "env_logger",
@@ -6829,7 +6820,7 @@ dependencies = [
  "once_cell",
  "prost",
  "prost-types",
- "serde",
+ "serde_json",
  "thiserror 2.0.17",
  "tokio",
  "tonic",
@@ -8876,7 +8867,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]

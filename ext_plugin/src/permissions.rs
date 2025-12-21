@@ -91,6 +91,12 @@ pub(crate) fn permissions_options_from_sapphillon_permissions(
             PermissionType::Execute => {
                 merge_allow_list(&mut allow_run, &permission.resource);
             }
+            PermissionType::AllowAll => {
+                allow_read = Some(vec![]);
+                allow_write = Some(vec![]);
+                allow_net = Some(vec![]);
+                allow_run = Some(vec![]);
+            }
             PermissionType::AllowMcp | PermissionType::Unspecified => {
                 // Not a Deno runtime permission; ignore here.
             }
