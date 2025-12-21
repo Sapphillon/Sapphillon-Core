@@ -22,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
 use serde_json::to_string as to_json_string;
+use anyhow::Result;
 
 /// Parsed plugin package schema.
 ///
@@ -122,6 +123,12 @@ impl fmt::Display for SapphillonPackage {
 }
 
 impl SapphillonPackage {
+
+        #[allow(dead_code)]
+        pub async fn new_async(package_script: &str) -> Result<SapphillonPackage> {
+            crate::parse_package::parse_package_info(package_script).await
+        }
+
         /// Generate JavaScript code that installs `globalThis.entrypoint`.
         ///
         /// The generated entrypoint accepts a JSON string of `RsJsBridgeArgs`,
