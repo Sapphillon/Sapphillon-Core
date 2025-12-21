@@ -16,13 +16,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod cert_store;
-mod module_loader;
-mod npm;
-mod package;
-mod parse_package;
-mod permissions;
-mod worker;
-mod rust_js_bridge;
+//! Generate EntryPoint Function to run External Plugins
 
-pub mod runner;
+use serde::Deserialize;
+use serde_json::{Value, to_string, from_str};
+use std::collections::HashMap;
+use anyhow::Result;
+
+#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+pub struct RsJsBridgeArgs {
+    // Function Name
+    pub func_name: String,
+    // Function Args and data
+    pub args: HashMap<String, Value>,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+pub struct RsJsBridgeReturns {
+    // Return data
+    pub args: HashMap<String, Value>,
+}
