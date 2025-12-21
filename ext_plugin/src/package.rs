@@ -18,15 +18,16 @@
 
 //! Define Package info
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
+use serde_json::to_string as to_json_string;
 
 /// Parsed plugin package schema.
 ///
 /// This is the Rust representation of `Sapphillon.Package` exported from the
 /// package script (JavaScript) and deserialized via `serde_v8`.
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 pub struct SapphillonPackage {
     /// Package metadata.
     pub meta: Meta,
@@ -35,7 +36,7 @@ pub struct SapphillonPackage {
 }
 
 /// Package metadata (typically derived from `package.toml`).
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 pub struct Meta {
     /// Human-readable package name.
     pub name: String,
@@ -48,7 +49,7 @@ pub struct Meta {
 }
 
 /// Function schema (typically derived from JSDoc).
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 pub struct FunctionSchema {
     /// Permission requirements to execute the function.
     pub permissions: Vec<Permission>,
@@ -61,7 +62,7 @@ pub struct FunctionSchema {
 }
 
 /// Permission requirement entry.
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 pub struct Permission {
     #[serde(rename = "type")]
     /// Permission type string.
@@ -71,7 +72,7 @@ pub struct Permission {
 }
 
 /// Function parameter entry.
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 pub struct Parameter {
     /// Parameter index (order).
     ///
@@ -89,7 +90,7 @@ pub struct Parameter {
 }
 
 /// Function return value entry.
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 pub struct ReturnInfo {
     /// Return value index (order).
     #[serde(default)]
@@ -118,6 +119,84 @@ impl fmt::Display for SapphillonPackage {
         }
         Ok(())
     }
+}
+
+impl SapphillonPackage {
+        /// Generate JavaScript code that installs `globalThis.entrypoint`.
+        ///
+        /// The generated entrypoint accepts a JSON string of `RsJsBridgeArgs`,
+        /// routes the call to the corresponding `Sapphillon.Package` handler,
+        /// and returns a JSON string compatible with `RsJsBridgeReturns`.
+        #[allow(dead_code)]
+        pub fn entrypoint_script(&self) -> serde_json::Result<String> {
+                let schema_json = to_json_string(self)?;
+                // Keep the JS small and dependency-free; only rely on the already loaded package script.
+                const TEMPLATE: &str = r#"
+(() => {
+    const __schema = __SCHEMA_JSON__;
+
+    const __resolveHandler = (funcName) => {
+        const fnEntry = globalThis.Sapphillon?.Package?.functions?.[funcName];
+        if (!fnEntry) throw new Error(`Unknown function: ${funcName}`);
+        const handler = typeof fnEntry === "function" ? fnEntry : fnEntry.handler;
+        if (typeof handler !== "function") throw new Error(`Handler for ${funcName} is not a function`);
+        return handler;
+    };
+
+    const __orderParams = (schema, rawArgs) => {
+        const params = schema?.parameters ?? [];
+        return params
+            .slice()
+            .sort((a, b) => (a?.idx ?? 0) - (b?.idx ?? 0))
+            .map((p) => rawArgs?.[p.name]);
+    };
+
+    const __buildReturns = (schema, value) => {
+        const declared = schema?.returns ?? [];
+        const out = {};
+        if (declared.length > 1 && Array.isArray(value)) {
+            for (const info of declared) {
+                const idx = Number.isInteger(info?.idx) ? info.idx : 0;
+                out[`ret${idx}`] = value[idx];
+            }
+            return out;
+        }
+        out.result = value;
+        return out;
+    };
+
+    globalThis.entrypoint = async function(entryArg) {
+        let payload;
+        try {
+            payload = JSON.parse(entryArg);
+        } catch (err) {
+            throw new Error(`Invalid RsJsBridgeArgs JSON: ${err?.message ?? err}`);
+        }
+
+        if (!payload || typeof payload.func_name !== "string") {
+            throw new Error("RsJsBridgeArgs.func_name must be a string");
+        }
+
+        const funcName = payload.func_name;
+        const schema = __schema.functions?.[funcName];
+        if (!schema) throw new Error(`Function schema not found: ${funcName}`);
+
+        const handler = __resolveHandler(funcName);
+        const orderedArgs = __orderParams(schema, payload.args ?? {});
+
+        let result = handler(...orderedArgs);
+        if (result && typeof result.then === "function") {
+            result = await result;
+        }
+
+        const returns = __buildReturns(schema, result);
+        return JSON.stringify({ args: returns });
+    };
+})();
+"#;
+
+                Ok(TEMPLATE.replace("__SCHEMA_JSON__", &schema_json))
+        }
 }
 
 impl fmt::Display for Meta {
@@ -183,5 +262,52 @@ impl fmt::Display for Parameter {
 impl fmt::Display for ReturnInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({})", self.return_type, self.description)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SapphillonPackage;
+    use crate::parse_package::parse_package_info;
+    use crate::runner::run_js_with_string_arg;
+    use crate::rust_js_bridge::{RsJsBridgeArgs, RsJsBridgeReturns};
+    use serde_json::json;
+
+    fn test_package_script() -> String {
+        // Ensure the global namespace exists before loading the fixture.
+        let fixture = include_str!("test_package.js");
+        format!("globalThis.Sapphillon = globalThis.Sapphillon || {{}};\n{fixture}")
+    }
+
+    #[tokio::test]
+    async fn entrypoint_script_invokes_handler_and_round_trips_json() {
+        let package_script = test_package_script();
+        let package: SapphillonPackage = parse_package_info(&package_script)
+            .await
+            .expect("package parsing succeeds");
+
+        let entry_script = package
+            .entrypoint_script()
+            .expect("entrypoint script generation succeeds");
+
+        let script = format!("{package_script}\n{entry_script}");
+
+        let args = RsJsBridgeArgs {
+            func_name: "add".to_string(),
+            args: vec![
+                ("a".to_string(), json!(2)),
+                ("b".to_string(), json!(3)),
+            ]
+            .into_iter()
+            .collect(),
+        };
+
+        let input = args.to_string().expect("serialize args");
+        let output = run_js_with_string_arg(&script, &input, &None)
+            .await
+            .expect("JS execution succeeds");
+
+        let returns = RsJsBridgeReturns::new_from_str(&output).expect("parse returns");
+        assert_eq!(returns.args.get("result"), Some(&json!(5)));
     }
 }
