@@ -133,8 +133,7 @@ mod tests {
             function_name: "fname".to_string(),
             description: "desc".to_string(),
             permissions: vec![],
-            arguments: "".to_string(),
-            returns: "".to_string(),
+            function_define: None,
         }
     }
 
