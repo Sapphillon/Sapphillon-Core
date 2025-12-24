@@ -139,7 +139,11 @@ mod tests {
         functions.insert("add".to_string(), add);
         functions.insert("mul".to_string(), mul);
 
-        SapphillonPackage { meta, functions }
+        SapphillonPackage {
+            meta,
+            functions,
+            package_script: String::new(),
+        }
     }
 
     #[tokio::test]

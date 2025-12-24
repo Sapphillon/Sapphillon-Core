@@ -86,13 +86,47 @@
 //!
 //! ### Using Bridge Types for Interoperability
 //!
+//! The new `execute()` method simplifies execution:
+//!
 //! ```rust
-//! use ext_plugin::{RsJsBridgeArgs, RsJsBridgeReturns};
+//! use ext_plugin::{SapphillonPackage, RsJsBridgeArgs};
 //! use serde_json::json;
-//! use std::collections::HashMap;
 //!
 //! # fn main() -> anyhow::Result<()> {
-//! // Prepare arguments to pass to JavaScript
+//! # let package_script = r#"
+//! #     globalThis.Sapphillon = {
+//! #         Package: {
+//! #             meta: {
+//! #                 name: "example-plugin",
+//! #                 version: "1.0.0",
+//! #                 description: "An example plugin",
+//! #                 package_id: "com.example.plugin"
+//! #             },
+//! #             functions: {
+//! #                 greet: {
+//! #                     description: "Greets a user",
+//! #                     permissions: [],
+//! #                     parameters: [{
+//! #                         idx: 0,
+//! #                         name: "username",
+//! #                         type: "string",
+//! #                         description: "Name to greet"
+//! #                     }],
+//! #                     returns: [{
+//! #                         idx: 0,
+//! #                         type: "string",
+//! #                         description: "Greeting message"
+//! #                     }],
+//! #                     handler: (args) => `Hello, ${args.username}!`
+//! #                 }
+//! #             }
+//! #         }
+//! #     };
+//! # "#;
+//! // Parse the package
+//! let package = SapphillonPackage::new(package_script)?;
+//!
+//! // Prepare arguments
 //! let args = RsJsBridgeArgs {
 //!     func_name: "greet".to_string(),
 //!     args: vec![
@@ -100,17 +134,15 @@
 //!     ].into_iter().collect(),
 //! };
 //!
-//! // Serialize to JSON for JavaScript
-//! let json_args = args.to_string()?;
-//! println!("Sending to JS: {}", json_args);
+//! // Execute the function (async example)
+//! # tokio::runtime::Runtime::new()?.block_on(async {
+//! let returns = package.execute(args, &None).await?;
 //!
-//! // Parse results returned from JavaScript
-//! let result_json = r#"{"args":{"message":"Hello, Alice!"}}"#;
-//! let returns = RsJsBridgeReturns::new_from_str(result_json)?;
-//!
-//! if let Some(message) = returns.args.get("message") {
+//! if let Some(message) = returns.args.get("result") {
 //!     println!("Result: {}", message);
 //! }
+//! # anyhow::Ok(())
+//! # })?;
 //! # Ok(())
 //! # }
 //! ```

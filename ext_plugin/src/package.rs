@@ -34,6 +34,9 @@ pub struct SapphillonPackage {
     pub meta: Meta,
     /// Function schemas keyed by function name.
     pub functions: HashMap<String, FunctionSchema>,
+    /// The original JavaScript package script.
+    #[serde(skip, default)]
+    pub package_script: String,
 }
 
 /// Package metadata (typically derived from `package.toml`).
@@ -123,16 +126,17 @@ impl fmt::Display for SapphillonPackage {
 }
 
 impl SapphillonPackage {
-    #[allow(dead_code)]
     pub async fn new_async(package_script: &str) -> Result<SapphillonPackage> {
-        crate::parse_package::parse_package_info(package_script).await
+        let mut package = crate::parse_package::parse_package_info(package_script).await?;
+        package.package_script = package_script.to_string();
+        Ok(package)
     }
 
-    #[allow(dead_code)]
     pub fn new(package_script: &str) -> Result<SapphillonPackage> {
         let rt = tokio::runtime::Runtime::new()?;
-
-        rt.block_on(crate::parse_package::parse_package_info(package_script))
+        let mut package = rt.block_on(crate::parse_package::parse_package_info(package_script))?;
+        package.package_script = package_script.to_string();
+        Ok(package)
     }
 
     /// Generate JavaScript code that installs `globalThis.entrypoint`.
@@ -140,8 +144,7 @@ impl SapphillonPackage {
     /// The generated entrypoint accepts a JSON string of `RsJsBridgeArgs`,
     /// routes the call to the corresponding `Sapphillon.Package` handler,
     /// and returns a JSON string compatible with `RsJsBridgeReturns`.
-    #[allow(dead_code)]
-    pub fn entrypoint_script(&self) -> serde_json::Result<String> {
+    fn entrypoint_script(&self) -> serde_json::Result<String> {
         let schema_json = to_json_string(self)?;
         // Keep the JS small and dependency-free; only rely on the already loaded package script.
         const TEMPLATE: &str = r#"
@@ -208,7 +211,60 @@ impl SapphillonPackage {
 })();
 "#;
 
+
         Ok(TEMPLATE.replace("__SCHEMA_JSON__", &schema_json))
+    }
+
+    /// Execute a package function with the given arguments.
+    ///
+    /// This method combines the package script with the entrypoint script,
+    /// invokes the specified function with the provided arguments, and returns
+    /// the result.
+    ///
+    /// # Arguments
+    /// * `args` - The bridge arguments containing the function name and parameters
+    /// * `permissions_options` - Optional Deno permissions for the execution
+    ///
+    /// # Returns
+    /// * `Ok(RsJsBridgeReturns)` with the function's return values
+    /// * `Err(...)` if execution fails
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use ext_plugin::{SapphillonPackage, RsJsBridgeArgs};
+    /// use serde_json::json;
+    ///
+    /// let package = SapphillonPackage::new(package_script)?;
+    /// let args = RsJsBridgeArgs {
+    ///     func_name: "add".to_string(),
+    ///     args: vec![
+    ///         ("a".to_string(), json!(2)),
+    ///         ("b".to_string(), json!(3)),
+    ///     ].into_iter().collect(),
+    /// };
+    /// let result = package.execute(args, &None).await?;
+    /// ```
+    #[allow(dead_code)]
+    pub async fn execute(
+        &self,
+        args: crate::rust_js_bridge::RsJsBridgeArgs,
+        permissions_options: &Option<deno_permissions::PermissionsOptions>,
+    ) -> Result<crate::rust_js_bridge::RsJsBridgeReturns> {
+        // Combine package script with entrypoint
+        let entry_script = self.entrypoint_script()?;
+        let script = format!("{}\n{}", self.package_script, entry_script);
+
+        // Serialize arguments
+        let input = args.to_string()?;
+
+        // Execute and get output
+        let output = crate::runner::run_js_with_string_arg(&script, &input, permissions_options)
+            .await
+            .map_err(|e| anyhow::anyhow!("JavaScript execution failed: {}", e))?;
+
+        // Deserialize return values
+        let returns = crate::rust_js_bridge::RsJsBridgeReturns::new_from_str(&output)?;
+        Ok(returns)
     }
 }
 
@@ -281,9 +337,7 @@ impl fmt::Display for ReturnInfo {
 #[cfg(test)]
 mod tests {
     use super::SapphillonPackage;
-    use crate::parse_package::parse_package_info;
-    use crate::runner::run_js_with_string_arg;
-    use crate::rust_js_bridge::{RsJsBridgeArgs, RsJsBridgeReturns};
+    use crate::rust_js_bridge::RsJsBridgeArgs;
     use serde_json::json;
 
     fn test_package_script() -> String {
@@ -293,17 +347,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn entrypoint_script_invokes_handler_and_round_trips_json() {
+    async fn execute_invokes_handler_and_round_trips_json() {
         let package_script = test_package_script();
-        let package: SapphillonPackage = parse_package_info(&package_script)
+        let package = SapphillonPackage::new_async(&package_script)
             .await
-            .expect("package parsing succeeds");
-
-        let entry_script = package
-            .entrypoint_script()
-            .expect("entrypoint script generation succeeds");
-
-        let script = format!("{package_script}\n{entry_script}");
+            .expect("package creation succeeds");
 
         let args = RsJsBridgeArgs {
             func_name: "add".to_string(),
@@ -312,12 +360,22 @@ mod tests {
                 .collect(),
         };
 
-        let input = args.to_string().expect("serialize args");
-        let output = run_js_with_string_arg(&script, &input, &None)
+        let returns = package
+            .execute(args, &None)
             .await
-            .expect("JS execution succeeds");
+            .expect("execution succeeds");
 
-        let returns = RsJsBridgeReturns::new_from_str(&output).expect("parse returns");
         assert_eq!(returns.args.get("result"), Some(&json!(5)));
+    }
+
+    #[tokio::test]
+    async fn package_script_is_stored() {
+        let package_script = test_package_script();
+        let package = SapphillonPackage::new_async(&package_script)
+            .await
+            .expect("package creation succeeds");
+
+        assert!(!package.package_script.is_empty());
+        assert_eq!(package.package_script, package_script);
     }
 }
