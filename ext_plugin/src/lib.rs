@@ -175,3 +175,6 @@ pub use package::{FunctionSchema, Meta, Parameter, Permission, ReturnInfo, Sapph
 
 // Public API: Bridge types for Rust-JS interoperability
 pub use rust_js_bridge::{RsJsBridgeArgs, RsJsBridgeReturns};
+
+// Public API: Runner functions for executing JavaScript code
+pub use runner::{run_js, run_js_with_string_arg};
