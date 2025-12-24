@@ -173,6 +173,46 @@ flowchart TB
 
 ---
 
+### 4. `SapphillonPackage::execute` - Execute Plugin Function
+
+```mermaid
+flowchart TB
+    subgraph "package.rs"
+        execute["SapphillonPackage::execute(args, permissions_options)"]
+        entrypoint_script["entrypoint_script()"]
+    end
+
+    subgraph "runner.rs"
+        run_js_with_string_arg["run_js_with_string_arg(script, input, permissions)"]
+    end
+
+    subgraph "rust_js_bridge.rs"
+        RsJsBridgeArgs_to_string["RsJsBridgeArgs::to_string()"]
+        RsJsBridgeReturns_new_from_str["RsJsBridgeReturns::new_from_str()"]
+    end
+
+    subgraph "worker.rs"
+        create_main_worker["create_main_worker(permissions_options)"]
+    end
+
+    subgraph "Deno Runtime"
+        MainWorker["MainWorker::bootstrap_from_options()"]
+        execute_script["worker.execute_script()"]
+        call_with_args["worker.js_runtime.call_with_args()"]
+    end
+
+    execute --> entrypoint_script
+    execute --> RsJsBridgeArgs_to_string
+    execute --> run_js_with_string_arg
+    run_js_with_string_arg --> create_main_worker
+    create_main_worker --> MainWorker
+    run_js_with_string_arg --> execute_script
+    run_js_with_string_arg --> call_with_args
+    execute --> RsJsBridgeReturns_new_from_str
+```
+
+---
+
 ## Complete Integration Flow
 
 ```mermaid
@@ -217,6 +257,7 @@ sequenceDiagram
 | `worker.rs` | `create_main_worker()` | Create configured Deno MainWorker |
 | `package.rs` | `SapphillonPackage::new()` | Parse package from script (sync wrapper) |
 | `package.rs` | `SapphillonPackage::new_async()` | Parse package from script (async) |
+| `package.rs` | `SapphillonPackage::execute()` | Execute a plugin function with given arguments |
 | `package.rs` | `entrypoint_script()` | Generate JS entrypoint wrapper |
 | `parse_package.rs` | `parse_package_info()` | Execute package script and deserialize |
 | `permissions.rs` | `create_descriptor_parser()` | Create Deno permission parser |
@@ -243,6 +284,7 @@ graph TD
         run_js["run_js()"]
         run_js_with_string_arg["run_js_with_string_arg()"]
         SapphillonPackage_new["SapphillonPackage::new()"]
+        SapphillonPackage_execute["SapphillonPackage::execute()"]
     end
 
     subgraph "runner.rs"
@@ -263,6 +305,7 @@ graph TD
     subgraph "package.rs"
         SapphillonPackage_new_async["SapphillonPackage::new_async()"]
         entrypoint_script["entrypoint_script()"]
+        SapphillonPackage_execute_impl["execute()"]
     end
 
     subgraph "parse_package.rs"
@@ -307,6 +350,14 @@ graph TD
     %% entrypoint_script dependencies
     entrypoint_script --> RsJsBridgeArgs_to_string
     entrypoint_script --> RsJsBridgeReturns_to_string
+
+    %% execute() dependencies
+    SapphillonPackage_execute --> entrypoint_script
+    SapphillonPackage_execute --> RsJsBridgeArgs_to_string
+    SapphillonPackage_execute --> run_js_with_string_arg
+    SapphillonPackage_execute --> RsJsBridgeReturns_new_from_str
+    SapphillonPackage_execute_impl --> entrypoint_script
+    SapphillonPackage_execute_impl --> run_js_with_string_arg
 ```
 
 ---
@@ -366,10 +417,15 @@ graph LR
         SapphillonPackage_new["SapphillonPackage::new(package_script)\n→ Result<SapphillonPackage>"]
         SapphillonPackage_new_async["SapphillonPackage::new_async(package_script)\n→ Result<SapphillonPackage>"]
         entrypoint_script["entrypoint_script(&self)\n→ serde_json::Result<String>"]
+        execute["execute(&self, args, permissions)\n→ Result<RsJsBridgeReturns>"]
     end
 
     subgraph "parse_package.rs"
         parse_package_info["parse_package_info(package_script)\n→ Result<SapphillonPackage>"]
+    end
+
+    subgraph "runner.rs"
+        run_js_with_string_arg["run_js_with_string_arg()"]
     end
 
     subgraph "rust_js_bridge.rs"
@@ -381,6 +437,10 @@ graph LR
     SapphillonPackage_new_async -->|"calls"| parse_package_info
     entrypoint_script -->|"uses"| RsJsBridgeArgs
     entrypoint_script -->|"uses"| RsJsBridgeReturns
+    execute -->|"calls"| entrypoint_script
+    execute -->|"calls"| run_js_with_string_arg
+    execute -->|"uses"| RsJsBridgeArgs
+    execute -->|"uses"| RsJsBridgeReturns
 ```
 
 ---
@@ -435,6 +495,8 @@ graph TD
 
     SapphillonPackage -.->|"uses for entrypoint"| RsJsBridgeArgs
     SapphillonPackage -.->|"uses for entrypoint"| RsJsBridgeReturns
+    SapphillonPackage -.->|"uses for execute"| RsJsBridgeArgs
+    SapphillonPackage -.->|"uses for execute"| RsJsBridgeReturns
 ```
 
 ---
