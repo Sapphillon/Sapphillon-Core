@@ -211,7 +211,6 @@ impl SapphillonPackage {
 })();
 "#;
 
-
         Ok(TEMPLATE.replace("__SCHEMA_JSON__", &schema_json))
     }
 
@@ -260,7 +259,7 @@ impl SapphillonPackage {
         // Execute and get output
         let output = crate::runner::run_js_with_string_arg(&script, &input, permissions_options)
             .await
-            .map_err(|e| anyhow::anyhow!("JavaScript execution failed: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("JavaScript execution failed: {e}"))?;
 
         // Deserialize return values
         let returns = crate::rust_js_bridge::RsJsBridgeReturns::new_from_str(&output)?;
