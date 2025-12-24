@@ -241,15 +241,15 @@ pub fn check_permission(
     }
 }
 
-/// 許可された権限リストから、指定されたfunction_idまたはワイルドカード(*)に
-/// マッチする権限を検索して返す
+/// Finds and returns permissions from a list of allowed permissions that match
+/// the given function ID or a wildcard (*).
 ///
 /// # Arguments
-/// * `allowed` - 許可された権限のリスト
-/// * `target_function_ids` - マッチ対象のfunction_id（複数対応）
+/// * `allowed` - A list of allowed permissions.
+/// * `target_function_ids` - The function IDs to match against (supports multiple).
 ///
 /// # Returns
-/// マッチした権限のPermissions。見つからない場合は空のPermissions
+/// The matching `Permissions`. Returns empty `Permissions` if no match is found.
 pub fn find_allowed_permissions(
     allowed: &[PluginFunctionPermissions],
     target_function_ids: &[&str],
@@ -266,16 +266,16 @@ pub fn find_allowed_permissions(
         })
 }
 
-/// 許可された権限リストから対象function_idの権限を検索し、
-/// 必要な権限と照合してチェック結果を返す
+/// Finds the permissions for a target function ID from a list of allowed
+/// permissions and checks them against the required permissions.
 ///
 /// # Arguments
-/// * `allowed` - 許可された権限のリスト
-/// * `target_function_ids` - マッチ対象のfunction_id（複数対応）
-/// * `required_permissions` - 必要な権限
+/// * `allowed` - A list of allowed permissions.
+/// * `target_function_ids` - The function IDs to match against (supports multiple).
+/// * `required_permissions` - The permissions required.
 ///
 /// # Returns
-/// CheckPermissionResult
+/// A `CheckPermissionResult`.
 pub fn find_and_check_permission(
     allowed: &[PluginFunctionPermissions],
     target_function_ids: &[&str],
@@ -285,17 +285,17 @@ pub fn find_and_check_permission(
     check_permission(&allowed_permissions, required_permissions)
 }
 
-/// リソース（ファイルパス、URL、コマンドなど）を含む権限チェックを行う
-/// 高レベルなヘルパー関数
+/// A high-level helper function to check permissions that include a resource
+/// (e.g., file path, URL, command).
 ///
 /// # Arguments
-/// * `allowed` - 許可された権限のリスト
-/// * `target_function_ids` - マッチ対象のfunction_id
-/// * `base_permissions` - ベースとなる権限定義
-/// * `resource` - チェック対象のリソース文字列
+/// * `allowed` - A list of allowed permissions.
+/// * `target_function_ids` - The function ID to match against.
+/// * `base_permissions` - The base permission definition.
+/// * `resource` - The resource string to check.
 ///
 /// # Returns
-/// Ok(()) または Err(MissingPermissions)
+/// `Ok(())` or `Err(MissingPermissions)`.
 pub fn check_plugin_permission_with_resource(
     allowed: &[PluginFunctionPermissions],
     target_function_ids: &[&str],
