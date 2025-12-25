@@ -755,6 +755,32 @@ mod tokio_runtime_tests {
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
 
+    // Uses the stored Tokio handle to spawn an async task and wait for its result.
+    #[op2]
+    #[string]
+    fn op_spawn_async(state: &mut OpState) -> String {
+        // Clone the handle so the mutex guard is released before awaiting.
+        let handle = {
+            let data = state
+                .borrow::<Arc<Mutex<OpStateWorkflowData>>>()
+                .lock()
+                .unwrap();
+            data.tokio_handle()
+        };
+
+        // Drive an async function on the runtime and join a spawned task.
+        let value = handle.block_on(async {
+            let handle_clone = handle.clone();
+            let join = handle_clone.spawn(async {
+                tokio::time::sleep(Duration::from_millis(8)).await;
+                99u32
+            });
+            join.await.expect("tokio task should succeed")
+        });
+
+        format!("joined={value}")
+    }
+
     #[op2]
     #[string]
     fn op_sleep(state: &mut OpState) -> String {
@@ -846,6 +872,38 @@ mod tokio_runtime_tests {
         assert!(
             result.is_ok(),
             "Script with block_on op should run successfully"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_op_spawn_async_on_tokio_runtime() {
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        let workflow_data = OpStateWorkflowData::new(
+            "tokio_spawn",
+            true,
+            None,
+            None,
+            tokio_runtime.handle().clone(),
+        );
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        let script = r#"
+            const v = Deno.core.ops.op_spawn_async();
+            if (v !== "joined=99") {
+                throw new Error(`Unexpected spawn result: ${v}`);
+            }
+        "#;
+
+        let result = run_script(
+            script,
+            vec![op_spawn_async()],
+            Some(workflow_data_arc),
+            None,
+        );
+        assert!(
+            result.is_ok(),
+            "Script with spawned tokio async op should run successfully"
         );
     }
 }
