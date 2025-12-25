@@ -14,6 +14,7 @@ use crate::permission::{
 
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
+use std::future::Future;
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Handle;
 
@@ -108,6 +109,16 @@ impl OpStateWorkflowData {
 
     pub fn get_required_permissions(&self) -> &Option<Vec<PluginFunctionPermissions>> {
         &self.required_permissions
+    }
+
+    /// Returns a cloned Tokio runtime handle for running futures from sync ops.
+    pub fn tokio_handle(&self) -> Handle {
+        self.tokio_runtime_handle.clone()
+    }
+
+    /// Runs the provided future on the stored Tokio runtime using `block_on`.
+    pub fn block_on<F: Future>(&self, fut: F) -> F::Output {
+        self.tokio_runtime_handle.block_on(fut)
     }
 }
 
@@ -723,7 +734,7 @@ mod tests {
 #[cfg(test)]
 mod tokio_runtime_tests {
     use super::*;
-    use deno_core::{op2, OpState};
+    use deno_core::{OpState, op2};
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
 
@@ -734,11 +745,32 @@ mod tokio_runtime_tests {
             .borrow::<Arc<Mutex<OpStateWorkflowData>>>()
             .lock()
             .unwrap();
-        let handle = data.tokio_runtime_handle.clone();
-        handle.block_on(async {
+        data.block_on(async {
             tokio::time::sleep(Duration::from_millis(10)).await;
         });
         "Slept for 10ms".to_string()
+    }
+
+    #[op2]
+    #[string]
+    fn op_block_on_add(state: &mut OpState) -> String {
+        let data = state
+            .borrow::<Arc<Mutex<OpStateWorkflowData>>>()
+            .lock()
+            .unwrap();
+
+        async fn double_after_delay(v: u32) -> u32 {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+            v * 2
+        }
+
+        let total = data.block_on(async {
+            let a = double_after_delay(10).await;
+            let b = double_after_delay(5).await;
+            a + b
+        });
+
+        format!("sum={total}")
     }
 
     #[test]
@@ -761,7 +793,41 @@ mod tokio_runtime_tests {
         "#;
 
         let result = run_script(script, vec![op_sleep()], Some(workflow_data_arc), None);
-        assert!(result.is_ok(), "Script with tokio op should run successfully");
+        assert!(
+            result.is_ok(),
+            "Script with tokio op should run successfully"
+        );
+    }
+
+    #[test]
+    fn test_op_block_on_future_result() {
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        let workflow_data = OpStateWorkflowData::new(
+            "tokio_block_on",
+            true,
+            None,
+            None,
+            tokio_runtime.handle().clone(),
+        );
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        let script = r#"
+            const value = Deno.core.ops.op_block_on_add();
+            if (value !== "sum=30") {
+                throw new Error(`Unexpected value: ${value}`);
+            }
+        "#;
+
+        let result = run_script(
+            script,
+            vec![op_block_on_add()],
+            Some(workflow_data_arc),
+            None,
+        );
+        assert!(
+            result.is_ok(),
+            "Script with block_on op should run successfully"
+        );
     }
 }
 
