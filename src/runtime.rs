@@ -279,7 +279,9 @@ mod tests {
 
     use super::*;
     use deno_core::{OpState, op2};
+    use serial_test::serial;
 
+    #[serial]
     #[test]
     fn test_extension() {
         #[op2]
@@ -296,6 +298,7 @@ mod tests {
         println!("[test_extension] result: {result:?}");
     }
 
+    #[serial]
     #[test]
     fn test_run_script() {
         let script = "1 + 1;";
@@ -303,6 +306,7 @@ mod tests {
         let result = run_script(script, vec![], None, None);
         assert!(result.is_ok(), "Script should run successfully");
     }
+    #[serial]
     #[test]
     fn test_run_script_hello() {
         let script = "a = 1 + 1; console.log('Hello, world!');console.log(a);";
@@ -311,6 +315,7 @@ mod tests {
         assert!(result.is_ok(), "Script should run successfully");
     }
 
+    #[serial]
     #[test]
     fn test_run_script_opstate_workflow_data() {
         // テスト用op: opstateからworkflow_idを取得
@@ -358,6 +363,7 @@ mod tests {
         );
     }
 
+    #[serial]
     #[test]
     fn test_run_script_change_opstate_workflow_data() {
         // テスト用op: opstateからworkflow_idを取得
@@ -415,6 +421,7 @@ mod tests {
         );
     }
 
+    #[serial]
     #[test]
     fn test_run_script_capture_stdout() {
         use std::sync::{Arc, Mutex};
@@ -458,6 +465,7 @@ mod tests {
     }
 
     // New unit tests for stdout_to_string()
+    #[serial]
     #[test]
     fn test_stdout_to_string_empty() {
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
@@ -472,6 +480,7 @@ mod tests {
         assert_eq!(data.stdout_to_string(), "");
     }
 
+    #[serial]
     #[test]
     fn test_stdout_to_string_single() {
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
@@ -486,6 +495,7 @@ mod tests {
         assert_eq!(data.stdout_to_string(), "Hello");
     }
 
+    #[serial]
     #[test]
     fn test_stdout_to_string_multiple() {
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
@@ -503,6 +513,7 @@ mod tests {
         };
         assert_eq!(data.stdout_to_string(), "One\nTwo\nThree");
     }
+    #[serial]
     #[test]
     fn test_run_script_capture_stdout_from_return() {
         use std::sync::{Arc, Mutex};
@@ -543,6 +554,7 @@ mod tests {
             "Results should match expected output"
         );
     }
+    #[serial]
     #[test]
     fn test_run_pre_script() {
         use std::sync::{Arc, Mutex};
@@ -596,6 +608,7 @@ mod tests {
             "Results should match expected output"
         );
     }
+    #[serial]
     #[test]
     fn test_run_script_with_pre_and_workflow_success_simple() {
         use std::sync::{Arc, Mutex};
@@ -638,6 +651,7 @@ mod tests {
         assert_eq!(results[1], WorkflowStdout::Stdout("123\n".to_string()));
     }
 
+    #[serial]
     #[test]
     fn test_run_script_no_pre_script_simple() {
         use std::sync::{Arc, Mutex};
@@ -668,6 +682,7 @@ mod tests {
         );
     }
 
+    #[serial]
     #[test]
     fn test_run_script_pre_script_failure_maps_error() {
         // Invalid JS in pre_script to force a JsError (syntax error)
@@ -699,6 +714,7 @@ mod tests {
         }
     }
 
+    #[serial]
     #[test]
     fn test_run_script_workflow_failure_maps_error() {
         // Valid pre-script
@@ -735,6 +751,7 @@ mod tests {
 mod tokio_runtime_tests {
     use super::*;
     use deno_core::{OpState, op2};
+    use serial_test::serial;
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
 
@@ -774,6 +791,7 @@ mod tokio_runtime_tests {
     }
 
     #[test]
+    #[serial]
     fn test_op_with_tokio_runtime() {
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData::new(
@@ -800,6 +818,7 @@ mod tokio_runtime_tests {
     }
 
     #[test]
+    #[serial]
     fn test_op_block_on_future_result() {
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData::new(
@@ -834,8 +853,10 @@ mod tokio_runtime_tests {
 #[cfg(test)]
 mod per_plugin_permission_tests {
     use super::*;
+    use serial_test::serial;
     use std::sync::{Arc, Mutex};
 
+    #[serial]
     #[test]
     fn test_run_script_per_plugin_merge_allowed_success() {
         use crate::permission::{Permissions, PluginFunctionPermissions};
@@ -891,6 +912,7 @@ mod per_plugin_permission_tests {
         );
     }
 
+    #[serial]
     #[test]
     fn test_run_script_per_plugin_allowed_missing() {
         use crate::permission::{Permissions, PluginFunctionPermissions};
