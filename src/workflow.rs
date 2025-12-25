@@ -10,6 +10,7 @@ use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
 use crate::runtime::{OpStateWorkflowData, run_script};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::runtime::Handle;
 
 #[derive(Debug, Clone)]
 pub struct CoreWorkflowCode {
@@ -71,7 +72,7 @@ impl CoreWorkflowCode {
     ///
     /// # Side Effects
     /// - Modifies the `result` field by adding a new `WorkflowResult`.
-    pub fn run(&mut self) {
+    pub fn run(&mut self, handle: Handle) {
         // Collect OpDecls from plugin packages
         let mut ops = Vec::new();
         for pkg in &self.plugin_packages {
@@ -125,6 +126,7 @@ impl CoreWorkflowCode {
             } else {
                 Some(self.required_permissions.clone())
             },
+            handle.clone(),
         );
         let result = run_script(
             &self.code,
@@ -251,7 +253,8 @@ mod tests {
             vec![],
             vec![],
         );
-        code.run();
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        code.run(tokio_runtime.handle().clone());
         assert_eq!(code.result.len(), 1);
         let res = &code.result[0];
         assert_eq!(res.exit_code, 0);
@@ -273,7 +276,8 @@ mod tests {
             vec![],
             vec![],
         );
-        code.run();
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        code.run(tokio_runtime.handle().clone());
         assert_eq!(code.result.len(), 1);
         let res = &code.result[0];
         assert_eq!(res.exit_code, 0);
@@ -295,7 +299,8 @@ mod tests {
             vec![],
             vec![],
         );
-        code.run();
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        code.run(tokio_runtime.handle().clone());
         assert_eq!(code.result.len(), 1);
         let res = &code.result[0];
         assert_eq!(res.exit_code, 1);
@@ -422,7 +427,8 @@ mod permission_tests {
                 permissions: Permissions::new(required),
             }],
         );
-        code.run();
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        code.run(tokio_runtime.handle().clone());
         code
     }
 
@@ -439,7 +445,8 @@ mod permission_tests {
             allowed,
             required,
         );
-        code.run();
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        code.run(tokio_runtime.handle().clone());
         code
     }
 
