@@ -6844,6 +6844,7 @@ dependencies = [
  "deno_resolver",
  "deno_runtime",
  "env_logger",
+ "ext_plugin",
  "log",
  "node_resolver",
  "once_cell",

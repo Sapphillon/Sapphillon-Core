@@ -15,6 +15,7 @@ members = ["ext_plugin/", "proto"]
 
 [workspace.dependencies]
 proto = { path = "proto" }
+ext_plugin = { path = "ext_plugin" }
 anyhow = { version = "1.0", default-features = false }
 tokio = "1"
 log = "0.4"
@@ -56,6 +57,7 @@ homepage.workspace = true
 
 [dependencies]
 proto.workspace = true
+ext_plugin.workspace = true
 anyhow.workspace = true
 tokio.workspace = true
 log.workspace = true

@@ -16,6 +16,7 @@ pub mod error;
 pub mod permission;
 pub mod plugin;
 pub use proto;
+pub use ext_plugin;
 pub mod runtime;
 pub mod utils;
 pub mod workflow;
