@@ -3459,7 +3459,7 @@ dependencies = [
  "httpmock",
  "node_resolver",
  "once_cell",
- "sapphillon_core",
+ "proto",
  "serde",
  "serde_json",
  "sys_traits",

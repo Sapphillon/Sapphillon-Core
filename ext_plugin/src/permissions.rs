@@ -21,7 +21,7 @@
 use anyhow::Result;
 use deno_permissions::{Permissions, PermissionsOptions};
 use deno_runtime::permissions::RuntimePermissionDescriptorParser;
-use sapphillon_core::proto::sapphillon::v1::{Permission as SapphillonPermission, PermissionType};
+use proto::sapphillon::v1::{Permission as SapphillonPermission, PermissionType};
 use std::sync::Arc;
 
 pub(crate) fn create_descriptor_parser()
@@ -114,7 +114,7 @@ pub(crate) fn permissions_options_from_sapphillon_permissions(
 mod tests {
     use super::permissions_options_from_sapphillon_permissions;
     use deno_permissions::PermissionsOptions;
-    use sapphillon_core::proto::sapphillon::v1::{Permission, PermissionType};
+    use proto::sapphillon::v1::{Permission, PermissionType};
 
     fn perm(permission_type: PermissionType, resource: Vec<&str>) -> Permission {
         Permission {
