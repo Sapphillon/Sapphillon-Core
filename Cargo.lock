@@ -1224,6 +1224,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "proto"
+version = "0.9.0"
+dependencies = [
+ "prost",
+ "prost-types",
+ "tonic",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1348,12 +1357,10 @@ dependencies = [
  "deno_error",
  "env_logger",
  "log",
- "prost",
- "prost-types",
+ "proto",
  "serial_test",
  "thiserror",
  "tokio",
- "tonic",
  "tonic-build",
  "unescaper",
  "url",
