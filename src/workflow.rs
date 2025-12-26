@@ -10,6 +10,7 @@ use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
 use crate::runtime::{OpStateWorkflowData, run_script};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::runtime::Handle;
 
 #[derive(Debug, Clone)]
 pub struct CoreWorkflowCode {
@@ -22,8 +23,9 @@ pub struct CoreWorkflowCode {
 
     pub code_revision: i32,
     pub result: Vec<sapphillon::v1::WorkflowResult>,
-    pub allowed_permissions: Option<PluginFunctionPermissions>,
-    pub required_permissions: Option<PluginFunctionPermissions>,
+
+    pub allowed_permissions: Vec<PluginFunctionPermissions>,
+    pub required_permissions: Vec<PluginFunctionPermissions>,
 }
 
 impl CoreWorkflowCode {
@@ -40,8 +42,8 @@ impl CoreWorkflowCode {
         code: String,
         plugin_packages: Vec<CorePluginPackage>,
         code_revision: i32,
-        allowed_permissions: Option<PluginFunctionPermissions>,
-        required_permissions: Option<PluginFunctionPermissions>,
+        allowed_permissions: Vec<PluginFunctionPermissions>,
+        required_permissions: Vec<PluginFunctionPermissions>,
     ) -> Self {
         Self {
             id,
@@ -70,7 +72,7 @@ impl CoreWorkflowCode {
     ///
     /// # Side Effects
     /// - Modifies the `result` field by adding a new `WorkflowResult`.
-    pub fn run(&mut self) {
+    pub fn run(&mut self, handle: Handle) {
         // Collect OpDecls from plugin packages
         let mut ops = Vec::new();
         for pkg in &self.plugin_packages {
@@ -112,10 +114,19 @@ impl CoreWorkflowCode {
         let opstate_workflow_data = OpStateWorkflowData::new(
             &self.id,
             true,
-            // Convert existing single-entry Option<PluginFunctionPermissions> into
-            // the new Option<Vec<PluginFunctionPermissions>> expected by OpStateWorkflowData.
-            self.allowed_permissions.clone().map(|p| vec![p]),
-            self.required_permissions.clone().map(|p| vec![p]),
+            // Convert Vec<PluginFunctionPermissions> fields into Option<Vec<PluginFunctionPermissions>>
+            // by mapping empty vectors to None and non-empty vectors to Some(vec).
+            if self.allowed_permissions.is_empty() {
+                None
+            } else {
+                Some(self.allowed_permissions.clone())
+            },
+            if self.required_permissions.is_empty() {
+                None
+            } else {
+                Some(self.required_permissions.clone())
+            },
+            handle.clone(),
         );
         let result = run_script(
             &self.code,
@@ -161,8 +172,8 @@ impl CoreWorkflowCode {
     pub fn new_from_proto(
         workflow_code: &sapphillon::v1::WorkflowCode,
         plugin_packages: Vec<CorePluginPackage>,
-        required_permissions: Option<PluginFunctionPermissions>,
-        allowed_permissions: Option<PluginFunctionPermissions>,
+        required_permissions: Vec<PluginFunctionPermissions>,
+        allowed_permissions: Vec<PluginFunctionPermissions>,
     ) -> Self {
         Self {
             id: workflow_code.id.clone(),
@@ -239,10 +250,11 @@ mod tests {
             "console.log(1 + 1);".to_string(),
             vec![pkg],
             1,
-            None,
-            None,
+            vec![],
+            vec![],
         );
-        code.run();
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        code.run(tokio_runtime.handle().clone());
         assert_eq!(code.result.len(), 1);
         let res = &code.result[0];
         assert_eq!(res.exit_code, 0);
@@ -261,10 +273,11 @@ mod tests {
             "console.log(1 + 1);".to_string(),
             vec![pkg],
             1,
-            None,
-            None,
+            vec![],
+            vec![],
         );
-        code.run();
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        code.run(tokio_runtime.handle().clone());
         assert_eq!(code.result.len(), 1);
         let res = &code.result[0];
         assert_eq!(res.exit_code, 0);
@@ -283,10 +296,11 @@ mod tests {
             "throw new Error('fail');".to_string(),
             vec![pkg],
             1,
-            None,
-            None,
+            vec![],
+            vec![],
         );
-        code.run();
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        code.run(tokio_runtime.handle().clone());
         assert_eq!(code.result.len(), 1);
         let res = &code.result[0];
         assert_eq!(res.exit_code, 1);
@@ -314,8 +328,8 @@ mod tests {
             r"\nconsole.log('test');".to_string(),
             vec![pkg],
             2,
-            None,
-            None,
+            vec![],
+            vec![],
         );
         assert_eq!(code.id, "wid");
         assert_eq!(code.code, "\nconsole.log('test');");
@@ -328,7 +342,7 @@ mod tests {
     fn test_core_workflow_code_new_from_proto() {
         let proto = dummy_proto_workflow_code();
         let pkg = dummy_plugin_package();
-        let code = CoreWorkflowCode::new_from_proto(&proto, vec![pkg], None, None);
+        let code = CoreWorkflowCode::new_from_proto(&proto, vec![pkg], vec![], vec![]);
         assert_eq!(code.id, proto.id);
         assert_eq!(code.code, proto.code);
         assert_eq!(code.plugin_packages.len(), 1);
@@ -344,8 +358,8 @@ mod tests {
             "console.log('test');".to_string(),
             vec![pkg],
             1,
-            None,
-            None,
+            vec![],
+            vec![],
         );
         assert!(code.result.is_empty(), "Initial results should be empty");
     }
@@ -404,16 +418,35 @@ mod permission_tests {
             script.to_string(),
             vec![], // no plugin packages needed
             1,
-            Some(PluginFunctionPermissions {
+            vec![PluginFunctionPermissions {
                 plugin_function_id: "id".to_string(),
                 permissions: Permissions::new(allowed),
-            }),
-            Some(PluginFunctionPermissions {
+            }],
+            vec![PluginFunctionPermissions {
                 plugin_function_id: "id".to_string(),
                 permissions: Permissions::new(required),
-            }),
+            }],
         );
-        code.run();
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        code.run(tokio_runtime.handle().clone());
+        code
+    }
+
+    fn run_with_multi_plugin_permissions(
+        allowed: Vec<PluginFunctionPermissions>,
+        required: Vec<PluginFunctionPermissions>,
+        script: &str,
+    ) -> CoreWorkflowCode {
+        let mut code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            script.to_string(),
+            vec![], // no plugin packages needed
+            1,
+            allowed,
+            required,
+        );
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        code.run(tokio_runtime.handle().clone());
         code
     }
 
@@ -614,5 +647,210 @@ mod permission_tests {
         // Check Requested / Granted fragments present
         assert!(res.result.contains("Requested Permissions"));
         assert!(res.result.contains("Granted Permissions"));
+    }
+
+    // ---------------
+    // Multiple PluginFunctionPermissions tests
+    // ---------------
+    #[test]
+    fn test_workflow_multiple_plugin_functions_all_satisfied() {
+        // Test with two different plugin function IDs, both with permissions satisfied
+        let allowed = vec![
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.func1".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemRead,
+                    &["/data"],
+                )]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.func2".to_string(),
+                permissions: Permissions::new(vec![perm(PermissionType::Execute, &[])]),
+            },
+        ];
+        let required = vec![
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.func1".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemRead,
+                    &["/data/file.txt"],
+                )]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.func2".to_string(),
+                permissions: Permissions::new(vec![perm(PermissionType::Execute, &[])]),
+            },
+        ];
+        let code = run_with_multi_plugin_permissions(allowed, required, "console.log('multi');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 0);
+        assert_eq!(
+            res.result_type,
+            sapphillon::v1::WorkflowResultType::SuccessUnspecified as i32
+        );
+    }
+
+    #[test]
+    fn test_workflow_multiple_plugin_functions_one_missing() {
+        // Test with two plugin function IDs, one has missing permissions
+        let allowed = vec![
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.func1".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemRead,
+                    &["/data"],
+                )]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.func2".to_string(),
+                permissions: Permissions::new(vec![]), // No Execute permission granted
+            },
+        ];
+        let required = vec![
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.func1".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemRead,
+                    &["/data/file.txt"],
+                )]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.func2".to_string(),
+                permissions: Permissions::new(vec![perm(PermissionType::Execute, &[])]),
+            },
+        ];
+        let code = run_with_multi_plugin_permissions(allowed, required, "console.log('x');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 1);
+        assert_eq!(
+            res.result_type,
+            sapphillon::v1::WorkflowResultType::Failure as i32
+        );
+        assert!(res.result.contains("Permission denied"));
+        assert!(res.result.contains("PERMISSION_TYPE_EXECUTE"));
+    }
+
+    #[test]
+    fn test_workflow_multiple_plugin_functions_id_not_in_allowed() {
+        // Test where required has a plugin_function_id not present in allowed list
+        let allowed = vec![PluginFunctionPermissions {
+            plugin_function_id: "plugin.funcA".to_string(),
+            permissions: Permissions::new(vec![perm(PermissionType::FilesystemRead, &["/data"])]),
+        }];
+        let required = vec![
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.funcA".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemRead,
+                    &["/data/file.txt"],
+                )]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.funcB".to_string(),
+                permissions: Permissions::new(vec![perm(PermissionType::Execute, &[])]),
+            },
+        ];
+        let code = run_with_multi_plugin_permissions(allowed, required, "console.log('x');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 1);
+        assert_eq!(
+            res.result_type,
+            sapphillon::v1::WorkflowResultType::Failure as i32
+        );
+        assert!(res.result.contains("Permission denied"));
+    }
+
+    #[test]
+    fn test_workflow_multiple_plugin_functions_same_id_merge() {
+        // Test with multiple allowed entries for the same plugin_function_id (merging behavior)
+        let allowed = vec![
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.main".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemRead,
+                    &["/workspace"],
+                )]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.main".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemWrite,
+                    &["/output"],
+                )]),
+            },
+        ];
+        let required = vec![PluginFunctionPermissions {
+            plugin_function_id: "plugin.main".to_string(),
+            permissions: Permissions::new(vec![
+                perm(PermissionType::FilesystemRead, &["/workspace/src/lib.rs"]),
+                perm(PermissionType::FilesystemWrite, &["/output/result.txt"]),
+            ]),
+        }];
+        let code = run_with_multi_plugin_permissions(allowed, required, "console.log('merged');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 0);
+        assert_eq!(
+            res.result_type,
+            sapphillon::v1::WorkflowResultType::SuccessUnspecified as i32
+        );
+    }
+
+    #[test]
+    fn test_workflow_multiple_plugin_functions_composite() {
+        // Test with three different plugin functions with various permission types
+        let allowed = vec![
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.reader".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemRead,
+                    &["/project"],
+                )]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.writer".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemWrite,
+                    &["/logs"],
+                )]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.networker".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::NetAccess,
+                    &["https://api.example.com"],
+                )]),
+            },
+        ];
+        let required = vec![
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.reader".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemRead,
+                    &["/project/data.json"],
+                )]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.writer".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::FilesystemWrite,
+                    &["/logs/output.log"],
+                )]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "plugin.networker".to_string(),
+                permissions: Permissions::new(vec![perm(
+                    PermissionType::NetAccess,
+                    &["https://api.example.com/v1/data"],
+                )]),
+            },
+        ];
+        let code =
+            run_with_multi_plugin_permissions(allowed, required, "console.log('composite');");
+        let res = &code.result[0];
+        assert_eq!(res.exit_code, 0);
+        assert_eq!(
+            res.result_type,
+            sapphillon::v1::WorkflowResultType::SuccessUnspecified as i32
+        );
     }
 }

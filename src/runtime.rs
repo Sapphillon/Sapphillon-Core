@@ -14,7 +14,9 @@ use crate::permission::{
 
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
+use std::future::Future;
 use std::sync::{Arc, Mutex};
+use tokio::runtime::Handle;
 
 /// Represents the standard output (stdout) of a workflow execution.
 /// Each variant holds the output as a string.
@@ -26,7 +28,8 @@ pub enum WorkflowStdout {
 
 /// Stores workflow-related state for operations within the runtime.
 /// Includes workflow ID, captured stdout results, and a flag for capturing stdout.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
+#[allow(dead_code)]
 pub struct OpStateWorkflowData {
     workflow_id: String,
     result: Vec<WorkflowStdout>,
@@ -34,6 +37,19 @@ pub struct OpStateWorkflowData {
     // Support multiple plugin-function permission entries for allowed/required.
     allowed_permissions: Option<Vec<PluginFunctionPermissions>>,
     required_permissions: Option<Vec<PluginFunctionPermissions>>,
+    pub tokio_runtime_handle: Handle,
+}
+
+impl std::fmt::Debug for OpStateWorkflowData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OpStateWorkflowData")
+            .field("workflow_id", &self.workflow_id)
+            .field("result", &self.result)
+            .field("capture_stdout", &self.capture_stdout)
+            .field("allowed_permissions", &self.allowed_permissions)
+            .field("required_permissions", &self.required_permissions)
+            .finish()
+    }
 }
 
 impl OpStateWorkflowData {
@@ -43,6 +59,7 @@ impl OpStateWorkflowData {
         capture_stdout: bool,
         allowed_permissions: Option<Vec<PluginFunctionPermissions>>,
         required_permissions: Option<Vec<PluginFunctionPermissions>>,
+        tokio_runtime_handle: Handle,
     ) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
@@ -50,6 +67,7 @@ impl OpStateWorkflowData {
             capture_stdout,
             allowed_permissions,
             required_permissions,
+            tokio_runtime_handle,
         }
     }
 
@@ -92,6 +110,16 @@ impl OpStateWorkflowData {
     pub fn get_required_permissions(&self) -> &Option<Vec<PluginFunctionPermissions>> {
         &self.required_permissions
     }
+
+    /// Returns a cloned Tokio runtime handle for running futures from sync ops.
+    pub fn tokio_handle(&self) -> Handle {
+        self.tokio_runtime_handle.clone()
+    }
+
+    /// Runs the provided future on the stored Tokio runtime using `block_on`.
+    pub fn block_on<F: Future>(&self, fut: F) -> F::Output {
+        self.tokio_runtime_handle.block_on(fut)
+    }
 }
 
 /// Executes a JavaScript script in a Deno `JsRuntime`.
@@ -122,7 +150,7 @@ pub(crate) fn run_script(
     // Register the extension with the provided operations
     let extension = Extension {
         name: "ext",
-        ops: std::borrow::Cow::Owned(ext_func),
+        ops: ext_func.into(),
         middleware_fn: Some(Box::new(|op| match op.name {
             "op_print" => op_print_wrapper(),
             _ => op,
@@ -139,16 +167,21 @@ pub(crate) fn run_script(
     });
 
     let mut data: Arc<Mutex<OpStateWorkflowData>>;
+    let mut tokio_runtime_option: Option<tokio::runtime::Runtime> = None;
     match workflow_data {
         Some(d) => data = d,
         None => {
+            let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+
             // If no workflow data is provided, create a default one
             data = Arc::new(Mutex::new(OpStateWorkflowData::new(
                 "default_workflow",
                 false,
                 None,
                 None,
+                tokio_runtime.handle().clone(),
             )));
+            tokio_runtime_option = Some(tokio_runtime);
         }
     }
     runtime.op_state().borrow_mut().put(data.clone());
@@ -246,7 +279,9 @@ mod tests {
 
     use super::*;
     use deno_core::{OpState, op2};
+    use serial_test::serial;
 
+    #[serial]
     #[test]
     fn test_extension() {
         #[op2]
@@ -263,6 +298,7 @@ mod tests {
         println!("[test_extension] result: {result:?}");
     }
 
+    #[serial]
     #[test]
     fn test_run_script() {
         let script = "1 + 1;";
@@ -270,6 +306,7 @@ mod tests {
         let result = run_script(script, vec![], None, None);
         assert!(result.is_ok(), "Script should run successfully");
     }
+    #[serial]
     #[test]
     fn test_run_script_hello() {
         let script = "a = 1 + 1; console.log('Hello, world!');console.log(a);";
@@ -278,6 +315,7 @@ mod tests {
         assert!(result.is_ok(), "Script should run successfully");
     }
 
+    #[serial]
     #[test]
     fn test_run_script_opstate_workflow_data() {
         // テスト用op: opstateからworkflow_idを取得
@@ -293,12 +331,14 @@ mod tests {
         use std::sync::{Arc, Mutex};
 
         // テスト用workflow_dataを生成
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: false,
             allowed_permissions: None,
             required_permissions: None,
+            tokio_runtime_handle: tokio_runtime.handle().clone(),
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -323,6 +363,7 @@ mod tests {
         );
     }
 
+    #[serial]
     #[test]
     fn test_run_script_change_opstate_workflow_data() {
         // テスト用op: opstateからworkflow_idを取得
@@ -339,12 +380,14 @@ mod tests {
         use std::sync::{Arc, Mutex};
 
         // テスト用workflow_dataを生成
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData {
             workflow_id: "test_id_123".to_string(),
             result: vec![WorkflowStdout::Stdout("Initial stdout".to_string())],
             capture_stdout: true,
             allowed_permissions: None,
             required_permissions: None,
+            tokio_runtime_handle: tokio_runtime.handle().clone(),
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -378,17 +421,20 @@ mod tests {
         );
     }
 
+    #[serial]
     #[test]
     fn test_run_script_capture_stdout() {
         use std::sync::{Arc, Mutex};
 
         // テスト用workflow_dataを生成
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
             allowed_permissions: None,
             required_permissions: None,
+            tokio_runtime_handle: tokio_runtime.handle().clone(),
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -419,32 +465,40 @@ mod tests {
     }
 
     // New unit tests for stdout_to_string()
+    #[serial]
     #[test]
     fn test_stdout_to_string_empty() {
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let data = OpStateWorkflowData {
             workflow_id: "w".to_string(),
             result: vec![],
             capture_stdout: true,
             allowed_permissions: None,
             required_permissions: None,
+            tokio_runtime_handle: tokio_runtime.handle().clone(),
         };
         assert_eq!(data.stdout_to_string(), "");
     }
 
+    #[serial]
     #[test]
     fn test_stdout_to_string_single() {
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let data = OpStateWorkflowData {
             workflow_id: "w".to_string(),
             result: vec![WorkflowStdout::Stdout("Hello".to_string())],
             capture_stdout: true,
             allowed_permissions: None,
             required_permissions: None,
+            tokio_runtime_handle: tokio_runtime.handle().clone(),
         };
         assert_eq!(data.stdout_to_string(), "Hello");
     }
 
+    #[serial]
     #[test]
     fn test_stdout_to_string_multiple() {
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let data = OpStateWorkflowData {
             workflow_id: "w".to_string(),
             result: vec![
@@ -455,20 +509,24 @@ mod tests {
             capture_stdout: true,
             allowed_permissions: None,
             required_permissions: None,
+            tokio_runtime_handle: tokio_runtime.handle().clone(),
         };
         assert_eq!(data.stdout_to_string(), "One\nTwo\nThree");
     }
+    #[serial]
     #[test]
     fn test_run_script_capture_stdout_from_return() {
         use std::sync::{Arc, Mutex};
 
         // テスト用workflow_dataを生成
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
             allowed_permissions: None,
             required_permissions: None,
+            tokio_runtime_handle: tokio_runtime.handle().clone(),
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -496,17 +554,20 @@ mod tests {
             "Results should match expected output"
         );
     }
+    #[serial]
     #[test]
     fn test_run_pre_script() {
         use std::sync::{Arc, Mutex};
 
         // テスト用workflow_dataを生成
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData {
             workflow_id: "test_id_123".to_string(),
             result: vec![],
             capture_stdout: true,
             allowed_permissions: None,
             required_permissions: None,
+            tokio_runtime_handle: tokio_runtime.handle().clone(),
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -547,12 +608,20 @@ mod tests {
             "Results should match expected output"
         );
     }
+    #[serial]
     #[test]
     fn test_run_script_with_pre_and_workflow_success_simple() {
         use std::sync::{Arc, Mutex};
 
         // Prepare workflow_data that captures stdout
-        let workflow_data = OpStateWorkflowData::new("wid_simple", true, None, None);
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        let workflow_data = OpStateWorkflowData::new(
+            "wid_simple",
+            true,
+            None,
+            None,
+            tokio_runtime.handle().clone(),
+        );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
         // Pre-script lines (will be joined with "\n")
@@ -582,11 +651,19 @@ mod tests {
         assert_eq!(results[1], WorkflowStdout::Stdout("123\n".to_string()));
     }
 
+    #[serial]
     #[test]
     fn test_run_script_no_pre_script_simple() {
         use std::sync::{Arc, Mutex};
 
-        let workflow_data = OpStateWorkflowData::new("wid_no_pre", true, None, None);
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        let workflow_data = OpStateWorkflowData::new(
+            "wid_no_pre",
+            true,
+            None,
+            None,
+            tokio_runtime.handle().clone(),
+        );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
         let script = r#"console.log('only workflow');"#;
@@ -605,6 +682,7 @@ mod tests {
         );
     }
 
+    #[serial]
     #[test]
     fn test_run_script_pre_script_failure_maps_error() {
         // Invalid JS in pre_script to force a JsError (syntax error)
@@ -636,6 +714,7 @@ mod tests {
         }
     }
 
+    #[serial]
     #[test]
     fn test_run_script_workflow_failure_maps_error() {
         // Valid pre-script
@@ -669,10 +748,173 @@ mod tests {
 }
 
 #[cfg(test)]
+mod tokio_runtime_tests {
+    use super::*;
+    use deno_core::{OpState, op2};
+    use serial_test::serial;
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    // Uses the stored Tokio handle to spawn an async task and wait for its result.
+    #[op2]
+    #[string]
+    fn op_spawn_async(state: &mut OpState) -> String {
+        // Clone the handle so the mutex guard is released before awaiting.
+        let handle = {
+            let data = state
+                .borrow::<Arc<Mutex<OpStateWorkflowData>>>()
+                .lock()
+                .unwrap();
+            data.tokio_handle()
+        };
+
+        // Drive an async function on the runtime and join a spawned task.
+        let value = handle.block_on(async {
+            let handle_clone = handle.clone();
+            let join = handle_clone.spawn(async {
+                tokio::time::sleep(Duration::from_millis(8)).await;
+                99u32
+            });
+            join.await.expect("tokio task should succeed")
+        });
+
+        format!("joined={value}")
+    }
+
+    #[op2]
+    #[string]
+    fn op_sleep(state: &mut OpState) -> String {
+        let data = state
+            .borrow::<Arc<Mutex<OpStateWorkflowData>>>()
+            .lock()
+            .unwrap();
+        data.block_on(async {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        });
+        "Slept for 10ms".to_string()
+    }
+
+    #[op2]
+    #[string]
+    fn op_block_on_add(state: &mut OpState) -> String {
+        let data = state
+            .borrow::<Arc<Mutex<OpStateWorkflowData>>>()
+            .lock()
+            .unwrap();
+
+        async fn double_after_delay(v: u32) -> u32 {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+            v * 2
+        }
+
+        let total = data.block_on(async {
+            let a = double_after_delay(10).await;
+            let b = double_after_delay(5).await;
+            a + b
+        });
+
+        format!("sum={total}")
+    }
+
+    #[test]
+    #[serial]
+    fn test_op_with_tokio_runtime() {
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        let workflow_data = OpStateWorkflowData::new(
+            "tokio_test",
+            true,
+            None,
+            None,
+            tokio_runtime.handle().clone(),
+        );
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        let script = r#"
+            let result = Deno.core.ops.op_sleep();
+            if (result !== "Slept for 10ms") {
+                throw new Error("Unexpected result from op_sleep");
+            }
+        "#;
+
+        let result = run_script(script, vec![op_sleep()], Some(workflow_data_arc), None);
+        assert!(
+            result.is_ok(),
+            "Script with tokio op should run successfully"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_op_block_on_future_result() {
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        let workflow_data = OpStateWorkflowData::new(
+            "tokio_block_on",
+            true,
+            None,
+            None,
+            tokio_runtime.handle().clone(),
+        );
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        let script = r#"
+            const value = Deno.core.ops.op_block_on_add();
+            if (value !== "sum=30") {
+                throw new Error(`Unexpected value: ${value}`);
+            }
+        "#;
+
+        let result = run_script(
+            script,
+            vec![op_block_on_add()],
+            Some(workflow_data_arc),
+            None,
+        );
+        assert!(
+            result.is_ok(),
+            "Script with block_on op should run successfully"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_op_spawn_async_on_tokio_runtime() {
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+        let workflow_data = OpStateWorkflowData::new(
+            "tokio_spawn",
+            true,
+            None,
+            None,
+            tokio_runtime.handle().clone(),
+        );
+        let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
+
+        let script = r#"
+            const v = Deno.core.ops.op_spawn_async();
+            if (v !== "joined=99") {
+                throw new Error(`Unexpected spawn result: ${v}`);
+            }
+        "#;
+
+        let result = run_script(
+            script,
+            vec![op_spawn_async()],
+            Some(workflow_data_arc),
+            None,
+        );
+        assert!(
+            result.is_ok(),
+            "Script with spawned tokio async op should run successfully"
+        );
+    }
+}
+
+#[cfg(test)]
 mod per_plugin_permission_tests {
     use super::*;
+    use serial_test::serial;
     use std::sync::{Arc, Mutex};
 
+    #[serial]
     #[test]
     fn test_run_script_per_plugin_merge_allowed_success() {
         use crate::permission::{Permissions, PluginFunctionPermissions};
@@ -711,11 +953,13 @@ mod per_plugin_permission_tests {
             permissions: Permissions::new(vec![required]),
         };
 
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData::new(
             "wid_merge",
             false,
             Some(vec![allowed_pf1, allowed_pf2]),
             Some(vec![required_pf]),
+            tokio_runtime.handle().clone(),
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -726,6 +970,7 @@ mod per_plugin_permission_tests {
         );
     }
 
+    #[serial]
     #[test]
     fn test_run_script_per_plugin_allowed_missing() {
         use crate::permission::{Permissions, PluginFunctionPermissions};
@@ -748,11 +993,13 @@ mod per_plugin_permission_tests {
             permissions: Permissions::new(vec![]),
         };
 
+        let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData::new(
             "wid_missing",
             false,
             Some(vec![allowed_pf_other]),
             Some(vec![required_pf]),
+            tokio_runtime.handle().clone(),
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 

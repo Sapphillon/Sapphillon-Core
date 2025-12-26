@@ -3,24 +3,12 @@
 // SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
 
 use crate::proto::sapphillon::v1 as sapphillon_v1;
+pub use sapphillon_v1::Permission;
+pub use sapphillon_v1::PermissionType;
 
 use crate::utils::{check_path::paths_cover_by_ancestor, check_url::urls_cover_by_ancestor};
 use std::collections::HashMap;
 use std::path::PathBuf;
-
-impl std::fmt::Display for sapphillon_v1::Permission {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let permission_type = self.permission_type;
-        let perm = sapphillon_v1::PermissionType::try_from(permission_type).unwrap();
-        let resources = self.resource.join(", ");
-        write!(
-            f,
-            "Permission {{{{ type: {}, resources: [{}] }}}}",
-            perm.as_str_name(),
-            resources
-        )
-    }
-}
 
 /// Associates a plugin function identifier with a set of permissions.
 ///
@@ -237,6 +225,76 @@ pub fn check_permission(
     } else {
         CheckPermissionResult::MissingPermission(missing_permissions)
     }
+}
+
+/// Finds and returns permissions from a list of allowed permissions that match
+/// the given function ID or a wildcard (*).
+///
+/// # Arguments
+/// * `allowed` - A list of allowed permissions.
+/// * `target_function_ids` - The function IDs to match against (supports multiple).
+///
+/// # Returns
+/// The matching `Permissions`. Returns empty `Permissions` if no match is found.
+pub fn find_allowed_permissions(
+    allowed: &[PluginFunctionPermissions],
+    target_function_ids: &[&str],
+) -> Permissions {
+    allowed
+        .iter()
+        .find(|p| {
+            target_function_ids.contains(&p.plugin_function_id.as_str())
+                || p.plugin_function_id == "*"
+        })
+        .map(|p| p.permissions.clone())
+        .unwrap_or_else(|| Permissions {
+            permissions: vec![],
+        })
+}
+
+/// Finds the permissions for a target function ID from a list of allowed
+/// permissions and checks them against the required permissions.
+///
+/// # Arguments
+/// * `allowed` - A list of allowed permissions.
+/// * `target_function_ids` - The function IDs to match against (supports multiple).
+/// * `required_permissions` - The permissions required.
+///
+/// # Returns
+/// A `CheckPermissionResult`.
+pub fn find_and_check_permission(
+    allowed: &[PluginFunctionPermissions],
+    target_function_ids: &[&str],
+    required_permissions: &Permissions,
+) -> CheckPermissionResult {
+    let allowed_permissions = find_allowed_permissions(allowed, target_function_ids);
+    check_permission(&allowed_permissions, required_permissions)
+}
+
+/// A high-level helper function to check permissions that include a resource
+/// (e.g., file path, URL, command).
+///
+/// # Arguments
+/// * `allowed` - A list of allowed permissions.
+/// * `target_function_ids` - The function ID to match against.
+/// * `base_permissions` - The base permission definition.
+/// * `resource` - The resource string to check.
+///
+/// # Returns
+/// `Ok(())` or `Err(MissingPermissions)`.
+pub fn check_plugin_permission_with_resource(
+    allowed: &[PluginFunctionPermissions],
+    target_function_ids: &[&str],
+    mut base_permissions: Vec<Permission>,
+    resource: String,
+) -> CheckPermissionResult {
+    if let Some(perm) = base_permissions.first_mut() {
+        perm.resource = vec![resource];
+    }
+    let required = Permissions {
+        permissions: base_permissions,
+    };
+    find_and_check_permission(allowed, target_function_ids, &required)
 }
 
 #[cfg(test)]
@@ -497,5 +555,150 @@ mod tests {
             &Permissions::new(vec![required]),
         );
         assert!(matches!(res, CheckPermissionResult::Ok));
+    }
+
+    #[test]
+    fn test_find_allowed_permissions_exact_match() {
+        let allowed = vec![
+            PluginFunctionPermissions {
+                plugin_function_id: "test.func1".to_string(),
+                permissions: Permissions::new(vec![sapphillon_v1::Permission {
+                    permission_type: 1,
+                    ..Default::default()
+                }]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "test.func2".to_string(),
+                permissions: Permissions::new(vec![sapphillon_v1::Permission {
+                    permission_type: 2,
+                    ..Default::default()
+                }]),
+            },
+        ];
+
+        let result = find_allowed_permissions(&allowed, &["test.func1"]);
+        assert_eq!(result.permissions.len(), 1);
+        assert_eq!(result.permissions[0].permission_type, 1);
+    }
+
+    #[test]
+    fn test_find_allowed_permissions_wildcard_match() {
+        let allowed = vec![
+            PluginFunctionPermissions {
+                plugin_function_id: "*".to_string(),
+                permissions: Permissions::new(vec![sapphillon_v1::Permission {
+                    permission_type: 99,
+                    ..Default::default()
+                }]),
+            },
+            PluginFunctionPermissions {
+                plugin_function_id: "test.func2".to_string(),
+                permissions: Permissions::new(vec![sapphillon_v1::Permission {
+                    permission_type: 2,
+                    ..Default::default()
+                }]),
+            },
+        ];
+
+        let result = find_allowed_permissions(&allowed, &["test.func1"]);
+        assert_eq!(result.permissions.len(), 1);
+        assert_eq!(result.permissions[0].permission_type, 99);
+    }
+
+    #[test]
+    fn test_find_allowed_permissions_no_match() {
+        let allowed = vec![PluginFunctionPermissions {
+            plugin_function_id: "test.func1".to_string(),
+            permissions: Permissions::new(vec![sapphillon_v1::Permission {
+                permission_type: 1,
+                ..Default::default()
+            }]),
+        }];
+
+        let result = find_allowed_permissions(&allowed, &["test.func3"]);
+        assert!(result.permissions.is_empty());
+    }
+
+    #[test]
+    fn test_find_allowed_permissions_multiple_function_ids() {
+        let allowed = vec![PluginFunctionPermissions {
+            plugin_function_id: "fetch.post".to_string(),
+            permissions: Permissions::new(vec![sapphillon_v1::Permission {
+                permission_type: 6, // NetAccess
+                ..Default::default()
+            }]),
+        }];
+
+        let result = find_allowed_permissions(&allowed, &["fetch.get", "fetch.post"]);
+        assert_eq!(result.permissions.len(), 1);
+        assert_eq!(result.permissions[0].permission_type, 6);
+    }
+
+    #[test]
+    fn test_find_and_check_permission_ok() {
+        let allowed = vec![PluginFunctionPermissions {
+            plugin_function_id: "filesystem.read".to_string(),
+            permissions: Permissions::new(vec![sapphillon_v1::Permission {
+                permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+                resource: vec!["/home/user".to_string()],
+                ..Default::default()
+            }]),
+        }];
+        let required = Permissions::new(vec![sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/home/user/file.txt".to_string()],
+            ..Default::default()
+        }]);
+
+        let result = find_and_check_permission(&allowed, &["filesystem.read"], &required);
+        assert!(matches!(result, CheckPermissionResult::Ok));
+    }
+
+    #[test]
+    fn test_find_and_check_permission_denied() {
+        let allowed = vec![PluginFunctionPermissions {
+            plugin_function_id: "filesystem.read".to_string(),
+            permissions: Permissions::new(vec![sapphillon_v1::Permission {
+                permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+                resource: vec!["/home/guest".to_string()],
+                ..Default::default()
+            }]),
+        }];
+        let required = Permissions::new(vec![sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
+            resource: vec!["/home/user/file.txt".to_string()],
+            ..Default::default()
+        }]);
+
+        let result = find_and_check_permission(&allowed, &["filesystem.read"], &required);
+        assert!(matches!(
+            result,
+            CheckPermissionResult::MissingPermission(_)
+        ));
+    }
+
+    #[test]
+    fn test_check_plugin_permission_with_resource() {
+        let allowed = vec![PluginFunctionPermissions {
+            plugin_function_id: "filesystem.write".to_string(),
+            permissions: Permissions::new(vec![sapphillon_v1::Permission {
+                permission_type: sapphillon_v1::PermissionType::FilesystemWrite as i32,
+                resource: vec!["/data".to_string()],
+                ..Default::default()
+            }]),
+        }];
+        let base_permissions = vec![sapphillon_v1::Permission {
+            permission_type: sapphillon_v1::PermissionType::FilesystemWrite as i32,
+            ..Default::default()
+        }];
+        let resource = "/data/new_file.txt".to_string();
+
+        let result = check_plugin_permission_with_resource(
+            &allowed,
+            &["filesystem.write"],
+            base_permissions,
+            resource,
+        );
+        assert!(matches!(result, CheckPermissionResult::Ok));
     }
 }
