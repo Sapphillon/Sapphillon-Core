@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! Permission Related Opration
+//! Permission Related Operation
 
 use anyhow::Result;
 use deno_permissions::{Permissions, PermissionsOptions};
