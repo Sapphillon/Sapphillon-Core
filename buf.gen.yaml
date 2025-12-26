@@ -6,9 +6,9 @@ plugins:
     - file_descriptor_set
     - compile_well_known_types
     - enable_type_names
-  out: src/proto
+  out: proto/src/proto
 - remote: buf.build/community/neoeinstein-tonic:v0.4.1
-  out: src/proto
+  out: proto/src/proto
 inputs:
   - git_repo: https://github.com/Walkmana-25/Sapphillon_API.git
     branch: v0.10.0

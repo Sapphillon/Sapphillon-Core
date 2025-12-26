@@ -10,20 +10,6 @@ use crate::utils::{check_path::paths_cover_by_ancestor, check_url::urls_cover_by
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-impl std::fmt::Display for sapphillon_v1::Permission {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let permission_type = self.permission_type;
-        let perm = sapphillon_v1::PermissionType::try_from(permission_type).unwrap();
-        let resources = self.resource.join(", ");
-        write!(
-            f,
-            "Permission {{{{ type: {}, resources: [{}] }}}}",
-            perm.as_str_name(),
-            resources
-        )
-    }
-}
-
 /// Associates a plugin function identifier with a set of permissions.
 ///
 /// Typically used to describe the permissions that a plugin function requires
