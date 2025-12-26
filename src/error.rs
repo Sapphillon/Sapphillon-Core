@@ -95,7 +95,7 @@ impl std::fmt::Display for WorkflowRuntimeErrorType {
 /// let err = WorkflowRuntimeError {
 ///     message: "evaluation failed".into(),
 ///     error_type: WorkflowRuntimeErrorType::WorkflowScriptExecuteError,
-///     js_error: /* deno_core::error::CoreError value here */ unimplemented!(),
+///     js_error: /* deno_core::error::JsError value here */ unimplemented!(),
 /// };
 /// assert_eq!(err.error_type.to_string(), "Workflow script execute error");
 /// ```

@@ -11,7 +11,7 @@ homepage = "https://github.com/Walkmana-25/Sapphillon-Core"
 
 [workspace]
 resolver = "3"
-members = ["ext_plugin/", "proto"]
+members = ["ext_plugin", "proto"]
 
 [workspace.dependencies]
 proto = { path = "proto" }
