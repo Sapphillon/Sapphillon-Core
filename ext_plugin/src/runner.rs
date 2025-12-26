@@ -26,12 +26,11 @@ use deno_runtime::deno_core::v8;
 
 use crate::worker::create_main_worker;
 
-#[allow(non_camel_case_types)]
-pub type Js_Error = JsErrorBox;
+pub type JsError = JsErrorBox;
 
-type JsResult<T> = std::result::Result<T, Js_Error>;
+type JsResult<T> = std::result::Result<T, JsError>;
 
-fn to_js_error<E: std::fmt::Display>(err: E) -> Js_Error {
+fn to_js_error<E: std::fmt::Display>(err: E) -> JsError {
     JsErrorBox::generic(err.to_string())
 }
 
@@ -189,7 +188,7 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
 
-    fn assert_permission_denied(err: &Js_Error, expected: &[&str]) {
+    fn assert_permission_denied(err: &JsError, expected: &[&str]) {
         let msg = err.to_string().to_lowercase();
         // Deno commonly uses "PermissionDenied" or "NotCapable" errors.
         assert!(

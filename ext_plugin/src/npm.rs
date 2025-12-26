@@ -55,6 +55,6 @@ impl NpmPackageFolderResolver for NoopNpmPackageFolderResolver {
     }
 }
 
-/// A dummy ExtNodeSys implementation using the real filesystem.
-/// This is needed for MainWorker but we don't support Node.js features.
+/// ExtNodeSys implementation backed by the real filesystem (`sys_traits::impls::RealSys`).
+/// Used for MainWorker compatibility; Node.js-specific features are not supported in this environment.
 pub type NoopExtNodeSys = sys_traits::impls::RealSys;
