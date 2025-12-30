@@ -26,6 +26,7 @@ deno_error = "0.7.3"
 unescaper = "0.1.8"
 thiserror = "2.0.17"
 url = "2.5.7"
+regex = "1"
 
 
 [build-dependencies]
