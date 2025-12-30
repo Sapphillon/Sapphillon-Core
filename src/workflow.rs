@@ -221,7 +221,10 @@ impl CoreWorkflowCode {
     /// );
     /// // plugins will only contain myPlugin.doSomething() if doSomething is defined
     /// ```
-    pub fn extract_used_plugins(&self, available_plugins: &[CorePluginPackage]) -> Vec<PluginIdentifier> {
+    pub fn extract_used_plugins(
+        &self,
+        available_plugins: &[CorePluginPackage],
+    ) -> Vec<PluginIdentifier> {
         extract_used_plugins_from_code(&self.code, available_plugins)
     }
 }
@@ -545,11 +548,7 @@ mod tests {
             .iter()
             .map(|n| make_test_plugin_function(n))
             .collect();
-        CorePluginPackage::new(
-            format!("{}_id", pkg_name),
-            pkg_name.to_string(),
-            functions,
-        )
+        CorePluginPackage::new(format!("{}_id", pkg_name), pkg_name.to_string(), functions)
     }
 
     #[test]
@@ -570,15 +569,21 @@ mod tests {
         let plugins = code.extract_used_plugins(&available_plugins);
 
         assert_eq!(plugins.len(), 2);
-        assert!(plugins.iter().any(|p| p.package_name == "myPlugin" && p.function_name == "doSomething"));
-        assert!(plugins.iter().any(|p| p.package_name == "anotherPlugin" && p.function_name == "run"));
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "myPlugin" && p.function_name == "doSomething")
+        );
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "anotherPlugin" && p.function_name == "run")
+        );
     }
 
     #[test]
     fn test_extract_used_plugins_duplicates_removed() {
-        let available_plugins = vec![
-            make_test_plugin_package("plugin", &["func", "other"]),
-        ];
+        let available_plugins = vec![make_test_plugin_package("plugin", &["func", "other"])];
 
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
@@ -591,16 +596,22 @@ mod tests {
         let plugins = code.extract_used_plugins(&available_plugins);
 
         assert_eq!(plugins.len(), 2);
-        assert!(plugins.iter().any(|p| p.package_name == "plugin" && p.function_name == "func"));
-        assert!(plugins.iter().any(|p| p.package_name == "plugin" && p.function_name == "other"));
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "plugin" && p.function_name == "func")
+        );
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "plugin" && p.function_name == "other")
+        );
     }
 
     #[test]
     fn test_extract_used_plugins_filters_non_plugins() {
         // Only myPlugin.action is a registered plugin
-        let available_plugins = vec![
-            make_test_plugin_package("myPlugin", &["action"]),
-        ];
+        let available_plugins = vec![make_test_plugin_package("myPlugin", &["action"])];
 
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
@@ -620,18 +631,10 @@ mod tests {
 
     #[test]
     fn test_extract_used_plugins_empty_code() {
-        let available_plugins = vec![
-            make_test_plugin_package("plugin", &["func"]),
-        ];
+        let available_plugins = vec![make_test_plugin_package("plugin", &["func"])];
 
-        let code = CoreWorkflowCode::new(
-            "wid".to_string(),
-            "".to_string(),
-            vec![],
-            1,
-            vec![],
-            vec![],
-        );
+        let code =
+            CoreWorkflowCode::new("wid".to_string(), "".to_string(), vec![], 1, vec![], vec![]);
         let plugins = code.extract_used_plugins(&available_plugins);
 
         assert!(plugins.is_empty());
@@ -673,7 +676,8 @@ mod tests {
                 console.log(JSON.stringify(result));
                 dbPlugin.save('key', result);
                 unknownPlugin.call(); // This should NOT be detected
-            "#.to_string(),
+            "#
+            .to_string(),
             vec![],
             1,
             vec![],
@@ -682,17 +686,27 @@ mod tests {
         let plugins = code.extract_used_plugins(&available_plugins);
 
         assert_eq!(plugins.len(), 3);
-        assert!(plugins.iter().any(|p| p.package_name == "filePlugin" && p.function_name == "read"));
-        assert!(plugins.iter().any(|p| p.package_name == "networkPlugin" && p.function_name == "send"));
-        assert!(plugins.iter().any(|p| p.package_name == "dbPlugin" && p.function_name == "save"));
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "filePlugin" && p.function_name == "read")
+        );
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "networkPlugin" && p.function_name == "send")
+        );
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "dbPlugin" && p.function_name == "save")
+        );
     }
 
     #[test]
     fn test_extract_used_plugins_function_not_registered() {
         // Plugin package exists but function is not registered
-        let available_plugins = vec![
-            make_test_plugin_package("myPlugin", &["registeredFunc"]),
-        ];
+        let available_plugins = vec![make_test_plugin_package("myPlugin", &["registeredFunc"])];
 
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
