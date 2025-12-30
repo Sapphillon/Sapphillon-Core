@@ -3466,6 +3466,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "url",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -6858,6 +6859,7 @@ dependencies = [
  "tonic",
  "unescaper",
  "url",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

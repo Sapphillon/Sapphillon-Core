@@ -437,6 +437,7 @@ mod tests {
         assert_eq!(result.unwrap(), 0);
     }
 
+    #[cfg(not(windows))]
     #[tokio::test]
     async fn test_permissions_run_denied_by_default() {
         let result = run_js(
@@ -452,6 +453,7 @@ mod tests {
         assert_permission_denied(&err, &["run"]);
     }
 
+    #[cfg(not(windows))]
     #[tokio::test]
     async fn test_permissions_run_allowed_for_command() {
         let permissions = PermissionsOptions {
