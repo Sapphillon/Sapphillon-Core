@@ -112,8 +112,8 @@ impl Permissions {
             .for_each(|p| match perm_map.get(&p.permission_type) {
                 Some(perm) => {
                     let new_permission = sapphillon_v1::Permission {
-                        display_name: p.display_name.clone() + ", " + &perm.display_name.clone(),
-                        description: p.description.clone() + ", " + &perm.description.clone(),
+                        display_name: p.display_name.clone() + ", " + perm.display_name.as_str(),
+                        description: p.description.clone() + ", " + perm.description.as_str(),
                         permission_type: p.permission_type,
                         resource: [p.resource.clone(), perm.resource.clone()].concat(),
                         permission_level: std::cmp::max(perm.permission_level, p.permission_level),

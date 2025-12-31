@@ -15,6 +15,7 @@ pub mod core;
 pub mod error;
 pub mod permission;
 pub mod plugin;
+pub use ext_plugin;
 pub use proto;
 pub mod runtime;
 pub mod utils;

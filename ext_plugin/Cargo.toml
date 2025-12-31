@@ -1,0 +1,36 @@
+[package]
+name = "ext_plugin"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+deno_runtime.workspace = true
+deno_core.workspace = true
+sys_traits.workspace = true
+deno_lib.workspace = true
+deno_web.workspace = true
+deno_resolver.workspace = true
+node_resolver.workspace = true
+url.workspace = true
+tokio.workspace = true
+deno_error.workspace = true
+once_cell.workspace = true
+deno_tls.workspace = true
+deno_permissions.workspace = true
+proto = { path = "../proto" }
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true
+
+[target.'cfg(windows)'.build-dependencies]
+windows-sys.workspace = true
+
+[build-dependencies]
+deno_runtime.workspace = true
+
+[dev-dependencies]
+httpmock = "0.7"
+tempfile = "3"

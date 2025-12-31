@@ -247,7 +247,7 @@ pub(crate) fn run_script(
         let pre_run_script = scripts.join("\n");
         runtime
             .execute_script("pre_script.js", pre_run_script)
-            .map_err(|e: JsError| {
+            .map_err(|e: Box<JsError>| {
                 Box::new(SapphillonError::WorkflowRuntimeError(
                     WorkflowRuntimeError {
                         message: "Failed to execute pre_script".to_string(),
@@ -261,7 +261,7 @@ pub(crate) fn run_script(
     // Execute the provided script in the runtime
     runtime
         .execute_script("workflow.js", script.to_string())
-        .map_err(|e: JsError| {
+        .map_err(|e: Box<JsError>| {
             Box::new(SapphillonError::WorkflowRuntimeError(
                 WorkflowRuntimeError {
                     message: "Failed to execute workflow script".to_string(),
