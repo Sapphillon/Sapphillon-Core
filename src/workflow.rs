@@ -295,12 +295,15 @@ pub fn extract_used_plugins_from_code(
     // 1. Namespaced packages (e.g. `sapphillon.core.exec.exec`)
     // 2. Optional chaining (e.g. `plugin?.func()`)
     static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-    let pattern =
-        r"\b((?:[a-zA-Z_$][a-zA-Z0-9_$]*\.)*[a-zA-Z_$][a-zA-Z0-9_$]*)\??\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(";
+    let pattern = r"\b((?:[a-zA-Z_$][a-zA-Z0-9_$]*\.)*[a-zA-Z_$][a-zA-Z0-9_$]*)\??\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(";
 
     let re = RE.get_or_init(|| {
-        Regex::new(pattern)
-            .unwrap_or_else(|e| panic!("Failed to compile plugin call regex pattern {:?}: {}", pattern, e))
+        Regex::new(pattern).unwrap_or_else(|e| {
+            panic!(
+                "Failed to compile plugin call regex pattern {:?}: {}",
+                pattern, e
+            )
+        })
     });
 
     let mut seen = HashSet::new();
