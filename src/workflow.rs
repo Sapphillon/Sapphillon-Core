@@ -215,10 +215,8 @@ impl CoreWorkflowCode {
     ///         vec![/* functions */],
     ///     ),
     /// ];
-    /// let plugins = extract_used_plugins_from_code(
-    ///     "myPlugin.doSomething(); unknownObj.method();",
-    ///     &available_plugins,
-    /// );
+    /// // Assuming we have a CoreWorkflowCode instance `workflow`
+    /// let plugins = workflow.extract_used_plugins(&available_plugins);
     /// // plugins will only contain myPlugin.doSomething() if doSomething is defined
     /// ```
     pub fn extract_used_plugins(
@@ -292,12 +290,18 @@ pub fn extract_used_plugins_from_code(
     // Regex pattern to match: identifier.identifier( (function call pattern)
     // This matches patterns like: packageName.functionName(
     // where packageName and functionName are valid JavaScript identifiers
-    let pattern = r"\b([a-zA-Z_$][a-zA-Z0-9_$]*)\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(";
+    //
+    // Updated to support:
+    // 1. Namespaced packages (e.g. `sapphillon.core.exec.exec`)
+    // 2. Optional chaining (e.g. `plugin?.func()`)
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let pattern =
+        r"\b((?:[a-zA-Z_$][a-zA-Z0-9_$]*\.)*[a-zA-Z_$][a-zA-Z0-9_$]*)\??\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(";
 
-    let re = match Regex::new(pattern) {
-        Ok(r) => r,
-        Err(_) => return Vec::new(),
-    };
+    let re = RE.get_or_init(|| {
+        Regex::new(pattern)
+            .unwrap_or_else(|e| panic!("Failed to compile plugin call regex pattern {:?}: {}", pattern, e))
+    });
 
     let mut seen = HashSet::new();
     let mut result = Vec::new();
@@ -728,6 +732,40 @@ mod tests {
     fn test_plugin_identifier_full_name() {
         let plugin = PluginIdentifier::new("myPackage".to_string(), "myFunction".to_string());
         assert_eq!(plugin.full_name(), "myPackage.myFunction");
+    }
+
+    #[test]
+    fn test_extract_used_plugins_optional_chaining() {
+        let available_plugins = vec![make_test_plugin_package("plugin", &["func"])];
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "plugin?.func();".to_string(),
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
+        let plugins = code.extract_used_plugins(&available_plugins);
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].package_name, "plugin");
+        assert_eq!(plugins[0].function_name, "func");
+    }
+
+    #[test]
+    fn test_extract_used_plugins_namespaced() {
+        let available_plugins = vec![make_test_plugin_package("sapphillon.core.exec", &["exec"])];
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "sapphillon.core.exec.exec();".to_string(),
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
+        let plugins = code.extract_used_plugins(&available_plugins);
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].package_name, "sapphillon.core.exec");
+        assert_eq!(plugins[0].function_name, "exec");
     }
 }
 
