@@ -8,6 +8,8 @@ use crate::proto::google::protobuf::Timestamp;
 use crate::proto::sapphillon;
 use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
 use crate::runtime::{OpStateWorkflowData, run_script};
+use regex::Regex;
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::runtime::Handle;
@@ -184,6 +186,173 @@ impl CoreWorkflowCode {
             required_permissions,
             allowed_permissions,
         }
+    }
+
+    /// Extracts the list of plugins used in the workflow code.
+    ///
+    /// This function parses the JavaScript code and extracts plugin function calls
+    /// in the format `package_name.function_name(...)`, then filters them against
+    /// the provided list of available plugin packages.
+    ///
+    /// # Arguments
+    ///
+    /// * `available_plugins` - A slice of `CorePluginPackage` representing all available plugins.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<PluginIdentifier>` containing all unique plugin calls found in the code
+    /// that match the available plugins.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// use sapphillon_core::plugin::CorePluginPackage;
+    ///
+    /// let available_plugins = vec![
+    ///     CorePluginPackage::new(
+    ///         "id1".to_string(),
+    ///         "myPlugin".to_string(),
+    ///         vec![/* functions */],
+    ///     ),
+    /// ];
+    /// // Assuming we have a CoreWorkflowCode instance `workflow`
+    /// let plugins = workflow.extract_used_plugins(&available_plugins);
+    /// // plugins will only contain myPlugin.doSomething() if doSomething is defined
+    /// ```
+    pub fn extract_used_plugins(
+        &self,
+        available_plugins: &[CorePluginPackage],
+    ) -> Vec<PluginIdentifier> {
+        extract_used_plugins_from_code(&self.code, available_plugins)
+    }
+}
+
+/// Extracts the list of plugins used in the given JavaScript code.
+///
+/// This function parses the JavaScript code and extracts plugin function calls
+/// in the format `package_name.function_name(...)`, then filters them against
+/// the provided list of available plugin packages.
+///
+/// Only plugins that are registered in `available_plugins` with matching
+/// package name and function name will be included in the result.
+///
+/// # Arguments
+///
+/// * `code` - The JavaScript code to analyze.
+/// * `available_plugins` - A slice of `CorePluginPackage` representing all available plugins.
+///
+/// # Returns
+///
+/// A `Vec<PluginIdentifier>` containing all unique plugin calls found in the code
+/// that match the available plugins.
+///
+/// # Example
+///
+/// ```ignore
+/// use sapphillon_core::plugin::{CorePluginPackage, CorePluginFunction};
+/// use sapphillon_core::workflow::extract_used_plugins_from_code;
+///
+/// // Create available plugins
+/// let available_plugins = vec![
+///     CorePluginPackage::new(
+///         "pkg1".to_string(),
+///         "filePlugin".to_string(),
+///         vec![
+///             CorePluginFunction::new(
+///                 "f1".to_string(),
+///                 "read".to_string(),
+///                 "Read a file".to_string(),
+///                 dummy_op(),
+///                 None,
+///             ),
+///         ],
+///     ),
+/// ];
+///
+/// let code = "filePlugin.read('/path'); unknownPlugin.call();";
+/// let plugins = extract_used_plugins_from_code(code, &available_plugins);
+/// // plugins will contain only filePlugin.read
+/// ```
+pub fn extract_used_plugins_from_code(
+    code: &str,
+    available_plugins: &[CorePluginPackage],
+) -> Vec<PluginIdentifier> {
+    // Build a HashSet of valid "package_name.function_name" combinations
+    let valid_plugin_calls: HashSet<(String, String)> = available_plugins
+        .iter()
+        .flat_map(|pkg| {
+            pkg.functions
+                .iter()
+                .map(move |func| (pkg.name.clone(), func.name.clone()))
+        })
+        .collect();
+
+    // Regex pattern to match: identifier.identifier( (function call pattern)
+    // This matches patterns like: packageName.functionName(
+    // where packageName and functionName are valid JavaScript identifiers
+    //
+    // Updated to support:
+    // 1. Namespaced packages (e.g. `sapphillon.core.exec.exec`)
+    // 2. Optional chaining (e.g. `plugin?.func()`)
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let pattern = r"\b((?:[a-zA-Z_$][a-zA-Z0-9_$]*\.)*[a-zA-Z_$][a-zA-Z0-9_$]*)\??\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(";
+
+    let re = RE.get_or_init(|| {
+        Regex::new(pattern).unwrap_or_else(|e| {
+            panic!(
+                "Failed to compile plugin call regex pattern {:?}: {}",
+                pattern, e
+            )
+        })
+    });
+
+    let mut seen = HashSet::new();
+    let mut result = Vec::new();
+
+    for cap in re.captures_iter(code) {
+        let package_name = cap[1].to_string();
+        let function_name = cap[2].to_string();
+
+        // Only include if this is a registered plugin function
+        if !valid_plugin_calls.contains(&(package_name.clone(), function_name.clone())) {
+            continue;
+        }
+
+        let key = format!("{}.{}", package_name, function_name);
+        if seen.insert(key) {
+            result.push(PluginIdentifier {
+                package_name,
+                function_name,
+            });
+        }
+    }
+
+    result
+}
+
+/// Represents a plugin function call identifier.
+///
+/// Contains the package name and function name extracted from a workflow code.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PluginIdentifier {
+    /// The name of the plugin package
+    pub package_name: String,
+    /// The name of the function within the package
+    pub function_name: String,
+}
+
+impl PluginIdentifier {
+    /// Creates a new PluginIdentifier.
+    pub fn new(package_name: String, function_name: String) -> Self {
+        Self {
+            package_name,
+            function_name,
+        }
+    }
+
+    /// Returns the full identifier in the format "package_name.function_name".
+    pub fn full_name(&self) -> String {
+        format!("{}.{}", self.package_name, self.function_name)
     }
 }
 #[cfg(test)]
@@ -362,6 +531,244 @@ mod tests {
             vec![],
         );
         assert!(code.result.is_empty(), "Initial results should be empty");
+    }
+
+    // Helper to create a plugin function for testing
+    fn make_test_plugin_function(name: &str) -> CorePluginFunction {
+        use deno_core::op2;
+        #[op2(fast)]
+        fn test_op() -> u32 {
+            0
+        }
+        CorePluginFunction::new(
+            format!("{}_id", name),
+            name.to_string(),
+            "test".to_string(),
+            test_op(),
+            None,
+        )
+    }
+
+    // Helper to create a plugin package for testing
+    fn make_test_plugin_package(pkg_name: &str, func_names: &[&str]) -> CorePluginPackage {
+        let functions = func_names
+            .iter()
+            .map(|n| make_test_plugin_function(n))
+            .collect();
+        CorePluginPackage::new(format!("{}_id", pkg_name), pkg_name.to_string(), functions)
+    }
+
+    #[test]
+    fn test_extract_used_plugins_basic() {
+        let available_plugins = vec![
+            make_test_plugin_package("myPlugin", &["doSomething"]),
+            make_test_plugin_package("anotherPlugin", &["run"]),
+        ];
+
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "myPlugin.doSomething(); anotherPlugin.run();".to_string(),
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
+        let plugins = code.extract_used_plugins(&available_plugins);
+
+        assert_eq!(plugins.len(), 2);
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "myPlugin" && p.function_name == "doSomething")
+        );
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "anotherPlugin" && p.function_name == "run")
+        );
+    }
+
+    #[test]
+    fn test_extract_used_plugins_duplicates_removed() {
+        let available_plugins = vec![make_test_plugin_package("plugin", &["func", "other"])];
+
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "plugin.func(); plugin.func(); plugin.other();".to_string(),
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
+        let plugins = code.extract_used_plugins(&available_plugins);
+
+        assert_eq!(plugins.len(), 2);
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "plugin" && p.function_name == "func")
+        );
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "plugin" && p.function_name == "other")
+        );
+    }
+
+    #[test]
+    fn test_extract_used_plugins_filters_non_plugins() {
+        // Only myPlugin.action is a registered plugin
+        let available_plugins = vec![make_test_plugin_package("myPlugin", &["action"])];
+
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "console.log('test'); Math.random(); myPlugin.action(); someObj.method();".to_string(),
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
+        let plugins = code.extract_used_plugins(&available_plugins);
+
+        // Only myPlugin.action should be detected
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].package_name, "myPlugin");
+        assert_eq!(plugins[0].function_name, "action");
+    }
+
+    #[test]
+    fn test_extract_used_plugins_empty_code() {
+        let available_plugins = vec![make_test_plugin_package("plugin", &["func"])];
+
+        let code =
+            CoreWorkflowCode::new("wid".to_string(), "".to_string(), vec![], 1, vec![], vec![]);
+        let plugins = code.extract_used_plugins(&available_plugins);
+
+        assert!(plugins.is_empty());
+    }
+
+    #[test]
+    fn test_extract_used_plugins_no_available_plugins() {
+        // No plugins are registered, so nothing should be detected
+        let available_plugins: Vec<CorePluginPackage> = vec![];
+
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "myPlugin.doSomething(); anotherPlugin.run();".to_string(),
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
+        let plugins = code.extract_used_plugins(&available_plugins);
+
+        assert!(plugins.is_empty());
+    }
+
+    #[test]
+    fn test_extract_used_plugins_complex_code() {
+        let available_plugins = vec![
+            make_test_plugin_package("filePlugin", &["read"]),
+            make_test_plugin_package("networkPlugin", &["send"]),
+            make_test_plugin_package("dbPlugin", &["save"]),
+        ];
+
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            r#"
+                const result = filePlugin.read('/path/to/file');
+                if (result) {
+                    networkPlugin.send(result);
+                }
+                console.log(JSON.stringify(result));
+                dbPlugin.save('key', result);
+                unknownPlugin.call(); // This should NOT be detected
+            "#
+            .to_string(),
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
+        let plugins = code.extract_used_plugins(&available_plugins);
+
+        assert_eq!(plugins.len(), 3);
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "filePlugin" && p.function_name == "read")
+        );
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "networkPlugin" && p.function_name == "send")
+        );
+        assert!(
+            plugins
+                .iter()
+                .any(|p| p.package_name == "dbPlugin" && p.function_name == "save")
+        );
+    }
+
+    #[test]
+    fn test_extract_used_plugins_function_not_registered() {
+        // Plugin package exists but function is not registered
+        let available_plugins = vec![make_test_plugin_package("myPlugin", &["registeredFunc"])];
+
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "myPlugin.registeredFunc(); myPlugin.unregisteredFunc();".to_string(),
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
+        let plugins = code.extract_used_plugins(&available_plugins);
+
+        // Only registeredFunc should be detected
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].package_name, "myPlugin");
+        assert_eq!(plugins[0].function_name, "registeredFunc");
+    }
+
+    #[test]
+    fn test_plugin_identifier_full_name() {
+        let plugin = PluginIdentifier::new("myPackage".to_string(), "myFunction".to_string());
+        assert_eq!(plugin.full_name(), "myPackage.myFunction");
+    }
+
+    #[test]
+    fn test_extract_used_plugins_optional_chaining() {
+        let available_plugins = vec![make_test_plugin_package("plugin", &["func"])];
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "plugin?.func();".to_string(),
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
+        let plugins = code.extract_used_plugins(&available_plugins);
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].package_name, "plugin");
+        assert_eq!(plugins[0].function_name, "func");
+    }
+
+    #[test]
+    fn test_extract_used_plugins_namespaced() {
+        let available_plugins = vec![make_test_plugin_package("sapphillon.core.exec", &["exec"])];
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "sapphillon.core.exec.exec();".to_string(),
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
+        let plugins = code.extract_used_plugins(&available_plugins);
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].package_name, "sapphillon.core.exec");
+        assert_eq!(plugins[0].function_name, "exec");
     }
 }
 
