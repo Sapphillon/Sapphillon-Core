@@ -179,6 +179,28 @@ impl CorePluginPackage {
     }
 }
 
+impl PluginPackageTrait for CorePluginPackage {
+    type Function = CorePluginFunction;
+
+    fn is_external(&self) -> bool {
+        // A package is external if all of its functions are external
+        // If there are no functions, we consider it internal
+        !self.functions.is_empty() && self.functions.iter().all(|f| f.is_external())
+    }
+
+    fn get_package_id(&self) -> String {
+        self.id.clone()
+    }
+
+    fn get_package_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_functions(&self) -> Vec<Self::Function> {
+        self.functions.clone()
+    }
+}
+
 /// Core representation of an external plugin function.
 /// Holds the function's ID, name, package JavaScript code, and external flag.
 #[derive(Debug, Clone)]
@@ -477,5 +499,129 @@ mod tests {
         
         let opdecl = func.get_opdecl();
         assert_eq!(opdecl.name, "dummy_op");
+    }
+
+    #[test]
+    fn test_plugin_package_trait_is_external_with_internal_functions() {
+        let func = CorePluginFunction::new(
+            "internal_id".to_string(),
+            "internal_name".to_string(),
+            "internal_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let pkg = CorePluginPackage::new(
+            "pkg_id".to_string(),
+            "pkg_name".to_string(),
+            vec![func],
+        );
+        // Package with internal functions should not be external
+        assert!(!pkg.is_external());
+    }
+
+    #[test]
+    fn test_plugin_package_trait_is_external_with_empty_functions() {
+        let pkg = CorePluginPackage::new(
+            "empty_pkg_id".to_string(),
+            "empty_pkg_name".to_string(),
+            vec![],
+        );
+        // Package with no functions should not be external
+        assert!(!pkg.is_external());
+    }
+
+    #[test]
+    fn test_plugin_package_trait_get_package_id() {
+        let func = CorePluginFunction::new(
+            "func_id".to_string(),
+            "func_name".to_string(),
+            "func_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let pkg = CorePluginPackage::new(
+            "test_package_id".to_string(),
+            "test_package_name".to_string(),
+            vec![func],
+        );
+        assert_eq!(pkg.get_package_id(), "test_package_id");
+    }
+
+    #[test]
+    fn test_plugin_package_trait_get_package_name() {
+        let func = CorePluginFunction::new(
+            "func_id".to_string(),
+            "func_name".to_string(),
+            "func_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let pkg = CorePluginPackage::new(
+            "test_package_id".to_string(),
+            "test_package_name".to_string(),
+            vec![func],
+        );
+        assert_eq!(pkg.get_package_name(), "test_package_name");
+    }
+
+    #[test]
+    fn test_plugin_package_trait_get_functions() {
+        let func1 = CorePluginFunction::new(
+            "func1_id".to_string(),
+            "func1_name".to_string(),
+            "func1_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let func2 = CorePluginFunction::new(
+            "func2_id".to_string(),
+            "func2_name".to_string(),
+            "func2_description".to_string(),
+            dummy_op(),
+            Some("pre_run".to_string()),
+        );
+        let pkg = CorePluginPackage::new(
+            "pkg_id".to_string(),
+            "pkg_name".to_string(),
+            vec![func1.clone(), func2.clone()],
+        );
+        
+        let functions = pkg.get_functions();
+        assert_eq!(functions.len(), 2);
+        assert_eq!(functions[0].id, "func1_id");
+        assert_eq!(functions[1].id, "func2_id");
+    }
+
+    #[test]
+    fn test_plugin_package_trait_all_methods() {
+        // Comprehensive test of all trait methods together
+        let func1 = CorePluginFunction::new(
+            "comprehensive_func1_id".to_string(),
+            "comprehensive_func1_name".to_string(),
+            "comprehensive_func1_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let func2 = CorePluginFunction::new(
+            "comprehensive_func2_id".to_string(),
+            "comprehensive_func2_name".to_string(),
+            "comprehensive_func2_description".to_string(),
+            dummy_op(),
+            Some("const y = 100;".to_string()),
+        );
+        let pkg = CorePluginPackage::new(
+            "comprehensive_pkg_id".to_string(),
+            "comprehensive_pkg_name".to_string(),
+            vec![func1, func2],
+        );
+
+        assert!(!pkg.is_external());
+        assert_eq!(pkg.get_package_id(), "comprehensive_pkg_id");
+        assert_eq!(pkg.get_package_name(), "comprehensive_pkg_name");
+        
+        let functions = pkg.get_functions();
+        assert_eq!(functions.len(), 2);
+        assert_eq!(functions[0].get_function_id(), "comprehensive_func1_id");
+        assert_eq!(functions[1].get_function_id(), "comprehensive_func2_id");
     }
 }
