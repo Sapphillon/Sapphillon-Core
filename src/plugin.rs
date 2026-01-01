@@ -252,7 +252,7 @@ impl PluginFunctionTrait for CorePluginExternalFunction {
     }
 
     fn get_opdecl(&self) -> Cow<'static, OpDecl> {
-        Cow::Borrowed(&extplugin_rsjs_bridge::op_rsjs_bridge_opdecl())
+        Cow::Owned(extplugin_rsjs_bridge::rsjs_bridge_opdecl())
     }
 
     fn get_pre_run_js(&self) -> Option<String> {
@@ -298,6 +298,26 @@ impl CorePluginExternalPackage {
             package_js,
             external: true,
         }
+    }
+}
+
+impl PluginPackageTrait for CorePluginExternalPackage {
+    type Function = CorePluginExternalFunction;
+
+    fn is_external(&self) -> bool {
+        self.external
+    }
+
+    fn get_package_id(&self) -> String {
+        self.id.clone()
+    }
+
+    fn get_package_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_functions(&self) -> Vec<Self::Function> {
+        self.functions.clone()
     }
 }
 
@@ -724,5 +744,132 @@ mod tests {
 
         let opdecl = ext_func.get_opdecl();
         assert_eq!(opdecl.name, "rsjs_bridge_opdecl");
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_is_external() {
+        let func = CorePluginExternalFunction::new(
+            "ext_func_id".to_string(),
+            "ext_func_name".to_string(),
+            "ext_func_description".to_string(),
+            "const a = 1;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "ext_pkg_id".to_string(),
+            "ext_pkg_name".to_string(),
+            vec![func],
+            "export default {};".to_string(),
+        );
+        // External package should always return true
+        assert!(pkg.is_external());
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_is_external_with_empty_functions() {
+        let pkg = CorePluginExternalPackage::new(
+            "empty_ext_pkg_id".to_string(),
+            "empty_ext_pkg_name".to_string(),
+            vec![],
+            "export default {};".to_string(),
+        );
+        // External package should always return true even if empty
+        assert!(pkg.is_external());
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_get_package_id() {
+        let func = CorePluginExternalFunction::new(
+            "ext_func_id".to_string(),
+            "ext_func_name".to_string(),
+            "ext_func_description".to_string(),
+            "const a = 1;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "test_ext_package_id".to_string(),
+            "test_ext_package_name".to_string(),
+            vec![func],
+            "export default {};".to_string(),
+        );
+        assert_eq!(pkg.get_package_id(), "test_ext_package_id");
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_get_package_name() {
+        let func = CorePluginExternalFunction::new(
+            "ext_func_id".to_string(),
+            "ext_func_name".to_string(),
+            "ext_func_description".to_string(),
+            "const a = 1;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "test_ext_package_id".to_string(),
+            "test_ext_package_name".to_string(),
+            vec![func],
+            "export default {};".to_string(),
+        );
+        assert_eq!(pkg.get_package_name(), "test_ext_package_name");
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_get_functions() {
+        let func1 = CorePluginExternalFunction::new(
+            "ext_func1_id".to_string(),
+            "ext_func1_name".to_string(),
+            "ext_func1_description".to_string(),
+            "const a = 1;".to_string(),
+        );
+        let func2 = CorePluginExternalFunction::new(
+            "ext_func2_id".to_string(),
+            "ext_func2_name".to_string(),
+            "ext_func2_description".to_string(),
+            "const b = 2;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "ext_pkg_id".to_string(),
+            "ext_pkg_name".to_string(),
+            vec![func1.clone(), func2.clone()],
+            "export default {};".to_string(),
+        );
+
+        let functions = pkg.get_functions();
+        assert_eq!(functions.len(), 2);
+        assert_eq!(functions[0].id, "ext_func1_id");
+        assert_eq!(functions[1].id, "ext_func2_id");
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_all_methods() {
+        // Comprehensive test of all trait methods for external package
+        let func1 = CorePluginExternalFunction::new(
+            "comprehensive_ext_func1_id".to_string(),
+            "comprehensive_ext_func1_name".to_string(),
+            "comprehensive_ext_func1_description".to_string(),
+            "const x = 100;".to_string(),
+        );
+        let func2 = CorePluginExternalFunction::new(
+            "comprehensive_ext_func2_id".to_string(),
+            "comprehensive_ext_func2_name".to_string(),
+            "comprehensive_ext_func2_description".to_string(),
+            "const y = 200;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "comprehensive_ext_pkg_id".to_string(),
+            "comprehensive_ext_pkg_name".to_string(),
+            vec![func1, func2],
+            "export default { init: () => console.log('initialized') };".to_string(),
+        );
+
+        assert!(pkg.is_external());
+        assert_eq!(pkg.get_package_id(), "comprehensive_ext_pkg_id");
+        assert_eq!(pkg.get_package_name(), "comprehensive_ext_pkg_name");
+
+        let functions = pkg.get_functions();
+        assert_eq!(functions.len(), 2);
+        assert_eq!(functions[0].get_function_id(), "comprehensive_ext_func1_id");
+        assert_eq!(functions[1].get_function_id(), "comprehensive_ext_func2_id");
+        
+        // Verify all functions are external
+        assert!(functions[0].is_external());
+        assert!(functions[1].is_external());
     }
 }
