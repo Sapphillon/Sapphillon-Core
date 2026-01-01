@@ -1,4 +1,3 @@
-
 use sapphillon_core::ext_plugin::{RsJsBridgeArgs, RsJsBridgeReturns};
 use sapphillon_core::extplugin_rsjs_bridge::rsjs_bridge_core;
 use serde_json::json;
@@ -39,18 +38,19 @@ fn test_integration_math_plugin_add() {
     // 2. Prepare arguments for the 'add' function
     let args = RsJsBridgeArgs {
         func_name: "add".to_string(),
-        args: vec![
-            ("a".to_string(), json!(10)),
-            ("b".to_string(), json!(20)),
-        ]
-        .into_iter()
-        .collect(),
+        args: vec![("a".to_string(), json!(10)), ("b".to_string(), json!(20))]
+            .into_iter()
+            .collect(),
     };
     let args_json = args.to_string().unwrap();
 
     // 3. Execute the bridge
     let result = rsjs_bridge_core(&args_json, &package_js);
-    assert!(result.is_ok(), "Bridge execution failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Bridge execution failed: {:?}",
+        result.err()
+    );
 
     // 4. Verify the result
     let result_json = result.unwrap();
@@ -89,24 +89,24 @@ fn test_integration_math_plugin_process_data() {
 
     let args = RsJsBridgeArgs {
         func_name: "process_data".to_string(),
-        args: vec![
-            ("data".to_string(), input_data),
-        ]
-        .into_iter()
-        .collect(),
+        args: vec![("data".to_string(), input_data)].into_iter().collect(),
     };
     let args_json = args.to_string().unwrap();
 
     // 3. Execute the bridge
     let result = rsjs_bridge_core(&args_json, &package_js);
-    assert!(result.is_ok(), "Bridge execution failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Bridge execution failed: {:?}",
+        result.err()
+    );
 
     // 4. Verify the result structure and values
     let result_json = result.unwrap();
     let returns = RsJsBridgeReturns::new_from_str(&result_json).expect("Failed to parse returns");
 
     let result_obj = returns.args.get("result").expect("No result returned");
-    
+
     assert_eq!(result_obj.get("original"), Some(&json!(50)));
     assert_eq!(result_obj.get("result"), Some(&json!(100)));
     // Verify timestamp exists (dynamic value, so we just check existence)
