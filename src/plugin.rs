@@ -128,6 +128,89 @@ impl CorePluginPackage {
         }
     }
 }
+
+/// Core representation of an external plugin function.
+/// Holds the function's ID, name, package JavaScript code, and external flag.
+#[derive(Debug, Clone)]
+pub struct CorePluginExternalFunction {
+    /// Unique ID of the function
+    pub id: String,
+    /// Function name
+    pub name: String,
+    /// Description of the function
+    pub description: String,
+    /// Package JavaScript code to be executed
+    pub package_js: String,
+    /// The plugin is external (always true for this type)
+    pub external: bool,
+}
+
+impl CorePluginExternalFunction {
+    /// Creates a new `CorePluginExternalFunction`.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier for the function.
+    /// * `name` - The name of the function.
+    /// * `description` - A description of what the function does.
+    /// * `package_js` - The JavaScript code for the package.
+    pub fn new(
+        id: String,
+        name: String,
+        description: String,
+        package_js: String,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            description,
+            package_js,
+            external: true,
+        }
+    }
+}
+
+/// Core representation of an external plugin package.
+/// Holds the package ID, name, functions list, package JavaScript code, and external flag.
+#[derive(Debug, Clone)]
+pub struct CorePluginExternalPackage {
+    /// Unique ID of the package
+    pub id: String,
+    /// Package name
+    pub name: String,
+    /// List of external functions included in the package
+    pub functions: Vec<CorePluginExternalFunction>,
+    /// Package JavaScript code to be executed
+    pub package_js: String,
+    /// The plugin is external (always true for this type)
+    pub external: bool,
+}
+
+impl CorePluginExternalPackage {
+    /// Creates a new `CorePluginExternalPackage`.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier for the package.
+    /// * `name` - The name of the package.
+    /// * `functions` - A vector of `CorePluginExternalFunction` instances included in this package.
+    /// * `package_js` - The JavaScript code for the package.
+    pub fn new(
+        id: String,
+        name: String,
+        functions: Vec<CorePluginExternalFunction>,
+        package_js: String,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            functions,
+            package_js,
+            external: true,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -210,5 +293,47 @@ mod tests {
         assert_eq!(pkg.id, pp.package_id);
         assert_eq!(pkg.name, pp.package_name);
         assert_eq!(pkg.functions.len(), 1);
+    }
+
+    #[test]
+    fn test_core_plugin_external_function_new() {
+        let func = CorePluginExternalFunction::new(
+            "ext_id".to_string(),
+            "ext_name".to_string(),
+            "ext_description".to_string(),
+            "console.log('external');".to_string(),
+        );
+        assert_eq!(func.id, "ext_id");
+        assert_eq!(func.name, "ext_name");
+        assert_eq!(func.description, "ext_description");
+        assert_eq!(func.package_js, "console.log('external');");
+        assert!(func.external);
+    }
+
+    #[test]
+    fn test_core_plugin_external_package_new() {
+        let f1 = CorePluginExternalFunction::new(
+            "ext_id1".to_string(),
+            "ext_name1".to_string(),
+            "ext_desc1".to_string(),
+            "const a = 1;".to_string(),
+        );
+        let f2 = CorePluginExternalFunction::new(
+            "ext_id2".to_string(),
+            "ext_name2".to_string(),
+            "ext_desc2".to_string(),
+            "const b = 2;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "ext_pkg_id".to_string(),
+            "ext_pkg_name".to_string(),
+            vec![f1, f2],
+            "export default {};".to_string(),
+        );
+        assert_eq!(pkg.id, "ext_pkg_id");
+        assert_eq!(pkg.name, "ext_pkg_name");
+        assert_eq!(pkg.functions.len(), 2);
+        assert_eq!(pkg.package_js, "export default {};");
+        assert!(pkg.external);
     }
 }
