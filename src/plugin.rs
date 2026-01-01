@@ -270,7 +270,7 @@ impl PluginFunctionTrait for CorePluginExternalFunction {
     }
 
     fn get_pre_run_js(&self) -> Option<String> {
-        /// TODO: 呼び出しスクリプトを格納する
+        // TODO: 呼び出しスクリプトを格納する
         None
     }
 }
