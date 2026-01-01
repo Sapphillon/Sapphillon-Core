@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
 
 use crate::proto::sapphillon::v1::{PluginFunction, PluginPackage};
+use crate::extplugin_rsjs_bridge;
 use deno_core::OpDecl;
 use std::borrow::Cow;
 
@@ -234,6 +235,28 @@ impl CorePluginExternalFunction {
             package_js,
             external: true,
         }
+    }
+}
+
+impl PluginFunctionTrait for CorePluginExternalFunction {
+    fn is_external(&self) -> bool {
+        self.external
+    }
+
+    fn get_function_id(&self) -> String {
+        self.id.clone()
+    }
+
+    fn get_function_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_opdecl(&self) -> Cow<'static, OpDecl> {
+        Cow::Borrowed(&extplugin_rsjs_bridge::op_rsjs_bridge_opdecl())
+    }
+
+    fn get_pre_run_js(&self) -> Option<String> {
+        None
     }
 }
 
@@ -623,5 +646,83 @@ mod tests {
         assert_eq!(functions.len(), 2);
         assert_eq!(functions[0].get_function_id(), "comprehensive_func1_id");
         assert_eq!(functions[1].get_function_id(), "comprehensive_func2_id");
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_is_external() {
+        let ext_func = CorePluginExternalFunction::new(
+            "ext_id".to_string(),
+            "ext_name".to_string(),
+            "ext_description".to_string(),
+            "console.log('external');".to_string(),
+        );
+        // External function should always return true
+        assert!(ext_func.is_external());
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_get_function_id() {
+        let ext_func = CorePluginExternalFunction::new(
+            "external_test_id".to_string(),
+            "external_test_name".to_string(),
+            "external_test_description".to_string(),
+            "const x = 1;".to_string(),
+        );
+        assert_eq!(ext_func.get_function_id(), "external_test_id");
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_get_function_name() {
+        let ext_func = CorePluginExternalFunction::new(
+            "external_test_id".to_string(),
+            "external_test_name".to_string(),
+            "external_test_description".to_string(),
+            "const x = 1;".to_string(),
+        );
+        assert_eq!(ext_func.get_function_name(), "external_test_name");
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_get_opdecl() {
+        let ext_func = CorePluginExternalFunction::new(
+            "external_test_id".to_string(),
+            "external_test_name".to_string(),
+            "external_test_description".to_string(),
+            "const x = 1;".to_string(),
+        );
+        let opdecl = ext_func.get_opdecl();
+        // OpDecl should be rsjs_bridge_opdecl
+        assert_eq!(opdecl.name, "rsjs_bridge_opdecl");
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_get_pre_run_js() {
+        let ext_func = CorePluginExternalFunction::new(
+            "external_test_id".to_string(),
+            "external_test_name".to_string(),
+            "external_test_description".to_string(),
+            "const x = 1;".to_string(),
+        );
+        // External functions should always return None for pre_run_js
+        assert_eq!(ext_func.get_pre_run_js(), None);
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_all_methods() {
+        // Comprehensive test of all trait methods for external function
+        let ext_func = CorePluginExternalFunction::new(
+            "comprehensive_ext_id".to_string(),
+            "comprehensive_ext_name".to_string(),
+            "comprehensive_ext_description".to_string(),
+            "export default { test: () => 'hello' };".to_string(),
+        );
+
+        assert!(ext_func.is_external());
+        assert_eq!(ext_func.get_function_id(), "comprehensive_ext_id");
+        assert_eq!(ext_func.get_function_name(), "comprehensive_ext_name");
+        assert_eq!(ext_func.get_pre_run_js(), None);
+
+        let opdecl = ext_func.get_opdecl();
+        assert_eq!(opdecl.name, "rsjs_bridge_opdecl");
     }
 }
