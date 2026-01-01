@@ -112,6 +112,10 @@ impl CorePluginFunction {
     }
 }
 
+/// Implementation of `PluginFunctionTrait` for `CorePluginFunction`.
+///
+/// This implementation provides standard trait methods to access function metadata
+/// and the Deno operation declaration for internal plugin functions.
 impl PluginFunctionTrait for CorePluginFunction {
     fn is_external(&self) -> bool {
         self.external_plugin
@@ -180,6 +184,11 @@ impl CorePluginPackage {
     }
 }
 
+/// Implementation of `PluginPackageTrait` for `CorePluginPackage`.
+///
+/// This implementation provides standard trait methods to access package metadata
+/// and the list of internal plugin functions. A package is considered external only
+/// if all of its functions are external.
 impl PluginPackageTrait for CorePluginPackage {
     type Function = CorePluginFunction;
 
@@ -238,6 +247,11 @@ impl CorePluginExternalFunction {
     }
 }
 
+/// Implementation of `PluginFunctionTrait` for `CorePluginExternalFunction`.
+///
+/// This implementation provides standard trait methods to access external function metadata.
+/// External functions always use the `rsjs_bridge_opdecl` operation and do not have pre-run scripts.
+/// The `is_external()` method always returns `true` for this type.
 impl PluginFunctionTrait for CorePluginExternalFunction {
     fn is_external(&self) -> bool {
         self.external
@@ -301,6 +315,11 @@ impl CorePluginExternalPackage {
     }
 }
 
+/// Implementation of `PluginPackageTrait` for `CorePluginExternalPackage`.
+///
+/// This implementation provides standard trait methods to access external package metadata
+/// and the list of external plugin functions. External packages always have the `external`
+/// flag set to `true`, and the `is_external()` method always returns `true` for this type.
 impl PluginPackageTrait for CorePluginExternalPackage {
     type Function = CorePluginExternalFunction;
 
