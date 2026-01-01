@@ -111,6 +111,28 @@ impl CorePluginFunction {
     }
 }
 
+impl PluginFunctionTrait for CorePluginFunction {
+    fn is_external(&self) -> bool {
+        self.external_plugin
+    }
+
+    fn get_function_id(&self) -> String {
+        self.id.clone()
+    }
+
+    fn get_function_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_opdecl(&self) -> Cow<'static, OpDecl> {
+        self.func.clone()
+    }
+
+    fn get_pre_run_js(&self) -> Option<String> {
+        self.pre_run_js.clone()
+    }
+}
+
 /// Core representation of a plugin package.
 /// Holds the package ID, name, and a list of functions.
 #[derive(Debug, Clone)]
@@ -358,5 +380,102 @@ mod tests {
         assert_eq!(pkg.functions.len(), 2);
         assert_eq!(pkg.package_js, "export default {};");
         assert!(pkg.external);
+    }
+
+    #[test]
+    fn test_plugin_function_trait_is_external() {
+        // Test internal plugin function
+        let internal_func = CorePluginFunction::new(
+            "internal_id".to_string(),
+            "internal_name".to_string(),
+            "internal_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        assert!(!internal_func.is_external());
+    }
+
+    #[test]
+    fn test_plugin_function_trait_get_function_id() {
+        let func = CorePluginFunction::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        assert_eq!(func.get_function_id(), "test_id");
+    }
+
+    #[test]
+    fn test_plugin_function_trait_get_function_name() {
+        let func = CorePluginFunction::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        assert_eq!(func.get_function_name(), "test_name");
+    }
+
+    #[test]
+    fn test_plugin_function_trait_get_opdecl() {
+        let func = CorePluginFunction::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let opdecl = func.get_opdecl();
+        // OpDecl should be cloned successfully
+        assert_eq!(opdecl.name, "dummy_op");
+    }
+
+    #[test]
+    fn test_plugin_function_trait_get_pre_run_js() {
+        // Test with Some pre_run_js
+        let func_with_js = CorePluginFunction::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            dummy_op(),
+            Some("console.log('pre-run');".to_string()),
+        );
+        assert_eq!(
+            func_with_js.get_pre_run_js(),
+            Some("console.log('pre-run');".to_string())
+        );
+
+        // Test with None pre_run_js
+        let func_without_js = CorePluginFunction::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        assert_eq!(func_without_js.get_pre_run_js(), None);
+    }
+
+    #[test]
+    fn test_plugin_function_trait_all_methods() {
+        // Comprehensive test of all trait methods together
+        let func = CorePluginFunction::new(
+            "comprehensive_id".to_string(),
+            "comprehensive_name".to_string(),
+            "comprehensive_description".to_string(),
+            dummy_op(),
+            Some("const x = 42;".to_string()),
+        );
+
+        assert!(!func.is_external());
+        assert_eq!(func.get_function_id(), "comprehensive_id");
+        assert_eq!(func.get_function_name(), "comprehensive_name");
+        assert_eq!(func.get_pre_run_js(), Some("const x = 42;".to_string()));
+        
+        let opdecl = func.get_opdecl();
+        assert_eq!(opdecl.name, "dummy_op");
     }
 }
