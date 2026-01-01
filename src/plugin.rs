@@ -49,7 +49,7 @@ pub struct CorePluginFunction {
     /// Optional: Pre Run Script
     pub pre_run_js: Option<String>,
     /// The plugin is external
-    pub external_plugin: bool
+    pub external_plugin: bool,
 }
 
 impl std::fmt::Debug for CorePluginFunction {
@@ -88,7 +88,7 @@ impl CorePluginFunction {
             func: Cow::Owned(func),
             pre_run_js,
             description,
-            external_plugin: false
+            external_plugin: false,
         }
     }
 
@@ -106,7 +106,7 @@ impl CorePluginFunction {
             func: Cow::Owned(function),
             description: plugin_function.description.clone(),
             pre_run_js: None,
-            external_plugin: false
+            external_plugin: false,
         }
     }
 }
@@ -182,12 +182,7 @@ impl CorePluginExternalFunction {
     /// * `name` - The name of the function.
     /// * `description` - A description of what the function does.
     /// * `package_js` - The JavaScript code for the package.
-    pub fn new(
-        id: String,
-        name: String,
-        description: String,
-        package_js: String,
-    ) -> Self {
+    pub fn new(id: String, name: String, description: String, package_js: String) -> Self {
         Self {
             id,
             name,

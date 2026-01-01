@@ -300,8 +300,7 @@ pub fn extract_used_plugins_from_code(
     let re = RE.get_or_init(|| {
         Regex::new(pattern).unwrap_or_else(|e| {
             panic!(
-                "Failed to compile plugin call regex pattern {:?}: {}",
-                pattern, e
+                "Failed to compile plugin call regex pattern {pattern:?}: {e}"
             )
         })
     });
@@ -318,7 +317,7 @@ pub fn extract_used_plugins_from_code(
             continue;
         }
 
-        let key = format!("{}.{}", package_name, function_name);
+        let key = format!("{package_name}.{function_name}");
         if seen.insert(key) {
             result.push(PluginIdentifier {
                 package_name,
@@ -541,7 +540,7 @@ mod tests {
             0
         }
         CorePluginFunction::new(
-            format!("{}_id", name),
+            format!("{name}_id"),
             name.to_string(),
             "test".to_string(),
             test_op(),
@@ -555,7 +554,7 @@ mod tests {
             .iter()
             .map(|n| make_test_plugin_function(n))
             .collect();
-        CorePluginPackage::new(format!("{}_id", pkg_name), pkg_name.to_string(), functions)
+        CorePluginPackage::new(format!("{pkg_name}_id"), pkg_name.to_string(), functions)
     }
 
     #[test]
