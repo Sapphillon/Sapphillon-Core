@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
 
 use crate::permission::PluginFunctionPermissions;
-use crate::plugin::{CorePluginPackage, CorePluginExternalPackage};
+use crate::plugin::{CorePluginPackage, CorePluginExternalPackage, PluginFunctionTrait};
 use crate::proto::google::protobuf::Timestamp;
 use crate::proto::sapphillon;
 use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
@@ -44,6 +44,7 @@ impl CoreWorkflowCode {
         id: String,
         code: String,
         plugin_packages: Vec<CorePluginPackage>,
+        plugin_external_packages: Vec<CorePluginExternalPackage>,
         code_revision: i32,
         allowed_permissions: Vec<PluginFunctionPermissions>,
         required_permissions: Vec<PluginFunctionPermissions>,
@@ -52,6 +53,7 @@ impl CoreWorkflowCode {
             id,
             code: unescaper::unescape(&code).unwrap(),
             plugin_packages,
+            plugin_external_packages,
             code_revision,
             result: Vec::new(),
             allowed_permissions,
@@ -83,6 +85,13 @@ impl CoreWorkflowCode {
                 ops.push(func.func.clone().into_owned());
             }
         }
+        
+        // Collect OpDecls from external plugin packages
+        for pkg in &self.plugin_external_packages {
+            for func in &pkg.functions {
+                ops.push(func.get_opdecl().into_owned());
+            }
+        }
 
         // Execute the workflow code and record the result
         let now = SystemTime::now();
@@ -102,7 +111,7 @@ impl CoreWorkflowCode {
         // Create pre-run script state
 
         let pre_run_js: Option<Vec<String>> = {
-            let v: Vec<String> = self
+            let mut v: Vec<String> = self
                 .plugin_packages
                 .iter()
                 .flat_map(|pkg| {
@@ -111,6 +120,16 @@ impl CoreWorkflowCode {
                         .filter_map(|func| func.pre_run_js.clone())
                 })
                 .collect();
+            
+            // Add pre-run scripts from external plugin packages
+            for pkg in &self.plugin_external_packages {
+                for func in &pkg.functions {
+                    if let Some(script) = func.get_pre_run_js() {
+                        v.push(script);
+                    }
+                }
+            }
+            
             if v.is_empty() { None } else { Some(v) }
         };
 
@@ -175,6 +194,7 @@ impl CoreWorkflowCode {
     pub fn new_from_proto(
         workflow_code: &sapphillon::v1::WorkflowCode,
         plugin_packages: Vec<CorePluginPackage>,
+        plugin_external_packages: Vec<CorePluginExternalPackage>,
         required_permissions: Vec<PluginFunctionPermissions>,
         allowed_permissions: Vec<PluginFunctionPermissions>,
     ) -> Self {
@@ -182,6 +202,7 @@ impl CoreWorkflowCode {
             id: workflow_code.id.clone(),
             code: workflow_code.code.clone(),
             plugin_packages,
+            plugin_external_packages,
             code_revision: workflow_code.code_revision,
             result: Vec::new(),
             required_permissions,
@@ -416,6 +437,7 @@ mod tests {
             "wid".to_string(),
             "console.log(1 + 1);".to_string(),
             vec![pkg],
+            vec![],
             1,
             vec![],
             vec![],
@@ -439,6 +461,7 @@ mod tests {
             "wid".to_string(),
             "console.log(1 + 1);".to_string(),
             vec![pkg],
+            vec![],
             1,
             vec![],
             vec![],
@@ -462,6 +485,7 @@ mod tests {
             "wid".to_string(),
             "throw new Error('fail');".to_string(),
             vec![pkg],
+            vec![],
             1,
             vec![],
             vec![],
@@ -494,6 +518,7 @@ mod tests {
             "wid".to_string(),
             r"\nconsole.log('test');".to_string(),
             vec![pkg],
+            vec![],
             2,
             vec![],
             vec![],
@@ -509,7 +534,7 @@ mod tests {
     fn test_core_workflow_code_new_from_proto() {
         let proto = dummy_proto_workflow_code();
         let pkg = dummy_plugin_package();
-        let code = CoreWorkflowCode::new_from_proto(&proto, vec![pkg], vec![], vec![]);
+        let code = CoreWorkflowCode::new_from_proto(&proto, vec![pkg], vec![], vec![], vec![]);
         assert_eq!(code.id, proto.id);
         assert_eq!(code.code, proto.code);
         assert_eq!(code.plugin_packages.len(), 1);
@@ -524,6 +549,7 @@ mod tests {
             "wid".to_string(),
             "console.log('test');".to_string(),
             vec![pkg],
+            vec![],
             1,
             vec![],
             vec![],
@@ -567,6 +593,7 @@ mod tests {
             "wid".to_string(),
             "myPlugin.doSomething(); anotherPlugin.run();".to_string(),
             vec![],
+            vec![],
             1,
             vec![],
             vec![],
@@ -593,6 +620,7 @@ mod tests {
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
             "plugin.func(); plugin.func(); plugin.other();".to_string(),
+            vec![],
             vec![],
             1,
             vec![],
@@ -622,6 +650,7 @@ mod tests {
             "wid".to_string(),
             "console.log('test'); Math.random(); myPlugin.action(); someObj.method();".to_string(),
             vec![],
+            vec![],
             1,
             vec![],
             vec![],
@@ -639,7 +668,7 @@ mod tests {
         let available_plugins = vec![make_test_plugin_package("plugin", &["func"])];
 
         let code =
-            CoreWorkflowCode::new("wid".to_string(), "".to_string(), vec![], 1, vec![], vec![]);
+            CoreWorkflowCode::new("wid".to_string(), "".to_string(), vec![], vec![], 1, vec![], vec![]);
         let plugins = code.extract_used_plugins(&available_plugins);
 
         assert!(plugins.is_empty());
@@ -653,6 +682,7 @@ mod tests {
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
             "myPlugin.doSomething(); anotherPlugin.run();".to_string(),
+            vec![],
             vec![],
             1,
             vec![],
@@ -683,6 +713,7 @@ mod tests {
                 unknownPlugin.call(); // This should NOT be detected
             "#
             .to_string(),
+            vec![],
             vec![],
             1,
             vec![],
@@ -717,6 +748,7 @@ mod tests {
             "wid".to_string(),
             "myPlugin.registeredFunc(); myPlugin.unregisteredFunc();".to_string(),
             vec![],
+            vec![],
             1,
             vec![],
             vec![],
@@ -742,6 +774,7 @@ mod tests {
             "wid".to_string(),
             "plugin?.func();".to_string(),
             vec![],
+            vec![],
             1,
             vec![],
             vec![],
@@ -758,6 +791,7 @@ mod tests {
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
             "sapphillon.core.exec.exec();".to_string(),
+            vec![],
             vec![],
             1,
             vec![],
@@ -822,6 +856,7 @@ mod permission_tests {
             "wid".to_string(),
             script.to_string(),
             vec![], // no plugin packages needed
+            vec![], // no external plugin packages needed
             1,
             vec![PluginFunctionPermissions {
                 plugin_function_id: "id".to_string(),
@@ -846,6 +881,7 @@ mod permission_tests {
             "wid".to_string(),
             script.to_string(),
             vec![], // no plugin packages needed
+            vec![], // no external plugin packages needed
             1,
             allowed,
             required,
