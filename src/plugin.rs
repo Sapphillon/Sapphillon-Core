@@ -6,6 +6,22 @@ use crate::proto::sapphillon::v1::{PluginFunction, PluginPackage};
 use deno_core::OpDecl;
 use std::borrow::Cow;
 
+pub trait PluginFunctionTrait {
+    fn is_external(&self) -> bool;
+    fn get_function_id(&self) -> String;
+    fn get_function_name(&self) -> String;
+    fn get_opdecl(&self) -> Cow<'static, OpDecl>;
+    fn get_pre_run_js(&self) -> Option<String>;
+}
+pub trait PluginPackageTrait {
+    type Function: PluginFunctionTrait;
+
+    fn is_external(&self) -> bool;
+    fn get_package_id(&self) -> String;
+    fn get_package_name(&self) -> String;
+    fn get_functions(&self) -> Vec<Self::Function>;
+}
+
 /// Core representation of a plugin function.
 /// Holds the function's ID, name, and Deno operation.
 #[derive(Clone)]
