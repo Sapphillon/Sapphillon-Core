@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
 
 use crate::permission::PluginFunctionPermissions;
-use crate::plugin::CorePluginPackage;
+use crate::plugin::{CorePluginPackage, CorePluginExternalPackage};
 use crate::proto::google::protobuf::Timestamp;
 use crate::proto::sapphillon;
 use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
@@ -22,6 +22,7 @@ pub struct CoreWorkflowCode {
     pub code: String,
     /// List of plugin packages used in the workflow
     pub plugin_packages: Vec<CorePluginPackage>,
+    pub plugin_external_packages: Vec<CorePluginExternalPackage>,
 
     pub code_revision: i32,
     pub result: Vec<sapphillon::v1::WorkflowResult>,
