@@ -212,7 +212,7 @@ impl PluginPackageTrait for CorePluginPackage {
 }
 
 /// Core representation of an external plugin function.
-/// Holds the function's ID, name, package JavaScript code, and external flag.
+/// Holds the function's ID, name, package name, JavaScript code, and external flag.
 #[derive(Debug, Clone)]
 pub struct CorePluginExternalFunction {
     /// Unique ID of the function
@@ -221,6 +221,8 @@ pub struct CorePluginExternalFunction {
     pub name: String,
     /// Description of the function
     pub description: String,
+    /// Name of the parent package (used for generating wrapper functions)
+    pub package_name: String,
     /// Package JavaScript code to be executed
     pub package_js: String,
     /// The plugin is external (always true for this type)
@@ -235,15 +237,59 @@ impl CorePluginExternalFunction {
     /// * `id` - The unique identifier for the function.
     /// * `name` - The name of the function.
     /// * `description` - A description of what the function does.
+    /// * `package_name` - The name of the parent package.
     /// * `package_js` - The JavaScript code for the package.
-    pub fn new(id: String, name: String, description: String, package_js: String) -> Self {
+    pub fn new(
+        id: String,
+        name: String,
+        description: String,
+        package_name: String,
+        package_js: String,
+    ) -> Self {
         Self {
             id,
             name,
             description,
+            package_name,
             package_js,
             external: true,
         }
+    }
+
+    /// Generates JavaScript code that creates a wrapper function for this external plugin function.
+    ///
+    /// The wrapper function:
+    /// 1. Serializes arguments to RsJsBridgeArgs JSON (using arg0, arg1, ... naming)
+    /// 2. Calls rsjs_bridge_opdecl via Deno.core.ops
+    /// 3. Deserializes RsJsBridgeReturns JSON and returns the result
+    ///
+    /// # Example Generated Code
+    ///
+    /// For a function `greet` in package `myPlugin`:
+    /// ```javascript
+    /// globalThis.myPlugin = globalThis.myPlugin || {};
+    /// globalThis.myPlugin.greet = function(...args) {
+    ///     const bridgeArgs = { func_name: "greet", args: {} };
+    ///     args.forEach((arg, idx) => { bridgeArgs.args[`arg${idx}`] = arg; });
+    ///     const resultJson = Deno.core.ops.rsjs_bridge_opdecl(
+    ///         JSON.stringify(bridgeArgs),
+    ///         <package_js>
+    ///     );
+    ///     const result = JSON.parse(resultJson);
+    ///     return result.args.result !== undefined ? result.args.result : result.args;
+    /// };
+    /// ```
+    fn generate_call_script(&self) -> String {
+        // Escape the package_js for embedding in JavaScript string
+        let package_js_escaped = serde_json::to_string(&self.package_js)
+            .unwrap_or_else(|_| format!("\"{}\"" , self.package_js.replace('"', "\\\"")));
+
+        format!(
+            r#"globalThis.{pkg_name} = globalThis.{pkg_name} || {{}};\nglobalThis.{pkg_name}.{func_name} = function(...args) {{\n    const bridgeArgs = {{\n        func_name: "{func_name}",\n        args: {{}}\n    }};\n    args.forEach((arg, idx) => {{\n        bridgeArgs.args[`arg${{idx}}`] = arg;\n    }});\n    const argsJson = JSON.stringify(bridgeArgs);\n    const packageJs = {package_js_escaped};\n    const resultJson = Deno.core.ops.rsjs_bridge_opdecl(argsJson, packageJs);\n    const result = JSON.parse(resultJson);\n    return result.args.result !== undefined ? result.args.result : result.args;\n}};\n"#,
+            pkg_name = self.package_name,
+            func_name = self.name,
+            package_js_escaped = package_js_escaped
+        )
     }
 }
 
@@ -270,8 +316,7 @@ impl PluginFunctionTrait for CorePluginExternalFunction {
     }
 
     fn get_pre_run_js(&self) -> Option<String> {
-        // TODO: 呼び出しスクリプトを格納する
-        None
+        Some(self.generate_call_script())
     }
 }
 
@@ -431,11 +476,13 @@ mod tests {
             "ext_id".to_string(),
             "ext_name".to_string(),
             "ext_description".to_string(),
+            "ext_package".to_string(),
             "console.log('external');".to_string(),
         );
         assert_eq!(func.id, "ext_id");
         assert_eq!(func.name, "ext_name");
         assert_eq!(func.description, "ext_description");
+        assert_eq!(func.package_name, "ext_package");
         assert_eq!(func.package_js, "console.log('external');");
         assert!(func.external);
     }
@@ -446,12 +493,14 @@ mod tests {
             "ext_id1".to_string(),
             "ext_name1".to_string(),
             "ext_desc1".to_string(),
+            "ext_pkg_name".to_string(),
             "const a = 1;".to_string(),
         );
         let f2 = CorePluginExternalFunction::new(
             "ext_id2".to_string(),
             "ext_name2".to_string(),
             "ext_desc2".to_string(),
+            "ext_pkg_name".to_string(),
             "const b = 2;".to_string(),
         );
         let pkg = CorePluginExternalPackage::new(
@@ -690,6 +739,7 @@ mod tests {
             "ext_id".to_string(),
             "ext_name".to_string(),
             "ext_description".to_string(),
+            "ext_package".to_string(),
             "console.log('external');".to_string(),
         );
         // External function should always return true
@@ -702,6 +752,7 @@ mod tests {
             "external_test_id".to_string(),
             "external_test_name".to_string(),
             "external_test_description".to_string(),
+            "test_package".to_string(),
             "const x = 1;".to_string(),
         );
         assert_eq!(ext_func.get_function_id(), "external_test_id");
@@ -713,6 +764,7 @@ mod tests {
             "external_test_id".to_string(),
             "external_test_name".to_string(),
             "external_test_description".to_string(),
+            "test_package".to_string(),
             "const x = 1;".to_string(),
         );
         assert_eq!(ext_func.get_function_name(), "external_test_name");
@@ -724,6 +776,7 @@ mod tests {
             "external_test_id".to_string(),
             "external_test_name".to_string(),
             "external_test_description".to_string(),
+            "test_package".to_string(),
             "const x = 1;".to_string(),
         );
         let opdecl = ext_func.get_opdecl();
@@ -737,10 +790,16 @@ mod tests {
             "external_test_id".to_string(),
             "external_test_name".to_string(),
             "external_test_description".to_string(),
+            "testPackage".to_string(),
             "const x = 1;".to_string(),
         );
-        // External functions should always return None for pre_run_js
-        assert_eq!(ext_func.get_pre_run_js(), None);
+        // External functions should now return Some with generated call script
+        let pre_run_js = ext_func.get_pre_run_js();
+        assert!(pre_run_js.is_some());
+        let script = pre_run_js.unwrap();
+        assert!(script.contains("globalThis.testPackage"));
+        assert!(script.contains("external_test_name"));
+        assert!(script.contains("Deno.core.ops.rsjs_bridge_opdecl"));
     }
 
     #[test]
@@ -750,13 +809,19 @@ mod tests {
             "comprehensive_ext_id".to_string(),
             "comprehensive_ext_name".to_string(),
             "comprehensive_ext_description".to_string(),
+            "comprehensivePackage".to_string(),
             "export default { test: () => 'hello' };".to_string(),
         );
 
         assert!(ext_func.is_external());
         assert_eq!(ext_func.get_function_id(), "comprehensive_ext_id");
         assert_eq!(ext_func.get_function_name(), "comprehensive_ext_name");
-        assert_eq!(ext_func.get_pre_run_js(), None);
+        
+        // Verify pre_run_js is now generated
+        let pre_run_js = ext_func.get_pre_run_js();
+        assert!(pre_run_js.is_some());
+        let script = pre_run_js.unwrap();
+        assert!(script.contains("globalThis.comprehensivePackage"));
 
         let opdecl = ext_func.get_opdecl();
         assert_eq!(opdecl.name, "rsjs_bridge_opdecl");
@@ -768,6 +833,7 @@ mod tests {
             "ext_func_id".to_string(),
             "ext_func_name".to_string(),
             "ext_func_description".to_string(),
+            "ext_pkg_name".to_string(),
             "const a = 1;".to_string(),
         );
         let pkg = CorePluginExternalPackage::new(
@@ -798,6 +864,7 @@ mod tests {
             "ext_func_id".to_string(),
             "ext_func_name".to_string(),
             "ext_func_description".to_string(),
+            "test_ext_package_name".to_string(),
             "const a = 1;".to_string(),
         );
         let pkg = CorePluginExternalPackage::new(
@@ -815,6 +882,7 @@ mod tests {
             "ext_func_id".to_string(),
             "ext_func_name".to_string(),
             "ext_func_description".to_string(),
+            "test_ext_package_name".to_string(),
             "const a = 1;".to_string(),
         );
         let pkg = CorePluginExternalPackage::new(
@@ -832,12 +900,14 @@ mod tests {
             "ext_func1_id".to_string(),
             "ext_func1_name".to_string(),
             "ext_func1_description".to_string(),
+            "ext_pkg_name".to_string(),
             "const a = 1;".to_string(),
         );
         let func2 = CorePluginExternalFunction::new(
             "ext_func2_id".to_string(),
             "ext_func2_name".to_string(),
             "ext_func2_description".to_string(),
+            "ext_pkg_name".to_string(),
             "const b = 2;".to_string(),
         );
         let pkg = CorePluginExternalPackage::new(
@@ -860,12 +930,14 @@ mod tests {
             "comprehensive_ext_func1_id".to_string(),
             "comprehensive_ext_func1_name".to_string(),
             "comprehensive_ext_func1_description".to_string(),
+            "comprehensive_ext_pkg_name".to_string(),
             "const x = 100;".to_string(),
         );
         let func2 = CorePluginExternalFunction::new(
             "comprehensive_ext_func2_id".to_string(),
             "comprehensive_ext_func2_name".to_string(),
             "comprehensive_ext_func2_description".to_string(),
+            "comprehensive_ext_pkg_name".to_string(),
             "const y = 200;".to_string(),
         );
         let pkg = CorePluginExternalPackage::new(
