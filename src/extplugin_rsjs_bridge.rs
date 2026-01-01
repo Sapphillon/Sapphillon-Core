@@ -76,9 +76,8 @@ pub fn rsjs_bridge_opdecl(
     #[string] args_json: String,
     #[string] package_js: String,
 ) -> Result<String, deno_error::JsErrorBox> {
-    rsjs_bridge_core(&args_json, &package_js).map_err(|e| {
-        deno_error::JsErrorBox::generic(format!("Rs-Js Bridge Error: {}", e))
-    })
+    rsjs_bridge_core(&args_json, &package_js)
+        .map_err(|e| deno_error::JsErrorBox::generic(format!("Rs-Js Bridge Error: {}", e)))
 }
 
 #[cfg(test)]
@@ -131,7 +130,8 @@ mod tests {
                 }
             }
         };
-        "#.to_string()
+        "#
+        .to_string()
     }
 
     #[test]
@@ -150,10 +150,7 @@ mod tests {
 
         let result_json = result.unwrap();
         let returns = RsJsBridgeReturns::new_from_str(&result_json).unwrap();
-        assert_eq!(
-            returns.args.get("result"),
-            Some(&json!("Hello, World!"))
-        );
+        assert_eq!(returns.args.get("result"), Some(&json!("Hello, World!")));
     }
 
     #[test]

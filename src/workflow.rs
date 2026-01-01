@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
 
 use crate::permission::PluginFunctionPermissions;
-use crate::plugin::{CorePluginPackage, CorePluginExternalPackage, PluginFunctionTrait};
+use crate::plugin::{CorePluginExternalPackage, CorePluginPackage, PluginFunctionTrait};
 use crate::proto::google::protobuf::Timestamp;
 use crate::proto::sapphillon;
 use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
@@ -85,7 +85,7 @@ impl CoreWorkflowCode {
                 ops.push(func.func.clone().into_owned());
             }
         }
-        
+
         // Collect OpDecls from external plugin packages
         for pkg in &self.plugin_external_packages {
             for func in &pkg.functions {
@@ -120,7 +120,7 @@ impl CoreWorkflowCode {
                         .filter_map(|func| func.pre_run_js.clone())
                 })
                 .collect();
-            
+
             // Add pre-run scripts from external plugin packages
             for pkg in &self.plugin_external_packages {
                 for func in &pkg.functions {
@@ -129,7 +129,7 @@ impl CoreWorkflowCode {
                     }
                 }
             }
-            
+
             if v.is_empty() { None } else { Some(v) }
         };
 
@@ -667,8 +667,15 @@ mod tests {
     fn test_extract_used_plugins_empty_code() {
         let available_plugins = vec![make_test_plugin_package("plugin", &["func"])];
 
-        let code =
-            CoreWorkflowCode::new("wid".to_string(), "".to_string(), vec![], vec![], 1, vec![], vec![]);
+        let code = CoreWorkflowCode::new(
+            "wid".to_string(),
+            "".to_string(),
+            vec![],
+            vec![],
+            1,
+            vec![],
+            vec![],
+        );
         let plugins = code.extract_used_plugins(&available_plugins);
 
         assert!(plugins.is_empty());
