@@ -20,6 +20,8 @@ pub struct CorePluginFunction {
     pub description: String,
     /// Optional: Pre Run Script
     pub pre_run_js: Option<String>,
+    /// The plugin is external
+    pub external_plugin: bool
 }
 
 impl std::fmt::Debug for CorePluginFunction {
@@ -36,6 +38,7 @@ impl std::fmt::Debug for CorePluginFunction {
 
 impl CorePluginFunction {
     /// Creates a new `CorePluginFunction`.
+    /// This Function must be internal plugins
     ///
     /// # Arguments
     ///
@@ -57,10 +60,12 @@ impl CorePluginFunction {
             func: Cow::Owned(func),
             pre_run_js,
             description,
+            external_plugin: false
         }
     }
 
     /// Creates a `CorePluginFunction` from a protobuf `PluginFunction` and an `OpDecl`.
+    /// This function must be internal plugin function
     ///
     /// # Arguments
     ///
@@ -73,6 +78,7 @@ impl CorePluginFunction {
             func: Cow::Owned(function),
             description: plugin_function.description.clone(),
             pre_run_js: None,
+            external_plugin: false
         }
     }
 }
