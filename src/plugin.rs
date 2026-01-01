@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2025 Yuta Takahashi
 // SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
 
-use crate::proto::sapphillon::v1::{PluginFunction, PluginPackage};
 use crate::extplugin_rsjs_bridge;
+use crate::proto::sapphillon::v1::{PluginFunction, PluginPackage};
 use deno_core::OpDecl;
 use std::borrow::Cow;
 
@@ -558,7 +558,7 @@ mod tests {
         assert_eq!(func.get_function_id(), "comprehensive_id");
         assert_eq!(func.get_function_name(), "comprehensive_name");
         assert_eq!(func.get_pre_run_js(), Some("const x = 42;".to_string()));
-        
+
         let opdecl = func.get_opdecl();
         assert_eq!(opdecl.name, "dummy_op");
     }
@@ -572,11 +572,7 @@ mod tests {
             dummy_op(),
             None,
         );
-        let pkg = CorePluginPackage::new(
-            "pkg_id".to_string(),
-            "pkg_name".to_string(),
-            vec![func],
-        );
+        let pkg = CorePluginPackage::new("pkg_id".to_string(), "pkg_name".to_string(), vec![func]);
         // Package with internal functions should not be external
         assert!(!pkg.is_external());
     }
@@ -647,7 +643,7 @@ mod tests {
             "pkg_name".to_string(),
             vec![func1.clone(), func2.clone()],
         );
-        
+
         let functions = pkg.get_functions();
         assert_eq!(functions.len(), 2);
         assert_eq!(functions[0].id, "func1_id");
@@ -680,7 +676,7 @@ mod tests {
         assert!(!pkg.is_external());
         assert_eq!(pkg.get_package_id(), "comprehensive_pkg_id");
         assert_eq!(pkg.get_package_name(), "comprehensive_pkg_name");
-        
+
         let functions = pkg.get_functions();
         assert_eq!(functions.len(), 2);
         assert_eq!(functions[0].get_function_id(), "comprehensive_func1_id");
@@ -886,7 +882,7 @@ mod tests {
         assert_eq!(functions.len(), 2);
         assert_eq!(functions[0].get_function_id(), "comprehensive_ext_func1_id");
         assert_eq!(functions[1].get_function_id(), "comprehensive_ext_func2_id");
-        
+
         // Verify all functions are external
         assert!(functions[0].is_external());
         assert!(functions[1].is_external());

@@ -17,7 +17,7 @@ pub mod permission;
 pub mod plugin;
 pub use ext_plugin;
 pub use proto;
+pub mod extplugin_rsjs_bridge;
 pub mod runtime;
 pub mod utils;
 pub mod workflow;
-pub mod extplugin_rsjs_bridge;

@@ -299,9 +299,7 @@ pub fn extract_used_plugins_from_code(
 
     let re = RE.get_or_init(|| {
         Regex::new(pattern).unwrap_or_else(|e| {
-            panic!(
-                "Failed to compile plugin call regex pattern {pattern:?}: {e}"
-            )
+            panic!("Failed to compile plugin call regex pattern {pattern:?}: {e}")
         })
     });
 
