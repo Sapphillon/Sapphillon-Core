@@ -6,9 +6,15 @@ plugins:
     - file_descriptor_set
     - compile_well_known_types
     - enable_type_names
+    - extern_path=.google.protobuf=::pbjson_types
   out: proto/src/proto
+- remote: buf.build/community/neoeinstein-prost-serde:v0.4.0
+  out: proto/src/proto
+  opt:
+    - no_include=true
 - remote: buf.build/community/neoeinstein-tonic:v0.4.1
   out: proto/src/proto
+
 inputs:
   - git_repo: https://github.com/Walkmana-25/Sapphillon_API.git
     branch: v0.11.0
