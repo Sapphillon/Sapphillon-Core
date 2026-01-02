@@ -46,6 +46,7 @@ pub fn rsjs_bridge_core(
 ) -> anyhow::Result<String> {
     use crate::runtime::OpStateWorkflowData;
     use std::sync::{Arc, Mutex};
+    use ext_plugin::extplugin_client;
 
     // Step 1: Retrieve the external package from OpState
     let workflow_data = state
@@ -60,30 +61,53 @@ pub fn rsjs_bridge_core(
         .ok_or_else(|| anyhow::anyhow!("Package not found: {package_name}"))?;
 
     // Clone the data we need before dropping the lock
+    // We need the SapphillonPackage itself, but it's wrapped in Arc<CorePluginExternalPackage>.
+    // CorePluginExternalPackage contains the package_js string.
+    // We need to construct a SapphillonPackage from it to pass to extplugin_client.
+    // Wait, extplugin_client takes &SapphillonPackage.
+    // CorePluginExternalPackage is NOT SapphillonPackage.
+    // CorePluginExternalPackage has package_js.
+    
     let package_js = package.package_js.clone();
-    let tokio_handle = workflow_data.tokio_runtime_handle.clone();
-
-    // Drop the lock before doing async work
+    
+    // Drop the lock
     drop(workflow_data);
 
     // Step 2: Parse RsJsBridgeArgs from JSON
     let args = RsJsBridgeArgs::new_from_str(args_json)?;
 
-    // Step 3 & 4: Parse the package and execute within a separate thread
-    // We must use a separate thread because we cannot create a new V8 isolate
-    // while already inside a V8 context (this function is called from within a Deno op).
-    let handle = std::thread::spawn(move || {
-        tokio_handle.block_on(async {
-            let sapphillon_package = SapphillonPackage::new_async(&package_js).await?;
-            sapphillon_package.execute(args, &None).await
-        })
-    });
+    // Step 3: Create SapphillonPackage (lightweight, just parsing JS)
+    // We need this because extplugin_client expects it.
+    // Note: SapphillonPackage::new parses the JS.
+    let sapphillon_package = SapphillonPackage::new(&package_js)?;
 
-    let returns = handle
-        .join()
-        .map_err(|e| anyhow::anyhow!("Thread panicked: {e:?}"))??;
+    // Step 4: Locate the runner process
+    // TODO: Make this configurable or more robust
+    let mut server_path_buf = std::env::current_exe()?;
+    server_path_buf.pop(); // Remove binary name
+    if server_path_buf.file_name().and_then(|s| s.to_str()) == Some("deps") {
+        server_path_buf.pop(); // Remove "deps" if in test
+    }
+    // Use extplugin_runner_process binary
+    server_path_buf.push("extplugin_runner_process");
+    
+    // Fallback for tests if runner process is not found, maybe use test server?
+    // But the requirement is to use extplugin_runner_process.
+    // If it doesn't exist, this will fail, which is expected if the binary is missing.
+    
+    let server_path = server_path_buf.to_str()
+        .ok_or_else(|| anyhow::anyhow!("Invalid server path"))?;
 
-    // Step 5: Serialize RsJsBridgeReturns to JSON
+    // Step 5: Execute via IPC
+    let returns = extplugin_client(
+        &sapphillon_package,
+        &args.func_name,
+        &args,
+        server_path,
+        vec![]
+    )?;
+
+    // Step 6: Serialize RsJsBridgeReturns to JSON
     returns.to_string()
 }
 
@@ -103,7 +127,7 @@ pub fn rsjs_bridge_core(
 ///
 /// JSON string of `RsJsBridgeReturns` on success, or throws a JavaScript error
 /// on failure.
-#[op2]
+#[op2(reentrant)]
 #[string]
 pub fn rsjs_bridge_opdecl(
     state: &mut OpState,
