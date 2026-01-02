@@ -177,7 +177,6 @@ fn test_integration_math_plugin_process_data() {
 /// In production, workflows run sequentially, avoiding this issue.
 /// Run with `cargo test -- --ignored` to execute.
 #[test]
-#[ignore]
 fn test_integration_workflow_with_external_plugin_add() {
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
@@ -259,7 +258,6 @@ fn test_integration_workflow_with_external_plugin_add() {
 /// See `test_integration_workflow_with_external_plugin_add` for details.
 /// Run with `cargo test -- --ignored` to execute.
 #[test]
-#[ignore]
 fn test_integration_workflow_with_external_plugin_process_data() {
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
