@@ -2,7 +2,6 @@ use sapphillon_core::ext_plugin::{RsJsBridgeArgs, RsJsBridgeReturns};
 use sapphillon_core::extplugin_rsjs_bridge::rsjs_bridge_core;
 use sapphillon_core::plugin::CorePluginExternalPackage;
 use sapphillon_core::runtime::OpStateWorkflowData;
-use deno_core::{JsRuntime, RuntimeOptions};
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -15,12 +14,15 @@ fn get_fixture_path(filename: &str) -> PathBuf {
     d
 }
 
-/// Creates a JsRuntime with OpState containing the test external package
-fn create_runtime_with_fixture(fixture_filename: &str, package_name: &str) -> JsRuntime {
+/// Creates OpState with workflow data containing the test external package from fixture
+/// Returns the OpState and the tokio Runtime to keep the runtime alive
+fn create_opstate_with_fixture(fixture_filename: &str, package_name: &str) -> (deno_core::OpState, tokio::runtime::Runtime) {
+    use deno_core::OpState;
+    
     let fixture_path = get_fixture_path(fixture_filename);
     let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
 
-    let mut runtime = JsRuntime::new(RuntimeOptions::default());
+    let mut op_state = OpState::new(None);
     
     // Create the external package
     let package = CorePluginExternalPackage::new(
@@ -42,12 +44,9 @@ fn create_runtime_with_fixture(fixture_filename: &str, package_name: &str) -> Js
     );
 
     // Put workflow data into OpState
-    runtime
-        .op_state()
-        .borrow_mut()
-        .put(Arc::new(Mutex::new(workflow_data)));
+    op_state.put(Arc::new(Mutex::new(workflow_data)));
 
-    runtime
+    (op_state, tokio_runtime)
 }
 
 /// Integration Test: Basic Function Execution
@@ -71,9 +70,7 @@ fn create_runtime_with_fixture(fixture_filename: &str, package_name: &str) -> Js
 #[test]
 fn test_integration_math_plugin_add() {
     // 1. Create runtime with the plugin package
-    let runtime = create_runtime_with_fixture("plugin_package.js", "math-plugin");
-    let op_state = runtime.op_state();
-    let mut state = op_state.borrow_mut();
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture("plugin_package.js", "math-plugin");
 
     // 2. Prepare arguments for the 'add' function
     let args = RsJsBridgeArgs {
@@ -85,7 +82,7 @@ fn test_integration_math_plugin_add() {
     let args_json = args.to_string().unwrap();
 
     // 3. Execute the bridge
-    let result = rsjs_bridge_core(&mut state, &args_json, "math-plugin");
+    let result = rsjs_bridge_core(&mut op_state, &args_json, "math-plugin");
     assert!(
         result.is_ok(),
         "Bridge execution failed: {:?}",
@@ -118,9 +115,7 @@ fn test_integration_math_plugin_add() {
 #[test]
 fn test_integration_math_plugin_process_data() {
     // 1. Create runtime with the plugin package
-    let runtime = create_runtime_with_fixture("plugin_package.js", "math-plugin");
-    let op_state = runtime.op_state();
-    let mut state = op_state.borrow_mut();
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture("plugin_package.js", "math-plugin");
 
     // 2. Prepare complex input data
     let input_data = json!({
@@ -135,7 +130,7 @@ fn test_integration_math_plugin_process_data() {
     let args_json = args.to_string().unwrap();
 
     // 3. Execute the bridge
-    let result = rsjs_bridge_core(&mut state, &args_json, "math-plugin");
+    let result = rsjs_bridge_core(&mut op_state, &args_json, "math-plugin");
     assert!(
         result.is_ok(),
         "Bridge execution failed: {:?}",
