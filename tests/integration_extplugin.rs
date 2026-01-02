@@ -29,7 +29,7 @@ fn create_opstate_with_fixture(
 
     // Create the external package
     let package = CorePluginExternalPackage::new(
-        format!("test.{}", package_name),
+        format!("test.{package_name}"),
         package_name.to_string(),
         vec![], // functions list not needed for this test
         package_js,

@@ -51,13 +51,13 @@ pub fn rsjs_bridge_core(
     let workflow_data = state
         .borrow::<Arc<Mutex<OpStateWorkflowData>>>()
         .lock()
-        .map_err(|e| anyhow::anyhow!("Failed to lock OpStateWorkflowData: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to lock OpStateWorkflowData: {e}"))?;
 
     let package = workflow_data
         .external_package
         .iter()
         .find(|pkg| pkg.name == package_name)
-        .ok_or_else(|| anyhow::anyhow!("Package not found: {}", package_name))?;
+        .ok_or_else(|| anyhow::anyhow!("Package not found: {package_name}"))?;
 
     // Clone the data we need before dropping the lock
     let package_js = package.package_js.clone();
@@ -81,7 +81,7 @@ pub fn rsjs_bridge_core(
 
     let returns = handle
         .join()
-        .map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))??;
+        .map_err(|e| anyhow::anyhow!("Thread panicked: {e:?}"))??;
 
     // Step 5: Serialize RsJsBridgeReturns to JSON
     returns.to_string()
