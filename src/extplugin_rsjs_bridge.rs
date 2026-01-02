@@ -45,8 +45,8 @@ pub fn rsjs_bridge_core(
     package_name: &str,
 ) -> anyhow::Result<String> {
     use crate::runtime::OpStateWorkflowData;
-    use std::sync::{Arc, Mutex};
     use ext_plugin::extplugin_client;
+    use std::sync::{Arc, Mutex};
 
     // Step 1: Retrieve the external package from OpState
     let workflow_data = state
@@ -67,9 +67,9 @@ pub fn rsjs_bridge_core(
     // Wait, extplugin_client takes &SapphillonPackage.
     // CorePluginExternalPackage is NOT SapphillonPackage.
     // CorePluginExternalPackage has package_js.
-    
+
     let package_js = package.package_js.clone();
-    
+
     // Drop the lock
     drop(workflow_data);
 
@@ -90,7 +90,7 @@ pub fn rsjs_bridge_core(
     }
     // Use extplugin_test_server binary
     server_path_buf.push("extplugin_test_server");
-    
+
     // Build the binary if it doesn't exist
     if !server_path_buf.exists() {
         // Find the ext_plugin crate directory relative to workspace root
@@ -100,13 +100,13 @@ pub fn rsjs_bridge_core(
             workspace_root.pop();
         }
         let ext_plugin_dir = workspace_root.join("ext_plugin");
-        
+
         if ext_plugin_dir.exists() {
             let status = std::process::Command::new("cargo")
                 .args(["build", "--bin", "extplugin_test_server"])
                 .current_dir(&ext_plugin_dir)
                 .status();
-            
+
             if let Ok(s) = status {
                 if !s.success() {
                     anyhow::bail!("Failed to build extplugin_test_server");
@@ -114,8 +114,9 @@ pub fn rsjs_bridge_core(
             }
         }
     }
-    
-    let server_path = server_path_buf.to_str()
+
+    let server_path = server_path_buf
+        .to_str()
         .ok_or_else(|| anyhow::anyhow!("Invalid server path"))?;
 
     // Step 5: Execute via IPC
@@ -124,7 +125,7 @@ pub fn rsjs_bridge_core(
         &args.func_name,
         &args,
         server_path,
-        vec![]
+        vec![],
     )?;
 
     // Step 6: Serialize RsJsBridgeReturns to JSON

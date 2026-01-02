@@ -193,6 +193,7 @@
 //! ```
 
 mod cert_store;
+mod extplugin_runner_process;
 mod module_loader;
 mod npm;
 mod package;
@@ -201,7 +202,6 @@ mod permissions;
 mod runner;
 mod rust_js_bridge;
 mod worker;
-mod extplugin_runner_process;
 
 // Public API: High-level SapphillonPackage types
 pub use package::{FunctionSchema, Meta, Parameter, Permission, ReturnInfo, SapphillonPackage};
@@ -212,4 +212,6 @@ pub use rust_js_bridge::{RsJsBridgeArgs, RsJsBridgeReturns};
 // Public API: Runner functions for executing JavaScript code
 pub use runner::{run_js, run_js_with_string_arg};
 
-pub use extplugin_runner_process::{extplugin_client, extplugin_server, ExternalPluginRunRequest, ExternalPluginRunResponse};
+pub use extplugin_runner_process::{
+    ExternalPluginRunRequest, ExternalPluginRunResponse, extplugin_client, extplugin_server,
+};

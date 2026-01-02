@@ -4,8 +4,8 @@
 
 use anyhow::Result;
 
-use crate::{SapphillonPackage, RsJsBridgeArgs, RsJsBridgeReturns};
-use ipc_channel::ipc::{self, IpcSender, IpcOneShotServer};
+use crate::{RsJsBridgeArgs, RsJsBridgeReturns, SapphillonPackage};
+use ipc_channel::ipc::{self, IpcOneShotServer, IpcSender};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 
@@ -16,24 +16,31 @@ pub struct ExternalPluginRunRequest {
     pub args_json: String,
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExternalPluginRunResponse {
     pub returns_json: String,
     pub error_message: Option<String>,
 }
 
-
-pub fn extplugin_client(sapphillon_package: &SapphillonPackage, func_name: &str, args: &RsJsBridgeArgs, server_path: &str, server_args: Vec<&str>) -> Result<RsJsBridgeReturns> {
-    let (server, server_name) = IpcOneShotServer::<IpcSender<(IpcSender<ExternalPluginRunResponse>, ExternalPluginRunRequest)>>::new()?;
+pub fn extplugin_client(
+    sapphillon_package: &SapphillonPackage,
+    func_name: &str,
+    args: &RsJsBridgeArgs,
+    server_path: &str,
+    server_args: Vec<&str>,
+) -> Result<RsJsBridgeReturns> {
+    let (server, server_name) = IpcOneShotServer::<
+        IpcSender<(
+            IpcSender<ExternalPluginRunResponse>,
+            ExternalPluginRunRequest,
+        )>,
+    >::new()?;
 
     let mut command = Command::new(server_path);
     command.args(server_args);
     command.arg(server_name);
 
-    let mut child = command
-        .stderr(std::process::Stdio::inherit())
-        .spawn()?;
+    let mut child = command.stderr(std::process::Stdio::inherit()).spawn()?;
 
     let (_rx_bootstrap, tx_req) = server.accept()?;
 
@@ -63,7 +70,12 @@ pub fn extplugin_server(server_name: &str) -> Result<()> {
     let (tx_req, rx_req) = ipc::channel()?;
     {
         eprintln!("DEBUG: Connecting to bootstrap");
-        let tx_bootstrap: IpcSender<IpcSender<(IpcSender<ExternalPluginRunResponse>, ExternalPluginRunRequest)>> = IpcSender::connect(server_name.to_string())?;
+        let tx_bootstrap: IpcSender<
+            IpcSender<(
+                IpcSender<ExternalPluginRunResponse>,
+                ExternalPluginRunRequest,
+            )>,
+        > = IpcSender::connect(server_name.to_string())?;
         eprintln!("DEBUG: Sending tx_req");
         tx_bootstrap.send(tx_req.clone())?;
         eprintln!("DEBUG: Sent tx_req");
@@ -169,7 +181,9 @@ mod tests {
             }
         }
 
-        let server_path = server_path_buf.to_str().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
+        let server_path = server_path_buf
+            .to_str()
+            .ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
         let server_args = vec![];
 
         let returns = extplugin_client(&package, "echo", &args, server_path, server_args)?;
