@@ -142,7 +142,10 @@ pub mod operations_client {
         pub async fn delete_operation(
             &mut self,
             request: impl tonic::IntoRequest<super::DeleteOperationRequest>,
-        ) -> std::result::Result<tonic::Response<::pbjson_types::Empty>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::super::protobuf::Empty>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -165,7 +168,10 @@ pub mod operations_client {
         pub async fn cancel_operation(
             &mut self,
             request: impl tonic::IntoRequest<super::CancelOperationRequest>,
-        ) -> std::result::Result<tonic::Response<::pbjson_types::Empty>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::super::protobuf::Empty>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -237,11 +243,17 @@ pub mod operations_server {
         async fn delete_operation(
             &self,
             request: tonic::Request<super::DeleteOperationRequest>,
-        ) -> std::result::Result<tonic::Response<::pbjson_types::Empty>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::super::protobuf::Empty>,
+            tonic::Status,
+        >;
         async fn cancel_operation(
             &self,
             request: tonic::Request<super::CancelOperationRequest>,
-        ) -> std::result::Result<tonic::Response<::pbjson_types::Empty>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::super::protobuf::Empty>,
+            tonic::Status,
+        >;
         async fn wait_operation(
             &self,
             request: tonic::Request<super::WaitOperationRequest>,
@@ -420,7 +432,7 @@ pub mod operations_server {
                         T: Operations,
                     > tonic::server::UnaryService<super::DeleteOperationRequest>
                     for DeleteOperationSvc<T> {
-                        type Response = ::pbjson_types::Empty;
+                        type Response = super::super::protobuf::Empty;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
@@ -465,7 +477,7 @@ pub mod operations_server {
                         T: Operations,
                     > tonic::server::UnaryService<super::CancelOperationRequest>
                     for CancelOperationSvc<T> {
-                        type Response = ::pbjson_types::Empty;
+                        type Response = super::super::protobuf::Empty;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,

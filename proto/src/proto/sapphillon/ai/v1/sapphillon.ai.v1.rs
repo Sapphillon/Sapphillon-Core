@@ -121,7 +121,7 @@ pub struct UpdateModelRequest {
     pub model: ::core::option::Option<Models>,
     /// The list of fields to be updated.
     #[prost(message, optional, tag="2")]
-    pub update_mask: ::core::option::Option<::pbjson_types::FieldMask>,
+    pub update_mask: ::core::option::Option<super::super::super::google::protobuf::FieldMask>,
 }
 impl ::prost::Name for UpdateModelRequest {
 const NAME: &'static str = "UpdateModelRequest";
@@ -314,7 +314,7 @@ pub struct UpdateProviderRequest {
     /// The list of fields to be updated.
     /// e.g., "display_name", "api_key"
     #[prost(message, optional, tag="2")]
-    pub update_mask: ::core::option::Option<::pbjson_types::FieldMask>,
+    pub update_mask: ::core::option::Option<super::super::super::google::protobuf::FieldMask>,
 }
 impl ::prost::Name for UpdateProviderRequest {
 const NAME: &'static str = "UpdateProviderRequest";

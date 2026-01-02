@@ -1,5 +1,5 @@
 // @generated
-impl serde::Serialize for ::pbjson_types::compiler::CodeGeneratorRequest {
+impl serde::Serialize for CodeGeneratorRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -35,7 +35,7 @@ impl serde::Serialize for ::pbjson_types::compiler::CodeGeneratorRequest {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::CodeGeneratorRequest {
+impl<'de> serde::Deserialize<'de> for CodeGeneratorRequest {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -91,13 +91,13 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::CodeGeneratorReq
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = ::pbjson_types::compiler::CodeGeneratorRequest;
+            type Value = CodeGeneratorRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 formatter.write_str("struct google.protobuf.compiler.CodeGeneratorRequest")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<::pbjson_types::compiler::CodeGeneratorRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CodeGeneratorRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -133,7 +133,7 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::CodeGeneratorReq
                         }
                     }
                 }
-                Ok(::pbjson_types::compiler::CodeGeneratorRequest {
+                Ok(CodeGeneratorRequest {
                     file_to_generate: file_to_generate__.unwrap_or_default(),
                     parameter: parameter__,
                     proto_file: proto_file__.unwrap_or_default(),
@@ -144,7 +144,7 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::CodeGeneratorReq
         deserializer.deserialize_struct("google.protobuf.compiler.CodeGeneratorRequest", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for ::pbjson_types::compiler::CodeGeneratorResponse {
+impl serde::Serialize for CodeGeneratorResponse {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -176,7 +176,7 @@ impl serde::Serialize for ::pbjson_types::compiler::CodeGeneratorResponse {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::CodeGeneratorResponse {
+impl<'de> serde::Deserialize<'de> for CodeGeneratorResponse {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -227,13 +227,13 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::CodeGeneratorRes
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = ::pbjson_types::compiler::CodeGeneratorResponse;
+            type Value = CodeGeneratorResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 formatter.write_str("struct google.protobuf.compiler.CodeGeneratorResponse")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<::pbjson_types::compiler::CodeGeneratorResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CodeGeneratorResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -264,7 +264,7 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::CodeGeneratorRes
                         }
                     }
                 }
-                Ok(::pbjson_types::compiler::CodeGeneratorResponse {
+                Ok(CodeGeneratorResponse {
                     error: error__,
                     supported_features: supported_features__,
                     file: file__.unwrap_or_default(),
@@ -274,7 +274,7 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::CodeGeneratorRes
         deserializer.deserialize_struct("google.protobuf.compiler.CodeGeneratorResponse", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for ::pbjson_types::compiler::code_generator_response::Feature {
+impl serde::Serialize for code_generator_response::Feature {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -287,7 +287,7 @@ impl serde::Serialize for ::pbjson_types::compiler::code_generator_response::Fea
         serializer.serialize_str(variant)
     }
 }
-impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::code_generator_response::Feature {
+impl<'de> serde::Deserialize<'de> for code_generator_response::Feature {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -301,7 +301,7 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::code_generator_r
         struct GeneratedVisitor;
 
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = ::pbjson_types::compiler::code_generator_response::Feature;
+            type Value = code_generator_response::Feature;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(formatter, "expected one of: {:?}", &FIELDS)
@@ -336,8 +336,8 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::code_generator_r
                 E: serde::de::Error,
             {
                 match value {
-                    "FEATURE_NONE" => Ok(::pbjson_types::compiler::code_generator_response::Feature::None),
-                    "FEATURE_PROTO3_OPTIONAL" => Ok(::pbjson_types::compiler::code_generator_response::Feature::Proto3Optional),
+                    "FEATURE_NONE" => Ok(code_generator_response::Feature::None),
+                    "FEATURE_PROTO3_OPTIONAL" => Ok(code_generator_response::Feature::Proto3Optional),
                     _ => Err(serde::de::Error::unknown_variant(value, FIELDS)),
                 }
             }
@@ -345,7 +345,7 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::code_generator_r
         deserializer.deserialize_any(GeneratedVisitor)
     }
 }
-impl serde::Serialize for ::pbjson_types::compiler::code_generator_response::File {
+impl serde::Serialize for code_generator_response::File {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -381,7 +381,7 @@ impl serde::Serialize for ::pbjson_types::compiler::code_generator_response::Fil
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::code_generator_response::File {
+impl<'de> serde::Deserialize<'de> for code_generator_response::File {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -436,13 +436,13 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::code_generator_r
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = ::pbjson_types::compiler::code_generator_response::File;
+            type Value = code_generator_response::File;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 formatter.write_str("struct google.protobuf.compiler.CodeGeneratorResponse.File")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<::pbjson_types::compiler::code_generator_response::File, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<code_generator_response::File, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -478,7 +478,7 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::code_generator_r
                         }
                     }
                 }
-                Ok(::pbjson_types::compiler::code_generator_response::File {
+                Ok(code_generator_response::File {
                     name: name__,
                     insertion_point: insertion_point__,
                     content: content__,
@@ -489,7 +489,7 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::code_generator_r
         deserializer.deserialize_struct("google.protobuf.compiler.CodeGeneratorResponse.File", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for ::pbjson_types::compiler::Version {
+impl serde::Serialize for Version {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -525,7 +525,7 @@ impl serde::Serialize for ::pbjson_types::compiler::Version {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::Version {
+impl<'de> serde::Deserialize<'de> for Version {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -578,13 +578,13 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::Version {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = ::pbjson_types::compiler::Version;
+            type Value = Version;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 formatter.write_str("struct google.protobuf.compiler.Version")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<::pbjson_types::compiler::Version, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Version, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -626,7 +626,7 @@ impl<'de> serde::Deserialize<'de> for ::pbjson_types::compiler::Version {
                         }
                     }
                 }
-                Ok(::pbjson_types::compiler::Version {
+                Ok(Version {
                     major: major__,
                     minor: minor__,
                     patch: patch__,

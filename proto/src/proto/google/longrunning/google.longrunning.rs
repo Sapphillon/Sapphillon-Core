@@ -14,7 +14,7 @@ pub struct Operation {
     /// Some services might not provide such metadata.  Any method that returns a
     /// long-running operation should document the metadata type, if any.
     #[prost(message, optional, tag="2")]
-    pub metadata: ::core::option::Option<::pbjson_types::Any>,
+    pub metadata: ::core::option::Option<super::protobuf::Any>,
     /// If the value is `false`, it means the operation is still in progress.
     /// If `true`, the operation is completed, and either `error` or `response` is
     /// available.
@@ -47,7 +47,7 @@ pub mod operation {
         /// is `TakeSnapshot()`, the inferred response type is
         /// `TakeSnapshotResponse`.
         #[prost(message, tag="5")]
-        Response(::pbjson_types::Any),
+        Response(super::super::protobuf::Any),
     }
 }
 impl ::prost::Name for Operation {
@@ -137,7 +137,7 @@ pub struct WaitOperationRequest {
     /// will be at most the time permitted by the underlying HTTP/RPC protocol.
     /// If RPC context deadline is also specified, the shorter one will be used.
     #[prost(message, optional, tag="2")]
-    pub timeout: ::core::option::Option<::pbjson_types::Duration>,
+    pub timeout: ::core::option::Option<super::protobuf::Duration>,
 }
 impl ::prost::Name for WaitOperationRequest {
 const NAME: &'static str = "WaitOperationRequest";
