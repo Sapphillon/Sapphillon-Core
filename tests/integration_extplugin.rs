@@ -16,14 +16,17 @@ fn get_fixture_path(filename: &str) -> PathBuf {
 
 /// Creates OpState with workflow data containing the test external package from fixture
 /// Returns the OpState and the tokio Runtime to keep the runtime alive
-fn create_opstate_with_fixture(fixture_filename: &str, package_name: &str) -> (deno_core::OpState, tokio::runtime::Runtime) {
+fn create_opstate_with_fixture(
+    fixture_filename: &str,
+    package_name: &str,
+) -> (deno_core::OpState, tokio::runtime::Runtime) {
     use deno_core::OpState;
-    
+
     let fixture_path = get_fixture_path(fixture_filename);
     let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
 
     let mut op_state = OpState::new(None);
-    
+
     // Create the external package
     let package = CorePluginExternalPackage::new(
         format!("test.{}", package_name),

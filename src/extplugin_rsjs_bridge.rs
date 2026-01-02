@@ -62,7 +62,7 @@ pub fn rsjs_bridge_core(
     // Clone the data we need before dropping the lock
     let package_js = package.package_js.clone();
     let tokio_handle = workflow_data.tokio_runtime_handle.clone();
-    
+
     // Drop the lock before doing async work
     drop(workflow_data);
 
@@ -175,9 +175,9 @@ mod tests {
     /// Returns the OpState and the tokio Runtime to keep the runtime alive
     fn create_opstate_with_package() -> (deno_core::OpState, tokio::runtime::Runtime) {
         use deno_core::OpState;
-        
+
         let mut op_state = OpState::new(None);
-        
+
         // Create the external package
         let package = CorePluginExternalPackage::new(
             "com.test.plugin".to_string(),
@@ -263,7 +263,7 @@ mod tests {
             args: Default::default(),
         };
         let args_json = args.to_string().unwrap();
-        
+
         // Try to use a package name that doesn't exist
         let result = rsjs_bridge_core(&mut op_state, &args_json, "non-existent-package");
         assert!(result.is_err());

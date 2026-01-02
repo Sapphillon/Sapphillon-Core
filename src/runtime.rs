@@ -12,12 +12,12 @@ use crate::permission::{
     CheckPermissionResult, Permissions, PluginFunctionPermissions, check_permission,
 };
 
+use crate::plugin::CorePluginExternalPackage;
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Handle;
-use crate::plugin::CorePluginExternalPackage;
 
 /// Represents the standard output (stdout) of a workflow execution.
 /// Each variant holds the output as a string.
