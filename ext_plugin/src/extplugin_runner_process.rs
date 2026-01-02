@@ -56,7 +56,7 @@ pub fn extplugin_client(sapphillon_package: &SapphillonPackage, func_name: &str,
         anyhow::bail!(err);
     }
 
-    Ok(RsJsBridgeReturns::new_from_str(&response.returns_json)?)
+    RsJsBridgeReturns::new_from_str(&response.returns_json)
 }
 
 pub fn extplugin_server(server_name: &str) -> Result<()> {
