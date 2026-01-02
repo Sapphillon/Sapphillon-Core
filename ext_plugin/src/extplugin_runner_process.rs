@@ -156,6 +156,19 @@ mod tests {
         }
         server_path_buf.push("extplugin_test_server");
 
+        // Build the binary if it doesn't exist
+        if !server_path_buf.exists() {
+            let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let status = std::process::Command::new("cargo")
+                .args(["build", "--bin", "extplugin_test_server"])
+                .current_dir(&manifest_dir)
+                .status()
+                .expect("Failed to execute cargo build");
+            if !status.success() {
+                anyhow::bail!("Failed to build extplugin_test_server");
+            }
+        }
+
         let server_path = server_path_buf.to_str().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
         let server_args = vec![];
 

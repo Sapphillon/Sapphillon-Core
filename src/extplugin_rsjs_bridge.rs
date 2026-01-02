@@ -91,9 +91,29 @@ pub fn rsjs_bridge_core(
     // Use extplugin_test_server binary
     server_path_buf.push("extplugin_test_server");
     
-    // Fallback for tests if runner process is not found, maybe use test server?
-    // But the requirement is to use extplugin_runner_process.
-    // If it doesn't exist, this will fail, which is expected if the binary is missing.
+    // Build the binary if it doesn't exist
+    if !server_path_buf.exists() {
+        // Find the ext_plugin crate directory relative to workspace root
+        let mut workspace_root = std::env::current_exe()?;
+        // Navigate up from target/debug/deps or target/debug to workspace root
+        for _ in 0..4 {
+            workspace_root.pop();
+        }
+        let ext_plugin_dir = workspace_root.join("ext_plugin");
+        
+        if ext_plugin_dir.exists() {
+            let status = std::process::Command::new("cargo")
+                .args(["build", "--bin", "extplugin_test_server"])
+                .current_dir(&ext_plugin_dir)
+                .status();
+            
+            if let Ok(s) = status {
+                if !s.success() {
+                    anyhow::bail!("Failed to build extplugin_test_server");
+                }
+            }
+        }
+    }
     
     let server_path = server_path_buf.to_str()
         .ok_or_else(|| anyhow::anyhow!("Invalid server path"))?;
