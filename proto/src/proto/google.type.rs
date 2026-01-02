@@ -226,7 +226,7 @@ pub struct Color {
     /// If omitted, this color object is rendered as a solid color
     /// (as if the alpha value had been explicitly given a value of 1.0).
     #[prost(message, optional, tag="4")]
-    pub alpha: ::core::option::Option<super::protobuf::FloatValue>,
+    pub alpha: ::core::option::Option<::pbjson_types::FloatValue>,
 }
 impl ::prost::Name for Color {
 const NAME: &'static str = "Color";
@@ -342,7 +342,7 @@ pub mod date_time {
         /// For example, a UTC offset of -4:00 would be represented as
         /// { seconds: -14400 }.
         #[prost(message, tag="8")]
-        UtcOffset(super::super::protobuf::Duration),
+        UtcOffset(::pbjson_types::Duration),
         /// Time zone.
         #[prost(message, tag="9")]
         TimeZone(super::TimeZone),
@@ -584,13 +584,13 @@ pub struct Interval {
     /// If specified, a Timestamp matching this interval will have to be the same
     /// or after the start.
     #[prost(message, optional, tag="1")]
-    pub start_time: ::core::option::Option<super::protobuf::Timestamp>,
+    pub start_time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// Optional. Exclusive end of the interval.
     ///
     /// If specified, a Timestamp matching this interval will have to be before the
     /// end.
     #[prost(message, optional, tag="2")]
-    pub end_time: ::core::option::Option<super::protobuf::Timestamp>,
+    pub end_time: ::core::option::Option<::pbjson_types::Timestamp>,
 }
 impl ::prost::Name for Interval {
 const NAME: &'static str = "Interval";

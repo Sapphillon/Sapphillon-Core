@@ -370,10 +370,10 @@ pub struct PluginPackage {
     pub deprecated: ::core::option::Option<bool>,
     /// Time when the plugin was installed.
     #[prost(message, optional, tag="10")]
-    pub installed_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub installed_at: ::core::option::Option<::pbjson_types::Timestamp>,
     /// Time when the plugin metadata or package was last updated.
     #[prost(message, optional, tag="11")]
-    pub updated_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub updated_at: ::core::option::Option<::pbjson_types::Timestamp>,
 }
 impl ::prost::Name for PluginPackage {
 const NAME: &'static str = "PluginPackage";
@@ -580,7 +580,7 @@ pub struct WorkflowCode {
     pub language: i32,
     /// Creation time of this code revision.
     #[prost(message, optional, tag="5")]
-    pub created_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub created_at: ::core::option::Option<::pbjson_types::Timestamp>,
     /// Optional result previews or cached outputs associated with this code revision.
     /// Behavior: Optional. May be empty when no run has occurred. Can store multiple results.
     #[prost(message, repeated, tag="6")]
@@ -632,7 +632,7 @@ pub struct WorkflowResult {
     pub result: ::prost::alloc::string::String,
     /// Time the execution completed.
     #[prost(message, optional, tag="5")]
-    pub ran_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub ran_at: ::core::option::Option<::pbjson_types::Timestamp>,
     /// Success or failure classification.
     #[prost(enumeration="WorkflowResultType", tag="6")]
     pub result_type: i32,
@@ -682,10 +682,10 @@ pub struct Workflow {
     pub workflow_code: ::prost::alloc::vec::Vec<WorkflowCode>,
     /// Creation time of the workflow.
     #[prost(message, optional, tag="6")]
-    pub created_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub created_at: ::core::option::Option<::pbjson_types::Timestamp>,
     /// Last update time of the workflow.
     #[prost(message, optional, tag="7")]
-    pub updated_at: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    pub updated_at: ::core::option::Option<::pbjson_types::Timestamp>,
     /// Historical execution results for this workflow.
     #[prost(message, repeated, tag="8")]
     pub workflow_results: ::prost::alloc::vec::Vec<WorkflowResult>,
@@ -969,7 +969,7 @@ pub struct UpdateWorkflowRequest {
     #[prost(message, optional, tag="1")]
     pub workflow: ::core::option::Option<Workflow>,
     #[prost(message, optional, tag="2")]
-    pub update_mask: ::core::option::Option<super::super::google::protobuf::FieldMask>,
+    pub update_mask: ::core::option::Option<::pbjson_types::FieldMask>,
 }
 impl ::prost::Name for UpdateWorkflowRequest {
 const NAME: &'static str = "UpdateWorkflowRequest";

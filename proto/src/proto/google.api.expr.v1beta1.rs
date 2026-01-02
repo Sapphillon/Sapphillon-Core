@@ -349,7 +349,7 @@ pub mod literal {
 #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ConstantKind {
         /// null value.
-        #[prost(enumeration="super::super::super::super::protobuf::NullValue", tag="1")]
+        #[prost(enumeration="::pbjson_types::NullValue", tag="1")]
         NullValue(i32),
         /// boolean value.
         #[prost(bool, tag="2")]
@@ -483,7 +483,7 @@ pub mod value {
 #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Kind {
         /// Null value.
-        #[prost(enumeration="super::super::super::super::protobuf::NullValue", tag="1")]
+        #[prost(enumeration="::pbjson_types::NullValue", tag="1")]
         NullValue(i32),
         /// Boolean value.
         #[prost(bool, tag="2")]
@@ -508,7 +508,7 @@ pub mod value {
         EnumValue(super::EnumValue),
         /// The proto message backing an object value.
         #[prost(message, tag="10")]
-        ObjectValue(super::super::super::super::protobuf::Any),
+        ObjectValue(::pbjson_types::Any),
         /// Map value.
         #[prost(message, tag="11")]
         MapValue(super::MapValue),

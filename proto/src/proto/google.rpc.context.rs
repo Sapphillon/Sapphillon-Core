@@ -51,7 +51,7 @@ pub struct AttributeContext {
     pub api: ::core::option::Option<attribute_context::Api>,
     /// Supports extensions for advanced use cases, such as logs and metrics.
     #[prost(message, repeated, tag="8")]
-    pub extensions: ::prost::alloc::vec::Vec<super::super::protobuf::Any>,
+    pub extensions: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
 }
 /// Nested message and enum types in `AttributeContext`.
 pub mod attribute_context {
@@ -166,7 +166,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.Attribute
         /// SAML assertions are similarly specified, but with an identity provider
         /// dependent structure.
         #[prost(message, optional, tag="4")]
-        pub claims: ::core::option::Option<super::super::super::protobuf::Struct>,
+        pub claims: ::core::option::Option<::pbjson_types::Struct>,
         /// A list of access level resource names that allow resources to be
         /// accessed by authenticated requester. It is part of Secure GCP processing
         /// for the incoming request. An access level string has the format:
@@ -216,7 +216,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.Attribute
         /// The timestamp when the `destination` service receives the last byte of
         /// the request.
         #[prost(message, optional, tag="9")]
-        pub time: ::core::option::Option<super::super::super::protobuf::Timestamp>,
+        pub time: ::core::option::Option<::pbjson_types::Timestamp>,
         /// The HTTP request size in bytes. If unknown, it must be -1.
         #[prost(int64, tag="10")]
         pub size: i64,
@@ -258,13 +258,13 @@ fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.Attribute
         /// The timestamp when the `destination` service sends the last byte of
         /// the response.
         #[prost(message, optional, tag="4")]
-        pub time: ::core::option::Option<super::super::super::protobuf::Timestamp>,
+        pub time: ::core::option::Option<::pbjson_types::Timestamp>,
         /// The amount of time it takes the backend service to fully respond to a
         /// request. Measured from when the destination service starts to send the
         /// request to the backend until when the destination service receives the
         /// complete response from the backend.
         #[prost(message, optional, tag="5")]
-        pub backend_latency: ::core::option::Option<super::super::super::protobuf::Duration>,
+        pub backend_latency: ::core::option::Option<::pbjson_types::Duration>,
     }
 impl ::prost::Name for Response {
 const NAME: &'static str = "Response";
@@ -327,16 +327,16 @@ fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.Attribute
         /// Output only. The timestamp when the resource was created. This may
         /// be either the time creation was initiated or when it was completed.
         #[prost(message, optional, tag="8")]
-        pub create_time: ::core::option::Option<super::super::super::protobuf::Timestamp>,
+        pub create_time: ::core::option::Option<::pbjson_types::Timestamp>,
         /// Output only. The timestamp when the resource was last updated. Any
         /// change to the resource made by users must refresh this value.
         /// Changes to a resource made by the service should refresh this value.
         #[prost(message, optional, tag="9")]
-        pub update_time: ::core::option::Option<super::super::super::protobuf::Timestamp>,
+        pub update_time: ::core::option::Option<::pbjson_types::Timestamp>,
         /// Output only. The timestamp when the resource was deleted.
         /// If the resource is not deleted, this must be empty.
         #[prost(message, optional, tag="10")]
-        pub delete_time: ::core::option::Option<super::super::super::protobuf::Timestamp>,
+        pub delete_time: ::core::option::Option<::pbjson_types::Timestamp>,
         /// Output only. An opaque value that uniquely identifies a version or
         /// generation of a resource. It can be used to confirm that the client
         /// and server agree on the ordering of a resource being written.

@@ -828,7 +828,7 @@ pub mod method_settings {
         /// Initial delay after which the first poll request will be made.
         /// Default value: 5 seconds.
         #[prost(message, optional, tag="1")]
-        pub initial_poll_delay: ::core::option::Option<super::super::protobuf::Duration>,
+        pub initial_poll_delay: ::core::option::Option<::pbjson_types::Duration>,
         /// Multiplier to gradually increase delay between subsequent polls until it
         /// reaches max_poll_delay.
         /// Default value: 1.5.
@@ -837,11 +837,11 @@ pub mod method_settings {
         /// Maximum time between two subsequent poll requests.
         /// Default value: 45 seconds.
         #[prost(message, optional, tag="3")]
-        pub max_poll_delay: ::core::option::Option<super::super::protobuf::Duration>,
+        pub max_poll_delay: ::core::option::Option<::pbjson_types::Duration>,
         /// Total polling timeout.
         /// Default value: 5 minutes.
         #[prost(message, optional, tag="4")]
-        pub total_poll_timeout: ::core::option::Option<super::super::protobuf::Duration>,
+        pub total_poll_timeout: ::core::option::Option<::pbjson_types::Duration>,
     }
 impl ::prost::Name for LongRunning {
 const NAME: &'static str = "LongRunning";
@@ -1206,7 +1206,7 @@ pub struct HttpBody {
     /// Application specific response metadata. Must be set in the first response
     /// for streaming APIs.
     #[prost(message, repeated, tag="3")]
-    pub extensions: ::prost::alloc::vec::Vec<super::protobuf::Any>,
+    pub extensions: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
 }
 impl ::prost::Name for HttpBody {
 const NAME: &'static str = "HttpBody";

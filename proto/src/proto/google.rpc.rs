@@ -23,7 +23,7 @@ pub struct Status {
     /// A list of messages that carry the error details.  There is a common set of
     /// message types for APIs to use.
     #[prost(message, repeated, tag="3")]
-    pub details: ::prost::alloc::vec::Vec<super::protobuf::Any>,
+    pub details: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
 }
 impl ::prost::Name for Status {
 const NAME: &'static str = "Status";
@@ -303,7 +303,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.rpc.ErrorInfo".into()
 pub struct RetryInfo {
     /// Clients should wait at least this long between retrying the same request.
     #[prost(message, optional, tag="1")]
-    pub retry_delay: ::core::option::Option<super::protobuf::Duration>,
+    pub retry_delay: ::core::option::Option<::pbjson_types::Duration>,
 }
 impl ::prost::Name for RetryInfo {
 const NAME: &'static str = "RetryInfo";
