@@ -35,7 +35,6 @@
 ///          "longitude": -73.70018
 ///      }
 /// }
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct Viewport {
     /// Required. The low point of the viewport.
@@ -207,4 +206,5 @@ pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x01, 0x12, 0x03, 0x43, 0x15, 0x19, 0x0a, 0x0c, 0x0a, 0x05, 0x04, 0x00, 0x02, 0x01, 0x03, 0x12,
     0x03, 0x43, 0x1c, 0x1d, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 ];
+include!("google.geo.type.serde.rs");
 // @@protoc_insertion_point(module)

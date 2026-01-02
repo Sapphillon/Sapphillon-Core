@@ -1,18 +1,19 @@
 version: v2
 clean: true
 plugins:
-- remote: buf.build/community/neoeinstein-prost:v0.4.0
+- remote: buf.build/community/neoeinstein-prost:v0.5.0
   opt:
     - file_descriptor_set
     - compile_well_known_types
     - enable_type_names
     - extern_path=.google.protobuf=::pbjson_types
+    - flat_output_dir=false
   out: proto/src/proto
 - remote: buf.build/community/neoeinstein-prost-serde:v0.4.0
   out: proto/src/proto
-  opt:
-    - no_include=true
-- remote: buf.build/community/neoeinstein-tonic:v0.4.1
+#  opt:
+#    - no_include=true
+- remote: buf.build/community/neoeinstein-tonic:v0.5.0
   out: proto/src/proto
 
 inputs:

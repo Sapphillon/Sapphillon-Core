@@ -3,7 +3,6 @@
 // A representation of the abstract syntax of the Common Expression Language.
 
 /// An expression together with source information as returned by the parser.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ParsedExpr {
     /// The parsed expression.
@@ -34,7 +33,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Par
 /// the declaration `google.api.name` within a
 /// [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression, and the
 /// function declaration `startsWith`.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Expr {
     /// Required. An id assigned to this node by the parser which is unique in a
@@ -49,8 +47,7 @@ pub struct Expr {
 /// Nested message and enum types in `Expr`.
 pub mod expr {
     /// An identifier expression. e.g. `request`.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
     pub struct Ident {
         /// Required. Holds a single, unqualified identifier, possibly preceded by a
         /// '.'.
@@ -65,8 +62,7 @@ const NAME: &'static str = "Ident";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Expr.Ident".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Expr.Ident".into() }}
     /// A field selection expression. e.g. `request.auth`.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Select {
         /// Required. The target of the selection expression.
         ///
@@ -93,8 +89,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Exp
     /// A call expression, including calls to predefined functions and operators.
     ///
     /// For example, `value == 10`, `size(map_value)`.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Call {
         /// The target of an method call-style expression. For example, `x` in
         /// `x.f()`.
@@ -115,8 +110,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Exp
     ///
     /// Lists may either be homogenous, e.g. `\[1, 2, 3\]`, or heterogeneous, e.g.
     /// `dyn(\[1, 'hello', 2.0\])`
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct CreateList {
         /// The elements part of the list.
         #[prost(message, repeated, tag="1")]
@@ -139,8 +133,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Exp
     /// Maps are constructed as `{'key_name': 'value'}`. Message construction is
     /// similar, but prefixed with a type name and composed of field ids:
     /// `types.MyType{field_id: 'value'}`.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct CreateStruct {
         /// The type name of the message to be created, empty when creating map
         /// literals.
@@ -153,8 +146,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Exp
     /// Nested message and enum types in `CreateStruct`.
     pub mod create_struct {
         /// Represents an entry.
-        #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct Entry {
             /// Required. An id assigned to this node by the parser which is unique
             /// in a given expression tree. This is used to associate type
@@ -178,8 +170,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Exp
         /// Nested message and enum types in `Entry`.
         pub mod entry {
             /// The `Entry` key kinds.
-            #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Oneof)]
+            #[derive(Clone, PartialEq, ::prost::Oneof)]
             pub enum KeyKind {
                 /// The field key for a message creator statement.
                 #[prost(string, tag="2")]
@@ -254,8 +245,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Exp
     /// }
     /// return `result`
     /// ```
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Comprehension {
         /// The name of the first iteration variable.
         /// When the iter_range is a list, this variable is the list element.
@@ -299,8 +289,7 @@ const NAME: &'static str = "Comprehension";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Expr.Comprehension".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Expr.Comprehension".into() }}
     /// Required. Variants of expressions.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ExprKind {
         /// A literal expression.
         #[prost(message, tag="3")]
@@ -343,7 +332,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Exp
 ///
 /// Examples of literals include: `"hello"`, `b'bytes'`, `1u`, `4.2`, `-2`,
 /// `true`, `null`.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Constant {
     /// Required. The valid constant kinds.
@@ -353,8 +341,7 @@ pub struct Constant {
 /// Nested message and enum types in `Constant`.
 pub mod constant {
     /// Required. The valid constant kinds.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ConstantKind {
         /// null value.
         #[prost(enumeration="::pbjson_types::NullValue", tag="1")]
@@ -394,7 +381,6 @@ const NAME: &'static str = "Constant";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Constant".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Constant".into() }}
 /// Source information collected at parse time.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SourceInfo {
     /// The syntax version of the source, e.g. `cel1`.
@@ -442,8 +428,7 @@ pub struct SourceInfo {
 /// Nested message and enum types in `SourceInfo`.
 pub mod source_info {
     /// An extension that was requested for the source expression.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
     pub struct Extension {
         /// Identifier for the extension. Example: constant_folding
         #[prost(string, tag="1")]
@@ -462,8 +447,7 @@ pub mod source_info {
     /// Nested message and enum types in `Extension`.
     pub mod extension {
         /// Version
-        #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct Version {
             /// Major version changes indicate different required support level from
             /// the required components.
@@ -500,10 +484,10 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Sou
             /// (if the ProtoBuf definition does not change) and safe for programmatic use.
             pub fn as_str_name(&self) -> &'static str {
                 match self {
-                    Component::Unspecified => "COMPONENT_UNSPECIFIED",
-                    Component::Parser => "COMPONENT_PARSER",
-                    Component::TypeChecker => "COMPONENT_TYPE_CHECKER",
-                    Component::Runtime => "COMPONENT_RUNTIME",
+                    Self::Unspecified => "COMPONENT_UNSPECIFIED",
+                    Self::Parser => "COMPONENT_PARSER",
+                    Self::TypeChecker => "COMPONENT_TYPE_CHECKER",
+                    Self::Runtime => "COMPONENT_RUNTIME",
                 }
             }
             /// Creates an enum from field names used in the ProtoBuf definition.
@@ -528,8 +512,7 @@ const NAME: &'static str = "SourceInfo";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.SourceInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.SourceInfo".into() }}
 /// A specific position in source.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct SourcePosition {
     /// The soucre location name (e.g. file name).
     #[prost(string, tag="1")]
@@ -553,7 +536,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Sou
 // Protos for representing CEL declarations and typed checked expressions.
 
 /// A CEL expression which has been successfully type checked.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CheckedExpr {
     /// A map from expression ids to resolved references.
@@ -603,7 +585,6 @@ const NAME: &'static str = "CheckedExpr";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.CheckedExpr".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.CheckedExpr".into() }}
 /// Represents a CEL type.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Type {
     /// The kind of type.
@@ -613,8 +594,7 @@ pub struct Type {
 /// Nested message and enum types in `Type`.
 pub mod r#type {
     /// List type with typed elements, e.g. `list<example.proto.MyMessage>`.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ListType {
         /// The element type.
         #[prost(message, optional, boxed, tag="1")]
@@ -625,8 +605,7 @@ const NAME: &'static str = "ListType";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Type.ListType".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Type.ListType".into() }}
     /// Map type with parameterized key and value types, e.g. `map<string, int>`.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct MapType {
         /// The type of the key.
         #[prost(message, optional, boxed, tag="1")]
@@ -640,8 +619,7 @@ const NAME: &'static str = "MapType";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Type.MapType".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Type.MapType".into() }}
     /// Function type with result and arg types.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct FunctionType {
         /// Result type of the function.
         #[prost(message, optional, boxed, tag="1")]
@@ -655,8 +633,7 @@ const NAME: &'static str = "FunctionType";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Type.FunctionType".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Type.FunctionType".into() }}
     /// Application defined abstract type.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct AbstractType {
         /// The fully qualified name of this abstract type.
         #[prost(string, tag="1")]
@@ -701,13 +678,13 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Typ
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
-                PrimitiveType::Unspecified => "PRIMITIVE_TYPE_UNSPECIFIED",
-                PrimitiveType::Bool => "BOOL",
-                PrimitiveType::Int64 => "INT64",
-                PrimitiveType::Uint64 => "UINT64",
-                PrimitiveType::Double => "DOUBLE",
-                PrimitiveType::String => "STRING",
-                PrimitiveType::Bytes => "BYTES",
+                Self::Unspecified => "PRIMITIVE_TYPE_UNSPECIFIED",
+                Self::Bool => "BOOL",
+                Self::Int64 => "INT64",
+                Self::Uint64 => "UINT64",
+                Self::Double => "DOUBLE",
+                Self::String => "STRING",
+                Self::Bytes => "BYTES",
             }
         }
         /// Creates an enum from field names used in the ProtoBuf definition.
@@ -748,10 +725,10 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Typ
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
-                WellKnownType::Unspecified => "WELL_KNOWN_TYPE_UNSPECIFIED",
-                WellKnownType::Any => "ANY",
-                WellKnownType::Timestamp => "TIMESTAMP",
-                WellKnownType::Duration => "DURATION",
+                Self::Unspecified => "WELL_KNOWN_TYPE_UNSPECIFIED",
+                Self::Any => "ANY",
+                Self::Timestamp => "TIMESTAMP",
+                Self::Duration => "DURATION",
             }
         }
         /// Creates an enum from field names used in the ProtoBuf definition.
@@ -766,8 +743,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Typ
         }
     }
     /// The kind of type.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum TypeKind {
         /// Dynamic type.
         #[prost(message, tag="1")]
@@ -832,7 +808,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Typ
 ///
 /// A declaration is part of the contract between the expression, the agent
 /// evaluating that expression, and the caller requesting evaluation.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Decl {
     /// The fully qualified name of the declaration.
@@ -859,8 +834,7 @@ pub mod decl {
     /// evaluation time. An identifier with a value should resolve to a constant,
     /// but may be used in conjunction with other identifiers bound at evaluation
     /// time.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct IdentDecl {
         /// Required. The type of the identifier.
         #[prost(message, optional, tag="1")]
@@ -882,8 +856,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Dec
     ///
     /// Functions have no observable side-effects (there may be side-effects like
     /// logging which are not observable from CEL).
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct FunctionDecl {
         /// Required. List of function overloads, must contain at least one overload.
         #[prost(message, repeated, tag="1")]
@@ -901,8 +874,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Dec
         ///
         /// Overloads must have non-overlapping argument types after erasure of all
         /// parameterized type variables (similar as type erasure in Java).
-        #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct Overload {
             /// Required. Globally unique overload name of the function which reflects
             /// the function name and argument types.
@@ -956,8 +928,7 @@ const NAME: &'static str = "FunctionDecl";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Decl.FunctionDecl".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Decl.FunctionDecl".into() }}
     /// Required. The declaration kind.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum DeclKind {
         /// Identifier declaration.
         #[prost(message, tag="2")]
@@ -972,7 +943,6 @@ const NAME: &'static str = "Decl";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Decl".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Decl".into() }}
 /// Describes a resolved reference to a declaration.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Reference {
     /// The fully qualified name of the declaration.
@@ -1004,7 +974,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Ref
 ///
 /// This is similar to `google.protobuf.Value`, but can represent CEL's full
 /// range of values.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
     /// Required. The valid kinds of values.
@@ -1014,8 +983,7 @@ pub struct Value {
 /// Nested message and enum types in `Value`.
 pub mod value {
     /// Required. The valid kinds of values.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Kind {
         /// Null value.
         #[prost(enumeration="::pbjson_types::NullValue", tag="1")]
@@ -1060,8 +1028,7 @@ const NAME: &'static str = "Value";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Value".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.Value".into() }}
 /// An enum value.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct EnumValue {
     /// The fully qualified name of the enum type.
     #[prost(string, tag="1")]
@@ -1078,7 +1045,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Enu
 ///
 /// Wrapped in a message so 'not set' and empty can be differentiated, which is
 /// required for use in a 'oneof'.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListValue {
     /// The ordered values in the list.
@@ -1093,7 +1059,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Lis
 ///
 /// Wrapped in a message so 'not set' and empty can be differentiated, which is
 /// required for use in a 'oneof'.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MapValue {
     /// The set of map entries.
@@ -1106,8 +1071,7 @@ pub struct MapValue {
 /// Nested message and enum types in `MapValue`.
 pub mod map_value {
     /// An entry in the map.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Entry {
         /// The key.
         ///
@@ -1131,7 +1095,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Map
 /// The state of an evaluation.
 ///
 /// Can represent an inital, partial, or completed state of evaluation.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EvalState {
     /// The unique values referenced in this message.
@@ -1147,8 +1110,7 @@ pub struct EvalState {
 /// Nested message and enum types in `EvalState`.
 pub mod eval_state {
     /// A single evalution result.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
     pub struct Result {
         /// The id of the expression this result if for.
         #[prost(int64, tag="1")]
@@ -1167,7 +1129,6 @@ const NAME: &'static str = "EvalState";
 const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.EvalState".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.EvalState".into() }}
 /// The value of an evaluated expression.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExprValue {
     /// An expression can resolve to a value, error or unknown.
@@ -1177,8 +1138,7 @@ pub struct ExprValue {
 /// Nested message and enum types in `ExprValue`.
 pub mod expr_value {
     /// An expression can resolve to a value, error or unknown.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Kind {
         /// A concrete value.
         #[prost(message, tag="1")]
@@ -1236,7 +1196,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Exp
 /// A set of errors.
 ///
 /// The errors included depend on the context. See `ExprValue.error`.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ErrorSet {
     /// The errors in the set.
@@ -1250,8 +1209,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.Err
 /// A set of expressions for which the value is unknown.
 ///
 /// The unknowns included depend on the context. See `ExprValue.unknown`.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct UnknownSet {
     /// The ids of the expressions with unknown values.
     #[prost(int64, repeated, tag="1")]
@@ -1263,7 +1221,6 @@ const PACKAGE: &'static str = "google.api.expr.v1alpha1";
 fn full_name() -> ::prost::alloc::string::String { "google.api.expr.v1alpha1.UnknownSet".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.expr.v1alpha1.UnknownSet".into() }}
 /// Values of intermediate expressions produced when evaluating expression.
 /// Deprecated, use `EvalState` instead.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Explain {
     /// All of the observed values.
@@ -1283,8 +1240,7 @@ pub struct Explain {
 /// Nested message and enum types in `Explain`.
 pub mod explain {
     /// ID and value index of one step.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
     pub struct ExprStep {
         /// ID of corresponding Expr node.
         #[prost(int64, tag="1")]
@@ -4200,4 +4156,5 @@ pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0a, 0x0c, 0x0a, 0x05, 0x04, 0x00, 0x02, 0x01, 0x03, 0x12, 0x03, 0x33, 0x21, 0x22, 0x62, 0x06,
     0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 ];
+include!("google.api.expr.v1alpha1.serde.rs");
 // @@protoc_insertion_point(module)

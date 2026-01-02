@@ -17,7 +17,6 @@
 /// NOTE: Different system may generate different subset of attributes. Please
 /// verify the system specification before relying on an attribute generated
 /// a system.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AttributeContext {
     /// The origin of a network activity. In a multi hop network activity,
@@ -59,8 +58,7 @@ pub mod attribute_context {
     /// The node can be either a service or an application that sends, forwards,
     /// or receives the request. Service peers should fill in
     /// `principal` and `labels` as appropriate.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Peer {
         /// The IP address of the peer.
         #[prost(string, tag="1")]
@@ -89,8 +87,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.Attribute
     /// This message defines attributes associated with API operations, such as
     /// a network API request. The terminology is based on the conventions used
     /// by Google APIs, Istio, and OpenAPI.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
     pub struct Api {
         /// The API service name. It is a logical identifier for a networked API,
         /// such as "pubsub.googleapis.com". The naming syntax depends on the
@@ -118,8 +115,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.Attribute
     /// This message defines request authentication attributes. Terminology is
     /// based on the JSON Web Token (JWT) standard, but the terms also
     /// correlate to concepts in other standards.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Auth {
         /// The authenticated principal. Reflects the issuer (`iss`) and subject
         /// (`sub`) claims within a JWT. The issuer and subject should be `/`
@@ -184,8 +180,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.Attribute
     /// This message defines attributes for an HTTP request. If the actual
     /// request is not an HTTP request, the runtime system should try to map
     /// the actual request to an equivalent HTTP request.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Request {
         /// The unique ID for a request, which can be propagated to downstream
         /// systems. The ID should have low probability of collision
@@ -241,8 +236,7 @@ const PACKAGE: &'static str = "google.rpc.context";
 fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.AttributeContext.Request".into() }fn type_url() -> ::prost::alloc::string::String { "/google.rpc.context.AttributeContext.Request".into() }}
     /// This message defines attributes for a typical network response. It
     /// generally models semantics of an HTTP response.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Response {
         /// The HTTP response status code, such as `200` and `404`.
         #[prost(int64, tag="1")]
@@ -273,8 +267,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.rpc.context.Attribute
     /// This message defines core attributes for a resource. A resource is an
     /// addressable (named) entity provided by the destination service. For
     /// example, a file stored on a network storage service.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Resource {
         /// The name of the service that this resource belongs to, such as
         /// `pubsub.googleapis.com`. The service may be different from the DNS
@@ -1521,4 +1514,5 @@ pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x0d, 0x0a, 0x05, 0x04, 0x00, 0x02, 0x07, 0x03, 0x12, 0x04, 0xd7, 0x02, 0x2c, 0x2d, 0x62, 0x06,
     0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 ];
+include!("google.rpc.context.serde.rs");
 // @@protoc_insertion_point(module)

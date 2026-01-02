@@ -5,7 +5,6 @@
 /// specified otherwise, this must conform to the
 /// <a href="<http://www.unoosa.org/pdf/icg/2012/template/WGS_84.pdf">WGS84>
 /// standard</a>. Values must be within normalized ranges.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct LatLng {
     /// The latitude in degrees. It must be in the range \[-90.0, +90.0\].
@@ -53,14 +52,14 @@ impl CalendarPeriod {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            CalendarPeriod::Unspecified => "CALENDAR_PERIOD_UNSPECIFIED",
-            CalendarPeriod::Day => "DAY",
-            CalendarPeriod::Week => "WEEK",
-            CalendarPeriod::Fortnight => "FORTNIGHT",
-            CalendarPeriod::Month => "MONTH",
-            CalendarPeriod::Quarter => "QUARTER",
-            CalendarPeriod::Half => "HALF",
-            CalendarPeriod::Year => "YEAR",
+            Self::Unspecified => "CALENDAR_PERIOD_UNSPECIFIED",
+            Self::Day => "DAY",
+            Self::Week => "WEEK",
+            Self::Fortnight => "FORTNIGHT",
+            Self::Month => "MONTH",
+            Self::Quarter => "QUARTER",
+            Self::Half => "HALF",
+            Self::Year => "YEAR",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -202,7 +201,6 @@ impl CalendarPeriod {
 ///      };
 ///
 ///      // ...
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct Color {
     /// The amount of red in the color as a value in the interval \[0, 1\].
@@ -245,8 +243,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.type.Color".into() }f
 ///
 /// Related types are [google.type.TimeOfDay][google.type.TimeOfDay] and
 /// `google.protobuf.Timestamp`.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Date {
     /// Year of the date. Must be from 1 to 9999, or 0 to specify a date without
     /// a year.
@@ -290,8 +287,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.type.Date".into() }fn
 ///
 /// This type is more flexible than some applications may want. Make sure to
 /// document and validate your application's limitations.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct DateTime {
     /// Optional. Year of date. Must be from 1 to 9999, or 0 if specifying a
     /// datetime without a year.
@@ -335,8 +331,7 @@ pub mod date_time {
     /// in the future (for example, a country modifies their DST start/end dates,
     /// and future DateTimes in the affected range had already been stored).
     /// If omitted, the DateTime is considered to be in local time.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, Eq, Hash, ::prost::Oneof)]
     pub enum TimeOffset {
         /// UTC offset. Must be whole seconds, between -18 hours and +18 hours.
         /// For example, a UTC offset of -4:00 would be represented as
@@ -354,8 +349,7 @@ const PACKAGE: &'static str = "google.type";
 fn full_name() -> ::prost::alloc::string::String { "google.type.DateTime".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.DateTime".into() }}
 /// Represents a time zone from the
 /// [IANA Time Zone Database](<https://www.iana.org/time-zones>).
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct TimeZone {
     /// IANA Time Zone Database time zone, e.g. "America/New_York".
     #[prost(string, tag="1")]
@@ -396,14 +390,14 @@ impl DayOfWeek {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            DayOfWeek::Unspecified => "DAY_OF_WEEK_UNSPECIFIED",
-            DayOfWeek::Monday => "MONDAY",
-            DayOfWeek::Tuesday => "TUESDAY",
-            DayOfWeek::Wednesday => "WEDNESDAY",
-            DayOfWeek::Thursday => "THURSDAY",
-            DayOfWeek::Friday => "FRIDAY",
-            DayOfWeek::Saturday => "SATURDAY",
-            DayOfWeek::Sunday => "SUNDAY",
+            Self::Unspecified => "DAY_OF_WEEK_UNSPECIFIED",
+            Self::Monday => "MONDAY",
+            Self::Tuesday => "TUESDAY",
+            Self::Wednesday => "WEDNESDAY",
+            Self::Thursday => "THURSDAY",
+            Self::Friday => "FRIDAY",
+            Self::Saturday => "SATURDAY",
+            Self::Sunday => "SUNDAY",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -428,8 +422,7 @@ impl DayOfWeek {
 /// \[BigDecimal\]:
 /// <https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/math/BigDecimal.html>
 /// \[decimal.Decimal\]: <https://docs.python.org/3/library/decimal.html>
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Decimal {
     /// The decimal value, as a string.
     ///
@@ -529,8 +522,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.type.Decimal".into() 
 /// The exact variables and functions that may be referenced within an expression
 /// are determined by the service that evaluates it. See the service
 /// documentation for additional information.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Expr {
     /// Textual representation of an expression in Common Expression Language
     /// syntax.
@@ -555,8 +547,7 @@ const NAME: &'static str = "Expr";
 const PACKAGE: &'static str = "google.type";
 fn full_name() -> ::prost::alloc::string::String { "google.type.Expr".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.Expr".into() }}
 /// Represents a fraction in terms of a numerator divided by a denominator.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Fraction {
     /// The numerator in the fraction, e.g. 2 in 2/3.
     #[prost(int64, tag="1")]
@@ -576,8 +567,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.type.Fraction".into()
 /// The start must be less than or equal to the end.
 /// When the start equals the end, the interval is empty (matches no time).
 /// When both start and end are unspecified, the interval matches any time.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Interval {
     /// Optional. Inclusive start of the interval.
     ///
@@ -597,8 +587,7 @@ const NAME: &'static str = "Interval";
 const PACKAGE: &'static str = "google.type";
 fn full_name() -> ::prost::alloc::string::String { "google.type.Interval".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.Interval".into() }}
 /// Localized variant of a text in a particular language.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct LocalizedText {
     /// Localized string in the language corresponding to `language_code' below.
     #[prost(string, tag="1")]
@@ -615,8 +604,7 @@ const NAME: &'static str = "LocalizedText";
 const PACKAGE: &'static str = "google.type";
 fn full_name() -> ::prost::alloc::string::String { "google.type.LocalizedText".into() }fn type_url() -> ::prost::alloc::string::String { "/google.type.LocalizedText".into() }}
 /// Represents an amount of money with its currency type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Money {
     /// The three-letter currency code defined in ISO 4217.
     #[prost(string, tag="1")]
@@ -676,19 +664,19 @@ impl Month {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            Month::Unspecified => "MONTH_UNSPECIFIED",
-            Month::January => "JANUARY",
-            Month::February => "FEBRUARY",
-            Month::March => "MARCH",
-            Month::April => "APRIL",
-            Month::May => "MAY",
-            Month::June => "JUNE",
-            Month::July => "JULY",
-            Month::August => "AUGUST",
-            Month::September => "SEPTEMBER",
-            Month::October => "OCTOBER",
-            Month::November => "NOVEMBER",
-            Month::December => "DECEMBER",
+            Self::Unspecified => "MONTH_UNSPECIFIED",
+            Self::January => "JANUARY",
+            Self::February => "FEBRUARY",
+            Self::March => "MARCH",
+            Self::April => "APRIL",
+            Self::May => "MAY",
+            Self::June => "JUNE",
+            Self::July => "JULY",
+            Self::August => "AUGUST",
+            Self::September => "SEPTEMBER",
+            Self::October => "OCTOBER",
+            Self::November => "NOVEMBER",
+            Self::December => "DECEMBER",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -737,8 +725,7 @@ impl Month {
 ///
 ///   Reference(s):
 ///    - <https://github.com/google/libphonenumber>
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct PhoneNumber {
     /// The phone number's extension. The extension is not standardized in ITU
     /// recommendations, except for being defined as a series of numbers with a
@@ -768,8 +755,7 @@ pub mod phone_number {
     /// dialable, which means the same short code can exist in different regions,
     /// with different usage and pricing, even if those regions share the same
     /// country calling code (e.g. US and CA).
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
     pub struct ShortCode {
         /// Required. The BCP-47 region code of the location where calls to this
         /// short code can be made, such as "US" and "BB".
@@ -790,8 +776,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.type.PhoneNumber.Shor
     /// Required.  Either a regular number, or a short code.  New fields may be
     /// added to the oneof below in the future, so clients should ignore phone
     /// numbers for which none of the fields they coded against are set.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, Eq, Hash, ::prost::Oneof)]
     pub enum Kind {
         /// The phone number, represented as a leading plus sign ('+'), followed by a
         /// phone number that uses a relaxed ITU E.164 format consisting of the
@@ -839,8 +824,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.type.PhoneNumber".int
 ///
 /// For more guidance on how to use this schema, please see:
 /// <https://support.google.com/business/answer/6397478>
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct PostalAddress {
     /// The schema revision of the `PostalAddress`. This must be set to 0, which is
     /// the latest revision.
@@ -994,7 +978,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.type.PostalAddress".i
 /// kept positive, which can be achieved by changing all the signs when `w` is
 /// negative.
 ///
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct Quaternion {
     /// The x component.
@@ -1018,8 +1001,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.type.Quaternion".into
 /// or are specified elsewhere. An API may choose to allow leap seconds. Related
 /// types are [google.type.Date][google.type.Date] and
 /// `google.protobuf.Timestamp`.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct TimeOfDay {
     /// Hours of day in 24 hour format. Should be from 0 to 23. An API may choose
     /// to allow the value "24:00:00" for scenarios like business closing time.
@@ -4186,4 +4168,5 @@ pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x04, 0x00, 0x02, 0x03, 0x03, 0x12, 0x03, 0x2a, 0x10, 0x11, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
     0x6f, 0x33,
 ];
+include!("google.type.serde.rs");
 // @@protoc_insertion_point(module)

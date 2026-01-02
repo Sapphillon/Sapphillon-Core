@@ -3,7 +3,6 @@
 /// Defines the HTTP configuration for an API service. It contains a list of
 /// [HttpRule][google.api.HttpRule], each specifying the mapping of an RPC method
 /// to one or more HTTP REST API methods.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Http {
     /// A list of HTTP configuration rules that apply to individual API methods.
@@ -288,7 +287,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.Http".into() }fn 
 /// If an API needs to use a JSON array for request or response body, it can map
 /// the request or response body to a repeated field. However, some gRPC
 /// Transcoding implementations may not support this feature.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HttpRule {
     /// Selects a method to which this rule applies.
@@ -329,8 +327,7 @@ pub mod http_rule {
     /// Determines the URL pattern is matched by this rules. This pattern can be
     /// used with any of the {get|put|post|delete|patch} methods. A custom method
     /// can be defined using the 'custom' field.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, Eq, Hash, ::prost::Oneof)]
     pub enum Pattern {
         /// Maps to HTTP GET. Used for listing and getting information about
         /// resources.
@@ -361,8 +358,7 @@ const NAME: &'static str = "HttpRule";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.HttpRule".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.HttpRule".into() }}
 /// A custom pattern is used for defining custom HTTP verb.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct CustomHttpPattern {
     /// The name of this custom HTTP verb.
     #[prost(string, tag="1")]
@@ -425,14 +421,14 @@ impl LaunchStage {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            LaunchStage::Unspecified => "LAUNCH_STAGE_UNSPECIFIED",
-            LaunchStage::Unimplemented => "UNIMPLEMENTED",
-            LaunchStage::Prelaunch => "PRELAUNCH",
-            LaunchStage::EarlyAccess => "EARLY_ACCESS",
-            LaunchStage::Alpha => "ALPHA",
-            LaunchStage::Beta => "BETA",
-            LaunchStage::Ga => "GA",
-            LaunchStage::Deprecated => "DEPRECATED",
+            Self::Unspecified => "LAUNCH_STAGE_UNSPECIFIED",
+            Self::Unimplemented => "UNIMPLEMENTED",
+            Self::Prelaunch => "PRELAUNCH",
+            Self::EarlyAccess => "EARLY_ACCESS",
+            Self::Alpha => "ALPHA",
+            Self::Beta => "BETA",
+            Self::Ga => "GA",
+            Self::Deprecated => "DEPRECATED",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -451,8 +447,7 @@ impl LaunchStage {
     }
 }
 /// Required information for every language.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct CommonLanguageSettings {
     /// Link to automatically generated reference documentation.  Example:
     /// <https://cloud.google.com/nodejs/docs/reference/asset/latest>
@@ -471,7 +466,6 @@ const NAME: &'static str = "CommonLanguageSettings";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.CommonLanguageSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.CommonLanguageSettings".into() }}
 /// Details about how and where to publish client libraries.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientLibrarySettings {
     /// Version of the API to apply these settings to. This is the full protobuf
@@ -518,7 +512,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.ClientLibrarySett
 /// This message configures the settings for publishing [Google Cloud Client
 /// libraries](<https://cloud.google.com/apis/docs/cloud-client-libraries>)
 /// generated from the service config.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Publishing {
     /// A list of API method settings, e.g. the behavior for methods that use the
@@ -571,7 +564,6 @@ const NAME: &'static str = "Publishing";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.Publishing".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.Publishing".into() }}
 /// Settings for Java client libraries.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct JavaSettings {
     /// The package name to use in Java. Clobbers the java_package option
@@ -612,8 +604,7 @@ const NAME: &'static str = "JavaSettings";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.JavaSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.JavaSettings".into() }}
 /// Settings for C++ client libraries.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct CppSettings {
     /// Some settings.
     #[prost(message, optional, tag="1")]
@@ -624,8 +615,7 @@ const NAME: &'static str = "CppSettings";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.CppSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.CppSettings".into() }}
 /// Settings for Php client libraries.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct PhpSettings {
     /// Some settings.
     #[prost(message, optional, tag="1")]
@@ -636,8 +626,7 @@ const NAME: &'static str = "PhpSettings";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.PhpSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.PhpSettings".into() }}
 /// Settings for Python client libraries.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct PythonSettings {
     /// Some settings.
     #[prost(message, optional, tag="1")]
@@ -651,8 +640,7 @@ pub mod python_settings {
     /// Experimental features to be included during client library generation.
     /// These fields will be deprecated once the feature graduates and is enabled
     /// by default.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
     pub struct ExperimentalFeatures {
         /// Enables generation of asynchronous REST clients if `rest` transport is
         /// enabled. By default, asynchronous REST clients will not be generated.
@@ -683,8 +671,7 @@ const NAME: &'static str = "PythonSettings";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.PythonSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.PythonSettings".into() }}
 /// Settings for Node client libraries.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct NodeSettings {
     /// Some settings.
     #[prost(message, optional, tag="1")]
@@ -695,7 +682,6 @@ const NAME: &'static str = "NodeSettings";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.NodeSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.NodeSettings".into() }}
 /// Settings for Dotnet client libraries.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DotnetSettings {
     /// Some settings.
@@ -737,8 +723,7 @@ const NAME: &'static str = "DotnetSettings";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.DotnetSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.DotnetSettings".into() }}
 /// Settings for Ruby client libraries.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct RubySettings {
     /// Some settings.
     #[prost(message, optional, tag="1")]
@@ -749,7 +734,6 @@ const NAME: &'static str = "RubySettings";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.RubySettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.RubySettings".into() }}
 /// Settings for Go client libraries.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GoSettings {
     /// Some settings.
@@ -771,7 +755,6 @@ const NAME: &'static str = "GoSettings";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.GoSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.GoSettings".into() }}
 /// Describes the generator configuration for a method.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MethodSettings {
     /// The fully qualified name of the method, for which the options below apply.
@@ -822,8 +805,7 @@ pub mod method_settings {
     /// All default values below are from those used in the client library
     /// generators (e.g.
     /// [Java](<https://github.com/googleapis/gapic-generator-java/blob/04c2faa191a9b5a10b92392fe8482279c4404803/src/main/java/com/google/api/generator/gapic/composer/common/RetrySettingsComposer.java>)).
-    #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+    #[derive(Clone, Copy, PartialEq, ::prost::Message)]
     pub struct LongRunning {
         /// Initial delay after which the first poll request will be made.
         /// Default value: 5 seconds.
@@ -854,8 +836,7 @@ const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.MethodSettings".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.MethodSettings".into() }}
 /// This message is used to configure the generation of a subset of the RPCs in
 /// a service for client libraries.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct SelectiveGapicGeneration {
     /// An allowlist of the fully qualified names of RPCs that should be included
     /// on public client surfaces.
@@ -903,14 +884,14 @@ impl ClientLibraryOrganization {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            ClientLibraryOrganization::Unspecified => "CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED",
-            ClientLibraryOrganization::Cloud => "CLOUD",
-            ClientLibraryOrganization::Ads => "ADS",
-            ClientLibraryOrganization::Photos => "PHOTOS",
-            ClientLibraryOrganization::StreetView => "STREET_VIEW",
-            ClientLibraryOrganization::Shopping => "SHOPPING",
-            ClientLibraryOrganization::Geo => "GEO",
-            ClientLibraryOrganization::GenerativeAi => "GENERATIVE_AI",
+            Self::Unspecified => "CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED",
+            Self::Cloud => "CLOUD",
+            Self::Ads => "ADS",
+            Self::Photos => "PHOTOS",
+            Self::StreetView => "STREET_VIEW",
+            Self::Shopping => "SHOPPING",
+            Self::Geo => "GEO",
+            Self::GenerativeAi => "GENERATIVE_AI",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -948,9 +929,9 @@ impl ClientLibraryDestination {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            ClientLibraryDestination::Unspecified => "CLIENT_LIBRARY_DESTINATION_UNSPECIFIED",
-            ClientLibraryDestination::Github => "GITHUB",
-            ClientLibraryDestination::PackageManager => "PACKAGE_MANAGER",
+            Self::Unspecified => "CLIENT_LIBRARY_DESTINATION_UNSPECIFIED",
+            Self::Github => "GITHUB",
+            Self::PackageManager => "PACKAGE_MANAGER",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -1026,15 +1007,15 @@ impl FieldBehavior {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            FieldBehavior::Unspecified => "FIELD_BEHAVIOR_UNSPECIFIED",
-            FieldBehavior::Optional => "OPTIONAL",
-            FieldBehavior::Required => "REQUIRED",
-            FieldBehavior::OutputOnly => "OUTPUT_ONLY",
-            FieldBehavior::InputOnly => "INPUT_ONLY",
-            FieldBehavior::Immutable => "IMMUTABLE",
-            FieldBehavior::UnorderedList => "UNORDERED_LIST",
-            FieldBehavior::NonEmptyDefault => "NON_EMPTY_DEFAULT",
-            FieldBehavior::Identifier => "IDENTIFIER",
+            Self::Unspecified => "FIELD_BEHAVIOR_UNSPECIFIED",
+            Self::Optional => "OPTIONAL",
+            Self::Required => "REQUIRED",
+            Self::OutputOnly => "OUTPUT_ONLY",
+            Self::InputOnly => "INPUT_ONLY",
+            Self::Immutable => "IMMUTABLE",
+            Self::UnorderedList => "UNORDERED_LIST",
+            Self::NonEmptyDefault => "NON_EMPTY_DEFAULT",
+            Self::Identifier => "IDENTIFIER",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -1054,7 +1035,6 @@ impl FieldBehavior {
     }
 }
 /// Rich semantic information of an API field beyond basic typing.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FieldInfo {
     /// The standard format of a field value. This does not explicitly configure
@@ -1107,11 +1087,11 @@ pub mod field_info {
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
-                Format::Unspecified => "FORMAT_UNSPECIFIED",
-                Format::Uuid4 => "UUID4",
-                Format::Ipv4 => "IPV4",
-                Format::Ipv6 => "IPV6",
-                Format::Ipv4OrIpv6 => "IPV4_OR_IPV6",
+                Self::Unspecified => "FORMAT_UNSPECIFIED",
+                Self::Uuid4 => "UUID4",
+                Self::Ipv4 => "IPV4",
+                Self::Ipv6 => "IPV6",
+                Self::Ipv4OrIpv6 => "IPV4_OR_IPV6",
             }
         }
         /// Creates an enum from field names used in the ProtoBuf definition.
@@ -1132,8 +1112,7 @@ const NAME: &'static str = "FieldInfo";
 const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.FieldInfo".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.FieldInfo".into() }}
 /// A reference to a message type, for use in [FieldInfo][google.api.FieldInfo].
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct TypeReference {
     /// The name of the type that the annotated, generic field may represent.
     /// If the type is in the same protobuf package, the value can be the simple
@@ -1194,7 +1173,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.TypeReference".in
 ///
 /// Use of this type only changes how the request and response bodies are
 /// handled, all other features will continue to work unchanged.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HttpBody {
     /// The HTTP Content-Type header value specifying the content type of the body.
@@ -1259,8 +1237,7 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.HttpBody".into() 
 ///        pattern: "folders/{folder}/logs/{log}"
 ///        pattern: "organizations/{organization}/logs/{log}"
 ///        pattern: "billingAccounts/{billing_account}/logs/{log}"
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct ResourceDescriptor {
     /// The resource type. It must be in the format of
     /// {service_name}/{resource_type_kind}. The `resource_type_kind` must be
@@ -1366,9 +1343,9 @@ pub mod resource_descriptor {
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
-                History::Unspecified => "HISTORY_UNSPECIFIED",
-                History::OriginallySinglePattern => "ORIGINALLY_SINGLE_PATTERN",
-                History::FutureMultiPattern => "FUTURE_MULTI_PATTERN",
+                Self::Unspecified => "HISTORY_UNSPECIFIED",
+                Self::OriginallySinglePattern => "ORIGINALLY_SINGLE_PATTERN",
+                Self::FutureMultiPattern => "FUTURE_MULTI_PATTERN",
             }
         }
         /// Creates an enum from field names used in the ProtoBuf definition.
@@ -1404,8 +1381,8 @@ pub mod resource_descriptor {
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
-                Style::Unspecified => "STYLE_UNSPECIFIED",
-                Style::DeclarativeFriendly => "DECLARATIVE_FRIENDLY",
+                Self::Unspecified => "STYLE_UNSPECIFIED",
+                Self::DeclarativeFriendly => "DECLARATIVE_FRIENDLY",
             }
         }
         /// Creates an enum from field names used in the ProtoBuf definition.
@@ -1424,8 +1401,7 @@ const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.ResourceDescriptor".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.ResourceDescriptor".into() }}
 /// Defines a proto annotation that describes a string field that refers to
 /// an API resource.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct ResourceReference {
     /// The resource type that the annotated field references.
     ///
@@ -1490,7 +1466,6 @@ fn full_name() -> ::prost::alloc::string::String { "google.api.ResourceReference
 ///
 /// Here, all methods are publicly visible except for the restricted methods
 /// EnhancedSearch and Delegate.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Visibility {
     /// A list of visibility rules that apply to individual API elements.
@@ -1505,8 +1480,7 @@ const PACKAGE: &'static str = "google.api";
 fn full_name() -> ::prost::alloc::string::String { "google.api.Visibility".into() }fn type_url() -> ::prost::alloc::string::String { "/google.api.Visibility".into() }}
 /// A visibility rule provides visibility configuration for an individual API
 /// element.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct VisibilityRule {
     /// Selects methods, messages, fields, enums, etc. to which this rule applies.
     ///
@@ -5798,4 +5772,5 @@ pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0x01, 0x12, 0x03, 0x6e, 0x09, 0x14, 0x0a, 0x0c, 0x0a, 0x05, 0x04, 0x01, 0x02, 0x01, 0x03, 0x12,
     0x03, 0x6e, 0x17, 0x18, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 ];
+include!("google.api.serde.rs");
 // @@protoc_insertion_point(module)

@@ -27,8 +27,7 @@
 /// - permission_type: Required.
 /// - resource: Optional; when omitted applies broadly.
 /// - permission_level: Recommended; some features may require it.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Permission {
     /// Human-readable name of the permission, suitable for display in UIs.
     /// Example: "Read File", "Execute Workflow".
@@ -73,7 +72,6 @@ fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.Permission".in
 /// - An AllowedPermission entry grants the listed permissions to code executing that
 ///    plugin function; it does not automatically grant permissions to other plugin functions.
 /// - Duplicates in permissions are allowed but have no extra effect; treat the list as a set.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AllowedPermission {
     /// Identifier of the plugin function this permission set applies to.
@@ -126,13 +124,13 @@ impl PermissionType {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            PermissionType::Unspecified => "PERMISSION_TYPE_UNSPECIFIED",
-            PermissionType::Execute => "PERMISSION_TYPE_EXECUTE",
-            PermissionType::FilesystemRead => "PERMISSION_TYPE_FILESYSTEM_READ",
-            PermissionType::FilesystemWrite => "PERMISSION_TYPE_FILESYSTEM_WRITE",
-            PermissionType::NetAccess => "PERMISSION_TYPE_NET_ACCESS",
-            PermissionType::AllowMcp => "PERMISSION_TYPE_ALLOW_MCP",
-            PermissionType::AllowAll => "PERMISSION_TYPE_ALLOW_ALL",
+            Self::Unspecified => "PERMISSION_TYPE_UNSPECIFIED",
+            Self::Execute => "PERMISSION_TYPE_EXECUTE",
+            Self::FilesystemRead => "PERMISSION_TYPE_FILESYSTEM_READ",
+            Self::FilesystemWrite => "PERMISSION_TYPE_FILESYSTEM_WRITE",
+            Self::NetAccess => "PERMISSION_TYPE_NET_ACCESS",
+            Self::AllowMcp => "PERMISSION_TYPE_ALLOW_MCP",
+            Self::AllowAll => "PERMISSION_TYPE_ALLOW_ALL",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -175,10 +173,10 @@ impl PermissionLevel {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            PermissionLevel::Unspecified => "PERMISSION_LEVEL_UNSPECIFIED",
-            PermissionLevel::Medium => "PERMISSION_LEVEL_MEDIUM",
-            PermissionLevel::High => "PERMISSION_LEVEL_HIGH",
-            PermissionLevel::Critical => "PERMISSION_LEVEL_CRITICAL",
+            Self::Unspecified => "PERMISSION_LEVEL_UNSPECIFIED",
+            Self::Medium => "PERMISSION_LEVEL_MEDIUM",
+            Self::High => "PERMISSION_LEVEL_HIGH",
+            Self::Critical => "PERMISSION_LEVEL_CRITICAL",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -206,8 +204,7 @@ impl PermissionLevel {
 ///      type: "string"
 ///      description: "The unique identifier of the user"
 ///    }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct FunctionParameter {
     /// The variable name of the parameter.
     /// Example: "userId", "message", "options".
@@ -240,7 +237,6 @@ fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.FunctionParame
 ///      ]
 ///      returns: \[{ name: "result", type: "boolean", description: "True if sent successfully" }\]
 ///    }
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FunctionDefine {
     /// The list of function parameters (arguments).
@@ -277,7 +273,6 @@ fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.FunctionDefine
 ///        returns: \[{ name: "success", type: "boolean", description: "True if sent" }\]
 ///      }
 ///    }
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PluginFunction {
     /// Stable unique identifier for the function.
@@ -331,7 +326,6 @@ fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.PluginFunction
 ///      verified: true
 ///      functions: \[{ function_id: "send_notification", ... }\]
 ///    }
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PluginPackage {
     /// Stable unique identifier for the plugin package.
@@ -380,8 +374,7 @@ const NAME: &'static str = "PluginPackage";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.PluginPackage".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.PluginPackage".into() }}
 /// Request message for listing plugins.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct ListPluginsRequest {
     /// The maximum number of plugins to return.
     /// The service may return fewer than this value.
@@ -398,7 +391,6 @@ const NAME: &'static str = "ListPluginsRequest";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.ListPluginsRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.ListPluginsRequest".into() }}
 /// Response message for listing plugins.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListPluginsResponse {
     /// A list of available plugin packages.
@@ -416,8 +408,7 @@ const NAME: &'static str = "ListPluginsResponse";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.ListPluginsResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.ListPluginsResponse".into() }}
 /// Request message for installing a plugin.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct InstallPluginRequest {
     /// The URI of the plugin to install.
     ///
@@ -447,7 +438,6 @@ const NAME: &'static str = "InstallPluginRequest";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.InstallPluginRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.InstallPluginRequest".into() }}
 /// Response message for installing a plugin.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InstallPluginResponse {
     /// The installed plugin package.
@@ -477,8 +467,7 @@ const NAME: &'static str = "InstallPluginResponse";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.InstallPluginResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.InstallPluginResponse".into() }}
 /// Request message for uninstalling a plugin.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct UninstallPluginRequest {
     /// The package ID of the plugin to uninstall.
     ///
@@ -500,7 +489,6 @@ const NAME: &'static str = "UninstallPluginRequest";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.UninstallPluginRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.UninstallPluginRequest".into() }}
 /// Response message for uninstalling a plugin.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UninstallPluginResponse {
     #[prost(message, optional, tag="1")]
@@ -512,8 +500,7 @@ const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.UninstallPluginResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.UninstallPluginResponse".into() }}
 /// Represents application version information.
 /// The version string typically follows Semantic Versioning.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Version {
     /// The version of the application.
     /// Format: "vMAJOR.MINOR.PATCH" with optional pre-release or build metadata
@@ -527,8 +514,7 @@ const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.Version".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.Version".into() }}
 /// Request for GetVersion.
 /// This message is intentionally empty to allow future extensibility without breaking changes.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct GetVersionRequest {
 }
 impl ::prost::Name for GetVersionRequest {
@@ -536,8 +522,7 @@ const NAME: &'static str = "GetVersionRequest";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.GetVersionRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.GetVersionRequest".into() }}
 /// Response for GetVersion.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct GetVersionResponse {
     /// The current application version.
     #[prost(message, optional, tag="1")]
@@ -561,7 +546,6 @@ fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.GetVersionResp
 /// Notes:
 /// - code_revision should increase by 1 for each new revision of the same workflow.
 /// - required_permissions should be kept minimal and specific to support principle of least privilege.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WorkflowCode {
     /// Stable identifier of the workflow code entity.
@@ -614,8 +598,7 @@ fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.WorkflowCode".
 /// - workflow_result_revision: Monotonic revision of this result record itself.
 ///
 /// TODO: Add structured data types for results (logs, metrics, artifacts).
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct WorkflowResult {
     /// Identifier of the result record.
     /// Format: UUID.
@@ -661,7 +644,6 @@ fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.WorkflowResult
 ///
 /// Notes:
 /// - Keep workflow_code revisions append-only to preserve history.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Workflow {
     /// Stable identifier for the workflow.
@@ -713,9 +695,9 @@ impl WorkflowLanguage {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            WorkflowLanguage::Unspecified => "WORKFLOW_LANGUAGE_UNSPECIFIED",
-            WorkflowLanguage::Typescript => "WORKFLOW_LANGUAGE_TYPESCRIPT",
-            WorkflowLanguage::Javascript => "WORKFLOW_LANGUAGE_JAVASCRIPT",
+            Self::Unspecified => "WORKFLOW_LANGUAGE_UNSPECIFIED",
+            Self::Typescript => "WORKFLOW_LANGUAGE_TYPESCRIPT",
+            Self::Javascript => "WORKFLOW_LANGUAGE_JAVASCRIPT",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -747,8 +729,8 @@ impl WorkflowResultType {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            WorkflowResultType::SuccessUnspecified => "WORKFLOW_RESULT_TYPE_SUCCESS_UNSPECIFIED",
-            WorkflowResultType::Failure => "WORKFLOW_RESULT_TYPE_FAILURE",
+            Self::SuccessUnspecified => "WORKFLOW_RESULT_TYPE_SUCCESS_UNSPECIFIED",
+            Self::Failure => "WORKFLOW_RESULT_TYPE_FAILURE",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -761,8 +743,7 @@ impl WorkflowResultType {
     }
 }
 /// Request to generate a workflow from a natural language prompt.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct GenerateWorkflowRequest {
     /// Natural language prompt describing the desired workflow.
     /// Example: "Check the weather, and if it's raining, send me a notification."
@@ -781,7 +762,6 @@ const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.GenerateWorkflowRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.GenerateWorkflowRequest".into() }}
 /// Server-streamed response containing the generated workflow definition.
 /// Each streamed message may be partial; the client should merge or replace as appropriate.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenerateWorkflowResponse {
     /// Structured workflow definition.
@@ -797,8 +777,7 @@ const NAME: &'static str = "GenerateWorkflowResponse";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.GenerateWorkflowResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.GenerateWorkflowResponse".into() }}
 /// Request to fix a workflow definition using a problem description.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct FixWorkflowRequest {
     /// The workflow definition to be fixed.
     /// Format: JSON, YAML, or another structured text representation.
@@ -817,7 +796,6 @@ const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.FixWorkflowRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.FixWorkflowRequest".into() }}
 /// Server-streamed response carrying fixed workflow definitions and a change summary.
 /// The final message typically represents the complete fixed definition.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FixWorkflowResponse {
     /// The fixed workflow definition.
@@ -837,8 +815,7 @@ const NAME: &'static str = "FixWorkflowResponse";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.FixWorkflowResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.FixWorkflowResponse".into() }}
 /// Request to run a workflow by ID.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct RunWorkflowRequest {
     /// Run a workflow by its ID and code ID.
     #[prost(message, optional, tag="1")]
@@ -854,8 +831,7 @@ const NAME: &'static str = "RunWorkflowRequest";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.RunWorkflowRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.RunWorkflowRequest".into() }}
 /// Specifies a workflow to run using its ID and code ID.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct WorkflowSourceById {
     /// The ID of the workflow to run.
     #[prost(string, tag="1")]
@@ -870,7 +846,6 @@ const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.WorkflowSourceById".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.WorkflowSourceById".into() }}
 /// Response after running a workflow.
 /// Contains the result of the workflow execution and status.
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RunWorkflowResponse {
     /// The result of the workflow execution.
@@ -885,8 +860,7 @@ impl ::prost::Name for RunWorkflowResponse {
 const NAME: &'static str = "RunWorkflowResponse";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.RunWorkflowResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.RunWorkflowResponse".into() }}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct GetWorkflowRequest {
     #[prost(string, tag="1")]
     pub workflow_id: ::prost::alloc::string::String,
@@ -895,7 +869,6 @@ impl ::prost::Name for GetWorkflowRequest {
 const NAME: &'static str = "GetWorkflowRequest";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.GetWorkflowRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.GetWorkflowRequest".into() }}
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetWorkflowResponse {
     #[prost(message, optional, tag="1")]
@@ -907,8 +880,7 @@ impl ::prost::Name for GetWorkflowResponse {
 const NAME: &'static str = "GetWorkflowResponse";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.GetWorkflowResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.GetWorkflowResponse".into() }}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct ListWorkflowsFilter {
     #[prost(string, tag="1")]
     pub display_name: ::prost::alloc::string::String,
@@ -920,8 +892,7 @@ const NAME: &'static str = "ListWorkflowsFilter";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.ListWorkflowsFilter".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.ListWorkflowsFilter".into() }}
 /// Order by clause
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct OrderByClause {
     /// Field name to order by (e.g. "display_name", "updated_at")
     #[prost(string, tag="1")]
@@ -933,7 +904,6 @@ impl ::prost::Name for OrderByClause {
 const NAME: &'static str = "OrderByClause";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.OrderByClause".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.OrderByClause".into() }}
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListWorkflowsRequest {
     #[prost(int32, tag="1")]
@@ -949,7 +919,6 @@ impl ::prost::Name for ListWorkflowsRequest {
 const NAME: &'static str = "ListWorkflowsRequest";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.ListWorkflowsRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.ListWorkflowsRequest".into() }}
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListWorkflowsResponse {
     #[prost(message, repeated, tag="1")]
@@ -963,7 +932,6 @@ impl ::prost::Name for ListWorkflowsResponse {
 const NAME: &'static str = "ListWorkflowsResponse";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.ListWorkflowsResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.ListWorkflowsResponse".into() }}
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UpdateWorkflowRequest {
     #[prost(message, optional, tag="1")]
@@ -975,7 +943,6 @@ impl ::prost::Name for UpdateWorkflowRequest {
 const NAME: &'static str = "UpdateWorkflowRequest";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.UpdateWorkflowRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.UpdateWorkflowRequest".into() }}
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UpdateWorkflowResponse {
     #[prost(message, optional, tag="1")]
@@ -987,8 +954,7 @@ impl ::prost::Name for UpdateWorkflowResponse {
 const NAME: &'static str = "UpdateWorkflowResponse";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.UpdateWorkflowResponse".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.UpdateWorkflowResponse".into() }}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct DeleteWorkflowRequest {
     #[prost(string, tag="1")]
     pub workflow_id: ::prost::alloc::string::String,
@@ -997,8 +963,7 @@ impl ::prost::Name for DeleteWorkflowRequest {
 const NAME: &'static str = "DeleteWorkflowRequest";
 const PACKAGE: &'static str = "sapphillon.v1";
 fn full_name() -> ::prost::alloc::string::String { "sapphillon.v1.DeleteWorkflowRequest".into() }fn type_url() -> ::prost::alloc::string::String { "/sapphillon.v1.DeleteWorkflowRequest".into() }}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct DeleteWorkflowResponse {
 }
 impl ::prost::Name for DeleteWorkflowResponse {
@@ -1022,9 +987,9 @@ impl OrderByDirection {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            OrderByDirection::Unspecified => "ORDER_BY_DIRECTION_UNSPECIFIED",
-            OrderByDirection::Asc => "ORDER_BY_DIRECTION_ASC",
-            OrderByDirection::Desc => "ORDER_BY_DIRECTION_DESC",
+            Self::Unspecified => "ORDER_BY_DIRECTION_UNSPECIFIED",
+            Self::Asc => "ORDER_BY_DIRECTION_ASC",
+            Self::Desc => "ORDER_BY_DIRECTION_DESC",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -3847,5 +3812,6 @@ pub const FILE_DESCRIPTOR_SET: &[u8] = &[
     0xcd, 0x01, 0x00, 0x21, 0x0a, 0x0b, 0x0a, 0x03, 0x04, 0x10, 0x01, 0x12, 0x04, 0xcd, 0x01, 0x08,
     0x1e, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 ];
+include!("sapphillon.v1.serde.rs");
 include!("sapphillon.v1.tonic.rs");
 // @@protoc_insertion_point(module)
