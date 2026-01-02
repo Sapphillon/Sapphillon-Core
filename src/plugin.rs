@@ -280,10 +280,24 @@ impl CorePluginExternalFunction {
     /// };
     /// ```
     fn generate_call_script(&self) -> String {
-
-
         format!(
-            r#"globalThis.{pkg_name} = globalThis.{pkg_name} || {{}};\nglobalThis.{pkg_name}.{func_name} = function(...args) {{\n    const bridgeArgs = {{\n        func_name: "{func_name}",\n        args: {{}}\n    }};\n    args.forEach((arg, idx) => {{\n        bridgeArgs.args[`arg${{idx}}`] = arg;\n    }});\n    const argsJson = JSON.stringify(bridgeArgs);\n    const packageName = "{pkg_name}";\n    const resultJson = Deno.core.ops.rsjs_bridge_opdecl(argsJson, packageName);\n    const result = JSON.parse(resultJson);\n    return result.args.result !== undefined ? result.args.result : result.args;\n}};\n"#,
+            r#"
+    globalThis.{pkg_name} = globalThis.{pkg_name} || {{}};
+    globalThis.{pkg_name}.{func_name} = function(...args) {{
+    const bridgeArgs = {{
+        func_name: "{func_name}",
+        args: {{}}
+    }};
+    args.forEach((arg, idx) => {{
+        bridgeArgs.args[`arg${{idx}}`] = arg;
+    }});
+    const argsJson = JSON.stringify(bridgeArgs);
+    const packageName = "{pkg_name}";
+    const resultJson = Deno.core.ops.rsjs_bridge_opdecl(argsJson, packageName);
+    const result = JSON.parse(resultJson);
+    return result.args.result !== undefined ? result.args.result : result.args;
+}};
+"#,
             pkg_name = self.package_name,
             func_name = self.name,
         )
