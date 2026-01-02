@@ -149,6 +149,7 @@ impl CoreWorkflowCode {
                 Some(self.required_permissions.clone())
             },
             handle.clone(),
+            self.plugin_external_packages.iter().map(|pkg| Arc::new(pkg.clone())).collect(),
         );
         let result = run_script(
             &self.code,
