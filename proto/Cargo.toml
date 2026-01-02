@@ -9,6 +9,15 @@ repository = "https://github.com/Walkmana-25/Sapphillon-Core"
 homepage = "https://github.com/Walkmana-25/Sapphillon-Core"
 
 [dependencies]
-tonic = { version = "0.12.0", default-features = false, features = ["codegen", "prost", "transport"] }
-prost = { version = "0.13.1", default-features = false, features = ["std"] }
-prost-types = { version = "0.13.1", default-features = false }
+tonic.workspace = true
+tonic-prost.workspace = true
+
+prost.workspace = true
+prost-types.workspace = true
+
+pbjson-build.workspace = true
+pbjson.workspace = true
+pbjson-types.workspace = true
+
+bytes.workspace = true
+serde.workspace = true
