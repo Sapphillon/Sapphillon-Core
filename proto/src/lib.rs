@@ -14,7 +14,7 @@ pub mod sapphillon {
     #![cfg(not(doctest))]
 
     pub mod v1 {
-        include!("proto/sapphillon.v1.rs");
+        include!("proto/sapphillon/v1/sapphillon.v1.rs");
 
         impl std::fmt::Display for Permission {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -33,7 +33,7 @@ pub mod sapphillon {
 
     pub mod ai {
         pub mod v1 {
-            include!("proto/sapphillon.ai.v1.rs");
+            include!("proto/sapphillon/ai/v1/sapphillon.ai.v1.rs");
         }
     }
 }
@@ -43,41 +43,41 @@ pub mod google {
     #![cfg(not(doctest))]
 
     pub mod api {
-        include!("proto/google.api.rs");
+        include!("proto/google/api/google.api.rs");
         pub mod expr {
             pub mod v1alpha1 {
-                include!("proto/google.api.expr.v1alpha1.rs");
+                include!("proto/google/api/expr/v1alpha1/google.api.expr.v1alpha1.rs");
             }
             pub mod v1beta1 {
-                include!("proto/google.api.expr.v1beta1.rs");
+                include!("proto/google/api/expr/v1beta1/google.api.expr.v1beta1.rs");
             }
         }
     }
     pub mod bytestream {
-        include!("proto/google.bytestream.rs");
+        include!("proto/google/bytestream/google.bytestream.rs");
     }
     pub mod longrunning {
-        include!("proto/google.longrunning.rs");
+        include!("proto/google/longrunning/google.longrunning.rs");
     }
     pub mod geo {
         pub mod r#type {
-            include!("proto/google.geo.type.rs");
+            include!("proto/google/geo/r#type/google.geo.type.rs");
         }
     }
     pub mod rpc {
-        include!("proto/google.rpc.rs");
+        include!("proto/google/rpc/google.rpc.rs");
         pub mod context {
-            include!("proto/google.rpc.context.rs");
+            include!("proto/google/rpc/context/google.rpc.context.rs");
         }
     }
     pub mod r#type {
-        include!("proto/google.type.rs");
+        include!("proto/google/r#type/google.type.rs");
     }
 
     pub mod protobuf {
-        include!("proto/google.protobuf.rs");
+        include!("proto/google/protobuf/google.protobuf.rs");
         pub mod compiler {
-            include!("proto/google.protobuf.compiler.rs");
+            include!("proto/google/protobuf/compiler/google.protobuf.compiler.rs");
         }
     }
 }
