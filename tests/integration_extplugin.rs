@@ -1,7 +1,11 @@
 use sapphillon_core::ext_plugin::{RsJsBridgeArgs, RsJsBridgeReturns};
 use sapphillon_core::extplugin_rsjs_bridge::rsjs_bridge_core;
+use sapphillon_core::plugin::CorePluginExternalPackage;
+use sapphillon_core::runtime::OpStateWorkflowData;
+use deno_core::{JsRuntime, RuntimeOptions};
 use serde_json::json;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 fn get_fixture_path(filename: &str) -> PathBuf {
     let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -9,6 +13,41 @@ fn get_fixture_path(filename: &str) -> PathBuf {
     d.push("fixtures");
     d.push(filename);
     d
+}
+
+/// Creates a JsRuntime with OpState containing the test external package
+fn create_runtime_with_fixture(fixture_filename: &str, package_name: &str) -> JsRuntime {
+    let fixture_path = get_fixture_path(fixture_filename);
+    let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
+
+    let mut runtime = JsRuntime::new(RuntimeOptions::default());
+    
+    // Create the external package
+    let package = CorePluginExternalPackage::new(
+        format!("test.{}", package_name),
+        package_name.to_string(),
+        vec![], // functions list not needed for this test
+        package_js,
+    );
+
+    // Create OpStateWorkflowData with the external package
+    let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+    let workflow_data = OpStateWorkflowData::new(
+        "test_workflow",
+        false,
+        None,
+        None,
+        tokio_runtime.handle().clone(),
+        vec![Arc::new(package)],
+    );
+
+    // Put workflow data into OpState
+    runtime
+        .op_state()
+        .borrow_mut()
+        .put(Arc::new(Mutex::new(workflow_data)));
+
+    runtime
 }
 
 /// Integration Test: Basic Function Execution
@@ -25,15 +64,16 @@ fn get_fixture_path(filename: &str) -> PathBuf {
 /// 4. The return value is correctly serialized and returned to Rust.
 ///
 /// **Flow:**
-/// 1. Load the `plugin_package.js` fixture.
+/// 1. Load the `plugin_package.js` fixture into OpState.
 /// 2. Construct `RsJsBridgeArgs` with the function name "add" and arguments `a=10`, `b=20`.
 /// 3. Execute the bridge via `rsjs_bridge_core`.
 /// 4. Parse the result and assert that the returned "result" is `30`.
 #[test]
 fn test_integration_math_plugin_add() {
-    // 1. Load the plugin package fixture
-    let fixture_path = get_fixture_path("plugin_package.js");
-    let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
+    // 1. Create runtime with the plugin package
+    let runtime = create_runtime_with_fixture("plugin_package.js", "math-plugin");
+    let op_state = runtime.op_state();
+    let mut state = op_state.borrow_mut();
 
     // 2. Prepare arguments for the 'add' function
     let args = RsJsBridgeArgs {
@@ -45,7 +85,7 @@ fn test_integration_math_plugin_add() {
     let args_json = args.to_string().unwrap();
 
     // 3. Execute the bridge
-    let result = rsjs_bridge_core(&args_json, &package_js);
+    let result = rsjs_bridge_core(&mut state, &args_json, "math-plugin");
     assert!(
         result.is_ok(),
         "Bridge execution failed: {:?}",
@@ -71,15 +111,16 @@ fn test_integration_math_plugin_add() {
 /// 3. The bridge correctly preserves the structure of nested JSON data.
 ///
 /// **Flow:**
-/// 1. Load the `plugin_package.js` fixture.
+/// 1. Load the `plugin_package.js` fixture into OpState.
 /// 2. Construct `RsJsBridgeArgs` for "process_data" with a complex input object.
 /// 3. Execute the bridge.
 /// 4. Verify that the returned object contains the expected fields ("original", "result", "timestamp").
 #[test]
 fn test_integration_math_plugin_process_data() {
-    // 1. Load the plugin package fixture
-    let fixture_path = get_fixture_path("plugin_package.js");
-    let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
+    // 1. Create runtime with the plugin package
+    let runtime = create_runtime_with_fixture("plugin_package.js", "math-plugin");
+    let op_state = runtime.op_state();
+    let mut state = op_state.borrow_mut();
 
     // 2. Prepare complex input data
     let input_data = json!({
@@ -94,7 +135,7 @@ fn test_integration_math_plugin_process_data() {
     let args_json = args.to_string().unwrap();
 
     // 3. Execute the bridge
-    let result = rsjs_bridge_core(&args_json, &package_js);
+    let result = rsjs_bridge_core(&mut state, &args_json, "math-plugin");
     assert!(
         result.is_ok(),
         "Bridge execution failed: {:?}",

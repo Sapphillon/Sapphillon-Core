@@ -280,15 +280,12 @@ impl CorePluginExternalFunction {
     /// };
     /// ```
     fn generate_call_script(&self) -> String {
-        // Escape the package_js for embedding in JavaScript string
-        let package_js_escaped = serde_json::to_string(&self.package_js)
-            .unwrap_or_else(|_| format!("\"{}\"", self.package_js.replace('"', "\\\"")));
+
 
         format!(
-            r#"globalThis.{pkg_name} = globalThis.{pkg_name} || {{}};\nglobalThis.{pkg_name}.{func_name} = function(...args) {{\n    const bridgeArgs = {{\n        func_name: "{func_name}",\n        args: {{}}\n    }};\n    args.forEach((arg, idx) => {{\n        bridgeArgs.args[`arg${{idx}}`] = arg;\n    }});\n    const argsJson = JSON.stringify(bridgeArgs);\n    const packageJs = {package_js_escaped};\n    const resultJson = Deno.core.ops.rsjs_bridge_opdecl(argsJson, packageJs);\n    const result = JSON.parse(resultJson);\n    return result.args.result !== undefined ? result.args.result : result.args;\n}};\n"#,
+            r#"globalThis.{pkg_name} = globalThis.{pkg_name} || {{}};\nglobalThis.{pkg_name}.{func_name} = function(...args) {{\n    const bridgeArgs = {{\n        func_name: "{func_name}",\n        args: {{}}\n    }};\n    args.forEach((arg, idx) => {{\n        bridgeArgs.args[`arg${{idx}}`] = arg;\n    }});\n    const argsJson = JSON.stringify(bridgeArgs);\n    const packageName = "{pkg_name}";\n    const resultJson = Deno.core.ops.rsjs_bridge_opdecl(argsJson, packageName);\n    const result = JSON.parse(resultJson);\n    return result.args.result !== undefined ? result.args.result : result.args;\n}};\n"#,
             pkg_name = self.package_name,
             func_name = self.name,
-            package_js_escaped = package_js_escaped
         )
     }
 }
