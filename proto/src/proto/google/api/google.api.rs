@@ -1179,8 +1179,8 @@ pub struct HttpBody {
     #[prost(string, tag="1")]
     pub content_type: ::prost::alloc::string::String,
     /// The HTTP request/response body as raw binary.
-    #[prost(bytes="vec", tag="2")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="2")]
+    pub data: ::prost::bytes::Bytes,
     /// Application specific response metadata. Must be set in the first response
     /// for streaming APIs.
     #[prost(message, repeated, tag="3")]

@@ -353,7 +353,7 @@ pub mod literal {
         StringValue(::prost::alloc::string::String),
         /// bytes value.
         #[prost(bytes, tag="7")]
-        BytesValue(::prost::alloc::vec::Vec<u8>),
+        BytesValue(::prost::bytes::Bytes),
     }
 }
 impl ::prost::Name for Literal {
@@ -480,7 +480,7 @@ pub mod value {
         StringValue(::prost::alloc::string::String),
         /// Byte string value.
         #[prost(bytes, tag="7")]
-        BytesValue(::prost::alloc::vec::Vec<u8>),
+        BytesValue(::prost::bytes::Bytes),
         /// An enum value.
         #[prost(message, tag="9")]
         EnumValue(super::EnumValue),

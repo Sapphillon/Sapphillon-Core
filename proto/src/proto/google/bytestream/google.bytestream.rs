@@ -34,8 +34,8 @@ pub struct ReadResponse {
     /// empty for any given `ReadResponse`. This enables the service to inform the
     /// client that the request is still live while it is running an operation to
     /// generate more data.
-    #[prost(bytes="vec", tag="10")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="10")]
+    pub data: ::prost::bytes::Bytes,
 }
 impl ::prost::Name for ReadResponse {
 const NAME: &'static str = "ReadResponse";
@@ -72,8 +72,8 @@ pub struct WriteRequest {
     /// empty for any given `WriteRequest`. This enables the client to inform the
     /// service that the request is still live while it is running an operation to
     /// generate more data.
-    #[prost(bytes="vec", tag="10")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="10")]
+    pub data: ::prost::bytes::Bytes,
 }
 impl ::prost::Name for WriteRequest {
 const NAME: &'static str = "WriteRequest";
