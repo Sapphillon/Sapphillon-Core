@@ -7,26 +7,25 @@ use anyhow::Result;
 use crate::{SapphillonPackage, RsJsBridgeArgs, RsJsBridgeReturns};
 use ipc_channel::ipc::{self, IpcSender, IpcOneShotServer};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::process::Command;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExternalPluginRunRequest {
     pub package_js: String,
     pub func_name: String,
-    pub args: RsJsBridgeArgs
+    pub args_json: String,
 }
 
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExternalPluginRunResponse {
-    pub returns: RsJsBridgeReturns,
+    pub returns_json: String,
     pub error_message: Option<String>,
 }
 
 
 pub fn extplugin_client(sapphillon_package: &SapphillonPackage, func_name: &str, args: &RsJsBridgeArgs, server_path: &str, server_args: Vec<&str>) -> Result<RsJsBridgeReturns> {
-    let (server, server_name) = IpcOneShotServer::<IpcSender<(ExternalPluginRunRequest, IpcSender<ExternalPluginRunResponse>)>>::new()?;
+    let (server, server_name) = IpcOneShotServer::<IpcSender<(IpcSender<ExternalPluginRunResponse>, ExternalPluginRunRequest)>>::new()?;
 
     let mut command = Command::new(server_path);
     command.args(server_args);
@@ -43,10 +42,10 @@ pub fn extplugin_client(sapphillon_package: &SapphillonPackage, func_name: &str,
     let request = ExternalPluginRunRequest {
         package_js: sapphillon_package.package_script.clone(),
         func_name: func_name.to_string(),
-        args: args.clone(),
+        args_json: args.to_string()?,
     };
 
-    tx_req.send((request, tx_res.clone()))?;
+    tx_req.send((tx_res.clone(), request))?;
 
     let response = rx_res.recv()?;
 
@@ -57,14 +56,14 @@ pub fn extplugin_client(sapphillon_package: &SapphillonPackage, func_name: &str,
         anyhow::bail!(err);
     }
 
-    Ok(response.returns)
+    Ok(RsJsBridgeReturns::new_from_str(&response.returns_json)?)
 }
 
 pub fn extplugin_server(server_name: &str) -> Result<()> {
     let (tx_req, rx_req) = ipc::channel()?;
     {
         eprintln!("DEBUG: Connecting to bootstrap");
-        let tx_bootstrap: IpcSender<IpcSender<(ExternalPluginRunRequest, IpcSender<ExternalPluginRunResponse>)>> = IpcSender::connect(server_name.to_string())?;
+        let tx_bootstrap: IpcSender<IpcSender<(IpcSender<ExternalPluginRunResponse>, ExternalPluginRunRequest)>> = IpcSender::connect(server_name.to_string())?;
         eprintln!("DEBUG: Sending tx_req");
         tx_bootstrap.send(tx_req.clone())?;
         eprintln!("DEBUG: Sent tx_req");
@@ -76,31 +75,25 @@ pub fn extplugin_server(server_name: &str) -> Result<()> {
         .enable_all()
         .build()?;
 
-    loop {
-        match rx_req.recv() {
-            Ok((request, tx_res)) => {
-                let result = rt.block_on(async {
-                    let package = SapphillonPackage::new_async(&request.package_js).await?;
-                    package.execute(request.args, &None).await
-                });
+    if let Ok((tx_res, request)) = rx_req.recv() {
+        let result = rt.block_on(async {
+            let package = SapphillonPackage::new_async(&request.package_js).await?;
+            let args = RsJsBridgeArgs::new_from_str(&request.args_json)?;
+            package.execute(args, &None).await
+        });
 
-                let response = match result {
-                    Ok(returns) => ExternalPluginRunResponse {
-                        returns,
-                        error_message: None,
-                    },
-                    Err(e) => ExternalPluginRunResponse {
-                        returns: RsJsBridgeReturns { args: HashMap::new() },
-                        error_message: Some(e.to_string()),
-                    },
-                };
+        let response = match result {
+            Ok(returns) => ExternalPluginRunResponse {
+                returns_json: returns.to_string().unwrap_or_default(),
+                error_message: None,
+            },
+            Err(e) => ExternalPluginRunResponse {
+                returns_json: "{}".to_string(),
+                error_message: Some(e.to_string()),
+            },
+        };
 
-                if tx_res.send(response).is_err() {
-                    break;
-                }
-            }
-            Err(_) => break,
-        }
+        let _ = tx_res.send(response);
     }
 
     Ok(())
@@ -137,7 +130,7 @@ mod tests {
                                 type: "string",
                                 description: "Echoed message"
                             }],
-                            handler: (args) => args.message
+                            handler: (message) => message
                         }
                     }
                 }
