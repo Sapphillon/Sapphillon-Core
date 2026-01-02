@@ -88,8 +88,8 @@ pub fn rsjs_bridge_core(
     if server_path_buf.file_name().and_then(|s| s.to_str()) == Some("deps") {
         server_path_buf.pop(); // Remove "deps" if in test
     }
-    // Use extplugin_runner_process binary
-    server_path_buf.push("extplugin_runner_process");
+    // Use extplugin_test_server binary
+    server_path_buf.push("extplugin_test_server");
     
     // Fallback for tests if runner process is not found, maybe use test server?
     // But the requirement is to use extplugin_runner_process.

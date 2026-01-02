@@ -164,7 +164,15 @@ impl SapphillonPackage {
         return params
             .slice()
             .sort((a, b) => (a?.idx ?? 0) - (b?.idx ?? 0))
-            .map((p) => rawArgs?.[p.name]);
+            .map((p) => {
+                // First try the parameter name (e.g., "a", "b")
+                if (rawArgs?.[p.name] !== undefined) {
+                    return rawArgs[p.name];
+                }
+                // Fallback to indexed format (e.g., "arg0", "arg1")
+                const idx = p?.idx ?? 0;
+                return rawArgs?.[`arg${idx}`];
+            });
     };
 
     const __buildReturns = (schema, value) => {
