@@ -12,7 +12,7 @@ use std::process::Command;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExternalPluginRunRequest {
-    pub package: SapphillonPackage,
+    pub package_js: String,
     pub func_name: String,
     pub args: RsJsBridgeArgs
 }
@@ -32,19 +32,21 @@ pub fn extplugin_client(sapphillon_package: &SapphillonPackage, func_name: &str,
     command.args(server_args);
     command.arg(server_name);
 
-    let mut child = command.spawn()?;
+    let mut child = command
+        .stderr(std::process::Stdio::inherit())
+        .spawn()?;
 
-    let (_, tx_req) = server.accept()?;
+    let (_rx_bootstrap, tx_req) = server.accept()?;
 
     let (tx_res, rx_res) = ipc::channel()?;
 
     let request = ExternalPluginRunRequest {
-        package: sapphillon_package.clone(),
+        package_js: sapphillon_package.package_script.clone(),
         func_name: func_name.to_string(),
         args: args.clone(),
     };
 
-    tx_req.send((request, tx_res))?;
+    tx_req.send((request, tx_res.clone()))?;
 
     let response = rx_res.recv()?;
 
@@ -59,17 +61,27 @@ pub fn extplugin_client(sapphillon_package: &SapphillonPackage, func_name: &str,
 }
 
 pub fn extplugin_server(server_name: &str) -> Result<()> {
-    let tx_bootstrap: IpcSender<IpcSender<(ExternalPluginRunRequest, IpcSender<ExternalPluginRunResponse>)>> = IpcSender::connect(server_name.to_string())?;
     let (tx_req, rx_req) = ipc::channel()?;
-    tx_bootstrap.send(tx_req)?;
+    {
+        eprintln!("DEBUG: Connecting to bootstrap");
+        let tx_bootstrap: IpcSender<IpcSender<(ExternalPluginRunRequest, IpcSender<ExternalPluginRunResponse>)>> = IpcSender::connect(server_name.to_string())?;
+        eprintln!("DEBUG: Sending tx_req");
+        tx_bootstrap.send(tx_req.clone())?;
+        eprintln!("DEBUG: Sent tx_req");
+        std::mem::forget(tx_bootstrap); // Hack to avoid Drop panic?
+    }
+    std::mem::forget(tx_req);
 
-    let rt = tokio::runtime::Runtime::new()?;
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
 
     loop {
         match rx_req.recv() {
             Ok((request, tx_res)) => {
                 let result = rt.block_on(async {
-                    request.package.execute(request.args, &None).await
+                    let package = SapphillonPackage::new_async(&request.package_js).await?;
+                    package.execute(request.args, &None).await
                 });
 
                 let response = match result {
@@ -92,4 +104,72 @@ pub fn extplugin_server(server_name: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_extplugin_runner_process() -> Result<()> {
+        let package_script = r#"
+            globalThis.Sapphillon = {
+                Package: {
+                    meta: {
+                        name: "test-plugin",
+                        version: "1.0.0",
+                        description: "Test plugin",
+                        package_id: "com.example.test"
+                    },
+                    functions: {
+                        echo: {
+                            description: "Echoes the input",
+                            permissions: [],
+                            parameters: [{
+                                idx: 0,
+                                name: "message",
+                                type: "string",
+                                description: "Message to echo"
+                            }],
+                            returns: [{
+                                idx: 0,
+                                type: "string",
+                                description: "Echoed message"
+                            }],
+                            handler: (args) => args.message
+                        }
+                    }
+                }
+            };
+        "#;
+
+        let package = SapphillonPackage::new(package_script)?;
+
+        let args = RsJsBridgeArgs {
+            func_name: "echo".to_string(),
+            args: vec![("message".to_string(), json!("Hello, World!"))]
+                .into_iter()
+                .collect(),
+        };
+
+        // Locate the test server binary.
+        // We assume the binary is built and located in the target directory.
+        // std::env::current_exe() returns path like .../target/debug/deps/test_name-hash
+        let mut server_path_buf = std::env::current_exe()?;
+        server_path_buf.pop(); // Remove test binary name
+        if server_path_buf.file_name().and_then(|s| s.to_str()) == Some("deps") {
+            server_path_buf.pop(); // Remove "deps"
+        }
+        server_path_buf.push("extplugin_test_server");
+
+        let server_path = server_path_buf.to_str().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
+        let server_args = vec![];
+
+        let returns = extplugin_client(&package, "echo", &args, server_path, server_args)?;
+
+        assert_eq!(returns.args.get("result"), Some(&json!("Hello, World!")));
+
+        Ok(())
+    }
 }
