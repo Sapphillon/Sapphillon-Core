@@ -6,16 +6,16 @@ use anyhow::Result;
 
 use crate::{RsJsBridgeArgs, RsJsBridgeReturns, SapphillonPackage};
 use ipc_channel::ipc::{self, IpcOneShotServer, IpcSender};
+use proto::sapphillon::v1::Permission;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use proto::sapphillon::v1::Permission;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExternalPluginRunRequest {
     pub package_js: String,
     pub func_name: String,
     pub args_json: String,
-    pub sapphillon_permissions: Vec<Permission>
+    pub sapphillon_permissions: Vec<Permission>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,7 +53,7 @@ pub fn extplugin_client(
         package_js: sapphillon_package.package_script.clone(),
         func_name: func_name.to_string(),
         args_json: args.to_string()?,
-        sapphillon_permissions
+        sapphillon_permissions,
     };
 
     tx_req.send((tx_res.clone(), request))?;
@@ -191,7 +191,14 @@ mod tests {
         let server_args = vec![];
         let sapphillon_permissions = vec![];
 
-        let returns = extplugin_client(&package, "echo", &args, server_path, server_args, sapphillon_permissions)?;
+        let returns = extplugin_client(
+            &package,
+            "echo",
+            &args,
+            server_path,
+            server_args,
+            sapphillon_permissions,
+        )?;
 
         assert_eq!(returns.args.get("result"), Some(&json!("Hello, World!")));
 
