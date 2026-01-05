@@ -189,8 +189,9 @@ mod tests {
             .to_str()
             .ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
         let server_args = vec![];
+        let sapphillon_permissions = vec![];
 
-        let returns = extplugin_client(&package, "echo", &args, server_path, server_args)?;
+        let returns = extplugin_client(&package, "echo", &args, server_path, server_args, sapphillon_permissions)?;
 
         assert_eq!(returns.args.get("result"), Some(&json!("Hello, World!")));
 

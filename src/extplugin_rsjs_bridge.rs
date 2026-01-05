@@ -10,7 +10,7 @@
 
 use deno_core::{OpState, op2};
 use ext_plugin::{RsJsBridgeArgs, SapphillonPackage};
-
+use proto;
 /// Core implementation of the Rs-Js bridge.
 ///
 /// This function:
@@ -69,14 +69,29 @@ pub fn rsjs_bridge_core(
     // CorePluginExternalPackage has package_js.
 
     let package_js = package.package_js.clone();
+    
+    // Step 2: Parse RsJsBridgeArgs from JSON to get the function name
+    let args = RsJsBridgeArgs::new_from_str(args_json)?;
+    
+    // Step 3: Get allowed permissions for this function
+    // Build the plugin_function_id from package_name and func_name
+    let plugin_function_id = format!("{}.{}", package_name, args.func_name);
+    
+    let sapphillon_permissions: Vec<proto::sapphillon::v1::Permission> = workflow_data
+        .get_allowed_permissions()
+        .as_ref()
+        .and_then(|allowed_list| {
+            allowed_list
+                .iter()
+                .find(|pf| pf.plugin_function_id == plugin_function_id || pf.plugin_function_id == "*")
+                .map(|pf| pf.permissions.permissions.clone())
+        })
+        .unwrap_or_default();
 
     // Drop the lock
     drop(workflow_data);
 
-    // Step 2: Parse RsJsBridgeArgs from JSON
-    let args = RsJsBridgeArgs::new_from_str(args_json)?;
-
-    // Step 3: Create SapphillonPackage (lightweight, just parsing JS)
+    // Step 4: Create SapphillonPackage (lightweight, just parsing JS)
     // We need this because extplugin_client expects it.
     // Note: SapphillonPackage::new parses the JS.
     let sapphillon_package = SapphillonPackage::new(&package_js)?;
@@ -126,6 +141,7 @@ pub fn rsjs_bridge_core(
         &args,
         server_path,
         vec![],
+        sapphillon_permissions,
     )?;
 
     // Step 6: Serialize RsJsBridgeReturns to JSON
