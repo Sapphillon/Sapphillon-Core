@@ -8,12 +8,14 @@ use crate::{RsJsBridgeArgs, RsJsBridgeReturns, SapphillonPackage};
 use ipc_channel::ipc::{self, IpcOneShotServer, IpcSender};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use proto::sapphillon::v1::Permission;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExternalPluginRunRequest {
     pub package_js: String,
     pub func_name: String,
     pub args_json: String,
+    pub sapphillon_permissions: Vec<Permission>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,6 +30,7 @@ pub fn extplugin_client(
     args: &RsJsBridgeArgs,
     server_path: &str,
     server_args: Vec<&str>,
+    sapphillon_permissions: Vec<Permission>,
 ) -> Result<RsJsBridgeReturns> {
     let (server, server_name) = IpcOneShotServer::<
         IpcSender<(
@@ -50,6 +53,7 @@ pub fn extplugin_client(
         package_js: sapphillon_package.package_script.clone(),
         func_name: func_name.to_string(),
         args_json: args.to_string()?,
+        sapphillon_permissions
     };
 
     tx_req.send((tx_res.clone(), request))?;
