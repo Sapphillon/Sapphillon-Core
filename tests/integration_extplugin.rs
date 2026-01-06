@@ -1,5 +1,6 @@
 use sapphillon_core::ext_plugin::{RsJsBridgeArgs, RsJsBridgeReturns};
 use sapphillon_core::extplugin_rsjs_bridge::rsjs_bridge_core;
+use sapphillon_core::permission::{Permission, PermissionType, Permissions, PluginFunctionPermissions};
 use sapphillon_core::plugin::{CorePluginExternalPackage, PluginPackageTrait};
 use sapphillon_core::runtime::OpStateWorkflowData;
 use serde_json::json;
@@ -318,6 +319,263 @@ fn test_integration_workflow_with_external_plugin_process_data() {
     assert!(
         res.result.contains("Result: 100"),
         "Expected result to contain 'Result: 100', got: {}",
+        res.result
+    );
+}
+
+/// Integration Test: Workflow with Permission Granted (Success Case)
+///
+/// **Purpose:**
+/// Verify that `CoreWorkflowCode` successfully executes when the required permissions
+/// are granted in the `allowed_permissions`.
+///
+/// **Intent:**
+/// This test ensures that:
+/// 1. A function requiring specific permissions can execute successfully.
+/// 2. The permission check passes when allowed_permissions match the required permissions.
+/// 3. The workflow completes without permission errors.
+///
+/// **Flow:**
+/// 1. Create a `CorePluginExternalPackage` with a function that requires FilesystemRead permission.
+/// 2. Create `allowed_permissions` that grant FilesystemRead permission.
+/// 3. Create workflow code that calls the external plugin function.
+/// 4. Execute the workflow via `CoreWorkflowCode::run()`.
+/// 5. Verify that the workflow result succeeds with exit_code 0 and contains the expected output.
+///
+/// **Note:** This test is currently ignored because permission checking in external plugins
+/// requires additional implementation in the extplugin_server process.
+#[test]
+#[ignore = "Permission checking in external plugins not yet fully implemented"]
+fn test_integration_workflow_with_permission_granted() {
+    use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
+    use sapphillon_core::workflow::CoreWorkflowCode;
+
+    let fixture_path = get_fixture_path("plugin_package_with_permission.js");
+    let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
+
+    // Create external function for 'read_file' (requires FilesystemRead permission)
+    let read_file_func = CorePluginExternalFunction::new(
+        "file-plugin-read-file".to_string(),
+        "read_file".to_string(),
+        "Reads a file".to_string(),
+        "filePlugin".to_string(),
+        package_js.clone(),
+    );
+
+    // Create external package
+    let ext_package = CorePluginExternalPackage::new(
+        "test.file-plugin".to_string(),
+        "filePlugin".to_string(),
+        vec![read_file_func],
+        package_js,
+    );
+
+    // Create allowed permissions that grant FilesystemRead for /tmp/test.txt
+    let allowed_permissions = vec![PluginFunctionPermissions {
+        plugin_function_id: "filePlugin.read_file".to_string(),
+        permissions: Permissions::new(vec![Permission {
+            permission_type: PermissionType::FilesystemRead as i32,
+            display_name: "Filesystem Read".to_string(),
+            description: "Permission to read files".to_string(),
+            resource: vec!["/tmp/test.txt".to_string()],
+            permission_level: 1,
+        }]),
+    }];
+
+    // Create workflow code that calls the external plugin
+    let workflow_code = r#"
+        const result = filePlugin.read_file("/tmp/test.txt");
+        console.log("File content:", result);
+    "#;
+
+    let mut code = CoreWorkflowCode::new(
+        "test_wf_permission_granted".to_string(),
+        workflow_code.to_string(),
+        vec![Arc::new(ext_package) as Arc<dyn PluginPackageTrait>],
+        1,
+        allowed_permissions,
+        vec![], // no required permissions at workflow level
+    );
+
+    // Run the workflow
+    let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+    code.run(tokio_runtime.handle().clone());
+
+    // Verify the result - should succeed
+    assert_eq!(code.result.len(), 1);
+    let res = &code.result[0];
+    assert_eq!(
+        res.exit_code, 0,
+        "Workflow should succeed with granted permissions, but got error: {}",
+        res.result
+    );
+    assert!(
+        res.result.contains("Content of /tmp/test.txt"),
+        "Expected result to contain file content, got: {}",
+        res.result
+    );
+}
+
+/// Integration Test: Workflow with Permission Denied (Error Case)
+///
+/// **Purpose:**
+/// Verify that `CoreWorkflowCode` fails with a permission error when the required
+/// permissions are not granted in the `allowed_permissions`.
+///
+/// **Intent:**
+/// This test ensures that:
+/// 1. A function requiring specific permissions cannot execute without proper grants.
+/// 2. The permission check fails when allowed_permissions don't match the required permissions.
+/// 3. The workflow completes with a permission error and non-zero exit code.
+///
+/// **Flow:**
+/// 1. Create a `CorePluginExternalPackage` with a function that requires FilesystemRead permission.
+/// 2. Create empty or mismatched `allowed_permissions` (not granting the required permission).
+/// 3. Create workflow code that calls the external plugin function.
+/// 4. Execute the workflow via `CoreWorkflowCode::run()`.
+/// 5. Verify that the workflow result fails with exit_code 1 and contains a permission error message.
+///
+/// **Note:** This test is currently ignored because permission checking in external plugins
+/// requires additional implementation in the extplugin_server process.
+#[test]
+#[ignore = "Permission checking in external plugins not yet fully implemented"]
+fn test_integration_workflow_with_permission_denied() {
+    use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
+    use sapphillon_core::workflow::CoreWorkflowCode;
+
+    let fixture_path = get_fixture_path("plugin_package_with_permission.js");
+    let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
+
+    // Create external function for 'read_file' (requires FilesystemRead permission)
+    let read_file_func = CorePluginExternalFunction::new(
+        "file-plugin-read-file".to_string(),
+        "read_file".to_string(),
+        "Reads a file".to_string(),
+        "filePlugin".to_string(),
+        package_js.clone(),
+    );
+
+    // Create external package
+    let ext_package = CorePluginExternalPackage::new(
+        "test.file-plugin".to_string(),
+        "filePlugin".to_string(),
+        vec![read_file_func],
+        package_js,
+    );
+
+    // Create empty allowed_permissions - no permissions granted!
+    let allowed_permissions = vec![];
+
+    // Create workflow code that calls the external plugin
+    let workflow_code = r#"
+        const result = filePlugin.read_file("/tmp/test.txt");
+        console.log("File content:", result);
+    "#;
+
+    let mut code = CoreWorkflowCode::new(
+        "test_wf_permission_denied".to_string(),
+        workflow_code.to_string(),
+        vec![Arc::new(ext_package) as Arc<dyn PluginPackageTrait>],
+        1,
+        allowed_permissions,
+        vec![], // no required permissions at workflow level
+    );
+
+    // Run the workflow
+    let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+    code.run(tokio_runtime.handle().clone());
+
+    // Verify the result - should fail with permission error
+    assert_eq!(code.result.len(), 1);
+    let res = &code.result[0];
+    assert_eq!(
+        res.exit_code, 1,
+        "Workflow should fail without granted permissions, but got exit code: {}",
+        res.exit_code
+    );
+    assert!(
+        res.result.contains("Permission") || res.result.contains("permission"),
+        "Expected result to contain permission error, got: {}",
+        res.result
+    );
+}
+
+/// Integration Test: Workflow with Function Without Permissions (Success Case)
+///
+/// **Purpose:**
+/// Verify that `CoreWorkflowCode` successfully executes functions that don't require
+/// any permissions, even when no permissions are granted.
+///
+/// **Intent:**
+/// This test ensures that:
+/// 1. Functions without permission requirements can execute freely.
+/// 2. Empty allowed_permissions doesn't block functions that don't need permissions.
+/// 3. The workflow completes successfully.
+///
+/// **Flow:**
+/// 1. Create a `CorePluginExternalPackage` with the `simple_function` that requires no permissions.
+/// 2. Create empty `allowed_permissions`.
+/// 3. Create workflow code that calls `filePlugin.simple_function("Hello")`.
+/// 4. Execute the workflow via `CoreWorkflowCode::run()`.
+/// 5. Verify that the workflow result succeeds with exit_code 0.
+#[test]
+fn test_integration_workflow_without_permission_requirement() {
+    use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
+    use sapphillon_core::workflow::CoreWorkflowCode;
+
+    let fixture_path = get_fixture_path("plugin_package_with_permission.js");
+    let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
+
+    // Create external function for 'simple_function' (no permissions required)
+    let simple_func = CorePluginExternalFunction::new(
+        "file-plugin-simple-function".to_string(),
+        "simple_function".to_string(),
+        "A simple function".to_string(),
+        "filePlugin".to_string(),
+        package_js.clone(),
+    );
+
+    // Create external package
+    let ext_package = CorePluginExternalPackage::new(
+        "test.file-plugin".to_string(),
+        "filePlugin".to_string(),
+        vec![simple_func],
+        package_js,
+    );
+
+    // Create empty allowed_permissions - but the function doesn't need any!
+    let allowed_permissions = vec![];
+
+    // Create workflow code that calls the external plugin
+    let workflow_code = r#"
+        const result = filePlugin.simple_function("Hello World");
+        console.log("Result:", result);
+    "#;
+
+    let mut code = CoreWorkflowCode::new(
+        "test_wf_no_permission_needed".to_string(),
+        workflow_code.to_string(),
+        vec![Arc::new(ext_package) as Arc<dyn PluginPackageTrait>],
+        1,
+        allowed_permissions,
+        vec![], // no required permissions at workflow level
+    );
+
+    // Run the workflow
+    let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+    code.run(tokio_runtime.handle().clone());
+
+    // Verify the result - should succeed even without permissions
+    assert_eq!(code.result.len(), 1);
+    let res = &code.result[0];
+    assert_eq!(
+        res.exit_code, 0,
+        "Workflow should succeed for functions without permission requirements, but got error: {}",
+        res.result
+    );
+    assert!(
+        res.result.contains("Echo: Hello World"),
+        "Expected result to contain echoed text, got: {}",
         res.result
     );
 }
