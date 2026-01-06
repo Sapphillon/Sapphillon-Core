@@ -25,7 +25,17 @@ function mul(a, b) {
   return a * b;
 }
 
-Sapphillon.Package =  {
+function readSecretFile(path) {
+  // This function requires file system read permission
+  return Deno.readTextFileSync(path);
+}
+
+function getMultipleValues(a, b) {
+  // Returns an array of multiple values for testing multi-return handling
+  return [a + b, a * b, a - b];
+}
+
+Sapphillon.Package = {
   // Information from package.toml
   meta: {
     name: "math-plugin",
@@ -37,7 +47,7 @@ Sapphillon.Package =  {
   functions: {
     add: {       // Function name
       handler: add,         // Actual function reference
-      permissions: [{type: "FileSystemRead", resource: "/etc"}],
+      permissions: [{ type: "FileSystemRead", resource: "/etc" }],
       description: "Adds two numbers.", // JSDoc summary
       parameters: [         // Parsed result of @param
         { name: "a", idx: 0, type: "number", description: "The number to be added to" },
@@ -49,7 +59,7 @@ Sapphillon.Package =  {
     },
     mul: {       // Function name
       handler: mul,         // Actual function reference
-      permissions: [{type: "FileSystemRead", resource: "/etc"}],
+      permissions: [{ type: "FileSystemRead", resource: "/etc" }],
       description: "Multiplies two numbers.", // JSDoc summary
       parameters: [         // Parsed result of @param
         { name: "a", idx: 0, type: "number", description: "The first factor" },
@@ -57,6 +67,31 @@ Sapphillon.Package =  {
       ],
       returns: [ // Parsed result of @returns
         { type: "number", idx: 0, description: "The product" }
+      ]
+    },
+    readSecretFile: {
+      handler: readSecretFile,
+      permissions: [{ type: "FileSystemRead", resource: "*" }],
+      description: "Reads a file from the filesystem.",
+      parameters: [
+        { name: "path", idx: 0, type: "string", description: "The file path to read" }
+      ],
+      returns: [
+        { type: "string", idx: 0, description: "The file contents" }
+      ]
+    },
+    getMultipleValues: {
+      handler: getMultipleValues,
+      permissions: [],
+      description: "Returns multiple computed values as an array.",
+      parameters: [
+        { name: "a", idx: 0, type: "number", description: "First number" },
+        { name: "b", idx: 1, type: "number", description: "Second number" }
+      ],
+      returns: [
+        { type: "number", idx: 0, description: "Sum (a + b)" },
+        { type: "number", idx: 1, description: "Product (a * b)" },
+        { type: "number", idx: 2, description: "Difference (a - b)" }
       ]
     }
   }

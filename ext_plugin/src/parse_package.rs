@@ -135,9 +135,66 @@ mod tests {
             }],
         };
 
+        let read_secret_file = FunctionSchema {
+            permissions: vec![Permission {
+                perm_type: "FileSystemRead".to_string(),
+                resource: "*".to_string(),
+            }],
+            description: "Reads a file from the filesystem.".to_string(),
+            parameters: vec![Parameter {
+                idx: 0,
+                name: "path".to_string(),
+                param_type: "string".to_string(),
+                description: "The file path to read".to_string(),
+            }],
+            returns: vec![ReturnInfo {
+                idx: 0,
+                return_type: "string".to_string(),
+                description: "The file contents".to_string(),
+            }],
+        };
+
+        let get_multiple_values = FunctionSchema {
+            permissions: vec![],
+            description: "Returns multiple computed values as an array.".to_string(),
+            parameters: vec![
+                Parameter {
+                    idx: 0,
+                    name: "a".to_string(),
+                    param_type: "number".to_string(),
+                    description: "First number".to_string(),
+                },
+                Parameter {
+                    idx: 1,
+                    name: "b".to_string(),
+                    param_type: "number".to_string(),
+                    description: "Second number".to_string(),
+                },
+            ],
+            returns: vec![
+                ReturnInfo {
+                    idx: 0,
+                    return_type: "number".to_string(),
+                    description: "Sum (a + b)".to_string(),
+                },
+                ReturnInfo {
+                    idx: 1,
+                    return_type: "number".to_string(),
+                    description: "Product (a * b)".to_string(),
+                },
+                ReturnInfo {
+                    idx: 2,
+                    return_type: "number".to_string(),
+                    description: "Difference (a - b)".to_string(),
+                },
+            ],
+        };
+
         let mut functions = HashMap::new();
         functions.insert("add".to_string(), add);
         functions.insert("mul".to_string(), mul);
+        functions.insert("readSecretFile".to_string(), read_secret_file);
+        functions.insert("getMultipleValues".to_string(), get_multiple_values);
 
         SapphillonPackage {
             meta,
