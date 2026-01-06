@@ -634,8 +634,11 @@ fn test_integration_plugin_throws_error() {
         func_name: "throw_immediate".to_string(),
         args: HashMap::new(),
     };
-    let result_immediate =
-        rsjs_bridge_core(&mut op_state, &args_immediate.to_string().unwrap(), "error-plugin");
+    let result_immediate = rsjs_bridge_core(
+        &mut op_state,
+        &args_immediate.to_string().unwrap(),
+        "error-plugin",
+    );
 
     assert!(
         result_immediate.is_err(),
@@ -653,8 +656,11 @@ fn test_integration_plugin_throws_error() {
         func_name: "throw_async".to_string(),
         args: HashMap::new(),
     };
-    let result_async =
-        rsjs_bridge_core(&mut op_state, &args_async.to_string().unwrap(), "error-plugin");
+    let result_async = rsjs_bridge_core(
+        &mut op_state,
+        &args_async.to_string().unwrap(),
+        "error-plugin",
+    );
 
     assert!(
         result_async.is_err(),
@@ -829,7 +835,11 @@ fn test_integration_plugin_null_undefined_return() {
         func_name: "return_null".to_string(),
         args: std::collections::HashMap::new(),
     };
-    let result_null = rsjs_bridge_core(&mut op_state, &args_null.to_string().unwrap(), "error-plugin");
+    let result_null = rsjs_bridge_core(
+        &mut op_state,
+        &args_null.to_string().unwrap(),
+        "error-plugin",
+    );
 
     // Note: The current implementation may error on null/undefined returns
     // because the runner expects a string return value.
@@ -848,7 +858,9 @@ fn test_integration_plugin_null_undefined_return() {
         // Current implementation errors on null/undefined returns
         let err_msg = result_null.err().unwrap().to_string();
         assert!(
-            err_msg.contains("null") || err_msg.contains("undefined") || err_msg.contains("non-string"),
+            err_msg.contains("null")
+                || err_msg.contains("undefined")
+                || err_msg.contains("non-string"),
             "Expected null/undefined related error, got: {}",
             err_msg
         );
@@ -859,13 +871,19 @@ fn test_integration_plugin_null_undefined_return() {
         func_name: "no_op".to_string(),
         args: std::collections::HashMap::new(),
     };
-    let result_noop = rsjs_bridge_core(&mut op_state, &args_noop.to_string().unwrap(), "error-plugin");
+    let result_noop = rsjs_bridge_core(
+        &mut op_state,
+        &args_noop.to_string().unwrap(),
+        "error-plugin",
+    );
 
     // Same handling as null - document behavior
     if result_noop.is_err() {
         let err_msg = result_noop.err().unwrap().to_string();
         assert!(
-            err_msg.contains("null") || err_msg.contains("undefined") || err_msg.contains("non-string"),
+            err_msg.contains("null")
+                || err_msg.contains("undefined")
+                || err_msg.contains("non-string"),
             "Expected null/undefined related error for no-op, got: {}",
             err_msg
         );
@@ -873,5 +891,3 @@ fn test_integration_plugin_null_undefined_return() {
     // If it succeeds, that's also valid behavior - the test passes either way
     // as long as it doesn't panic
 }
-
-
