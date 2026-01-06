@@ -345,10 +345,17 @@ fn test_integration_workflow_with_external_plugin_process_data() {
 /// **Note:** This test is currently ignored because permission checking in external plugins
 /// requires additional implementation in the extplugin_server process.
 #[test]
-#[ignore = "Permission checking in external plugins not yet fully implemented"]
 fn test_integration_workflow_with_permission_granted() {
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
+    use tempfile::tempdir;
+
+    // Create a temporary file with known content
+    let dir = tempdir().expect("create temp dir");
+    let test_file = dir.path().join("test.txt");
+    let test_content = "Hello from test file!";
+    std::fs::write(&test_file, test_content).expect("write temp file");
+    let test_file_path = test_file.to_string_lossy().to_string();
 
     let fixture_path = get_fixture_path("plugin_package_with_permission.js");
     let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
@@ -370,27 +377,30 @@ fn test_integration_workflow_with_permission_granted() {
         package_js,
     );
 
-    // Create allowed permissions that grant FilesystemRead for /tmp/test.txt
+    // Create allowed permissions that grant FilesystemRead for the temp file
     let allowed_permissions = vec![PluginFunctionPermissions {
         plugin_function_id: "filePlugin.read_file".to_string(),
         permissions: Permissions::new(vec![Permission {
             permission_type: PermissionType::FilesystemRead as i32,
             display_name: "Filesystem Read".to_string(),
             description: "Permission to read files".to_string(),
-            resource: vec!["/tmp/test.txt".to_string()],
+            resource: vec![test_file_path.clone()],
             permission_level: 1,
         }]),
     }];
 
     // Create workflow code that calls the external plugin
-    let workflow_code = r#"
-        const result = filePlugin.read_file("/tmp/test.txt");
+    let workflow_code = format!(
+        r#"
+        const result = filePlugin.read_file("{}");
         console.log("File content:", result);
-    "#;
+    "#,
+        test_file_path.replace('\\', "\\\\").replace('"', "\\\"")
+    );
 
     let mut code = CoreWorkflowCode::new(
         "test_wf_permission_granted".to_string(),
-        workflow_code.to_string(),
+        workflow_code,
         vec![Arc::new(ext_package) as Arc<dyn PluginPackageTrait>],
         1,
         allowed_permissions,
@@ -410,8 +420,9 @@ fn test_integration_workflow_with_permission_granted() {
         res.result
     );
     assert!(
-        res.result.contains("Content of /tmp/test.txt"),
-        "Expected result to contain file content, got: {}",
+        res.result.contains(test_content),
+        "Expected result to contain file content '{}', got: {}",
+        test_content,
         res.result
     );
 }
@@ -438,10 +449,16 @@ fn test_integration_workflow_with_permission_granted() {
 /// **Note:** This test is currently ignored because permission checking in external plugins
 /// requires additional implementation in the extplugin_server process.
 #[test]
-#[ignore = "Permission checking in external plugins not yet fully implemented"]
 fn test_integration_workflow_with_permission_denied() {
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
+    use tempfile::tempdir;
+
+    // Create a temporary file with known content
+    let dir = tempdir().expect("create temp dir");
+    let test_file = dir.path().join("secret.txt");
+    std::fs::write(&test_file, "secret content").expect("write temp file");
+    let test_file_path = test_file.to_string_lossy().to_string();
 
     let fixture_path = get_fixture_path("plugin_package_with_permission.js");
     let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
@@ -467,14 +484,17 @@ fn test_integration_workflow_with_permission_denied() {
     let allowed_permissions = vec![];
 
     // Create workflow code that calls the external plugin
-    let workflow_code = r#"
-        const result = filePlugin.read_file("/tmp/test.txt");
+    let workflow_code = format!(
+        r#"
+        const result = filePlugin.read_file("{}");
         console.log("File content:", result);
-    "#;
+    "#,
+        test_file_path.replace('\\', "\\\\").replace('"', "\\\"")
+    );
 
     let mut code = CoreWorkflowCode::new(
         "test_wf_permission_denied".to_string(),
-        workflow_code.to_string(),
+        workflow_code,
         vec![Arc::new(ext_package) as Arc<dyn PluginPackageTrait>],
         1,
         allowed_permissions,
@@ -490,11 +510,13 @@ fn test_integration_workflow_with_permission_denied() {
     let res = &code.result[0];
     assert_eq!(
         res.exit_code, 1,
-        "Workflow should fail without granted permissions, but got exit code: {}",
-        res.exit_code
+        "Workflow should fail without granted permissions, but got exit code: {} result: {}",
+        res.exit_code,
+        res.result
     );
     assert!(
-        res.result.contains("Permission") || res.result.contains("permission"),
+        res.result.to_lowercase().contains("permission")
+            || res.result.to_lowercase().contains("notcapable"),
         "Expected result to contain permission error, got: {}",
         res.result
     );

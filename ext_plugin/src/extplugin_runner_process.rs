@@ -71,6 +71,8 @@ pub fn extplugin_client(
 }
 
 pub fn extplugin_server(server_name: &str) -> Result<()> {
+    use crate::permissions::permissions_options_from_sapphillon_permissions;
+
     let (tx_req, rx_req) = ipc::channel()?;
     {
         eprintln!("DEBUG: Connecting to bootstrap");
@@ -92,10 +94,19 @@ pub fn extplugin_server(server_name: &str) -> Result<()> {
         .build()?;
 
     if let Ok((tx_res, request)) = rx_req.recv() {
+        // Convert Sapphillon permissions to Deno PermissionsOptions
+        let permissions_options =
+            permissions_options_from_sapphillon_permissions(&request.sapphillon_permissions);
+        let permissions_options = if permissions_options == Default::default() {
+            None
+        } else {
+            Some(permissions_options)
+        };
+
         let result = rt.block_on(async {
             let package = SapphillonPackage::new_async(&request.package_js).await?;
             let args = RsJsBridgeArgs::new_from_str(&request.args_json)?;
-            package.execute(args, &None).await
+            package.execute(args, &permissions_options).await
         });
 
         let response = match result {

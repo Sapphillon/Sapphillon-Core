@@ -6970,6 +6970,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serial_test",
+ "tempfile",
  "thiserror 2.0.17",
  "tokio",
  "tonic 0.14.2",

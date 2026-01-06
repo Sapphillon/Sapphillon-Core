@@ -26,7 +26,7 @@ globalThis.Sapphillon = {
                 }],
                 handler: (path) => {
                     console.log(`[JS] Reading file: ${path}`);
-                    return `Content of ${path}`;
+                    return Deno.readTextFileSync(path);
                 }
             },
             simple_function: {
