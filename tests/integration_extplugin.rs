@@ -359,7 +359,9 @@ fn test_integration_workflow_with_permission_granted() {
     let test_file = dir.path().join("test.txt");
     let test_content = "Hello from test file!";
     std::fs::write(&test_file, test_content).expect("write temp file");
-    let test_file_path = test_file.to_string_lossy().to_string();
+    // Convert Windows backslash paths to forward slashes to avoid JS escape issues
+    // Windows APIs accept forward slashes, and this avoids \t, \n etc being interpreted as escapes
+    let test_file_path = test_file.to_string_lossy().replace('\\', "/");
 
     let fixture_path = get_fixture_path("plugin_package_with_permission.js");
     let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
@@ -381,25 +383,28 @@ fn test_integration_workflow_with_permission_granted() {
         package_js,
     );
 
-    // Create allowed permissions that grant FilesystemRead for the temp file
+    // Create allowed permissions that grant FilesystemRead for the temp directory
+    // Use forward slash path format for consistency with Deno
+    let temp_dir_path = dir.path().to_string_lossy().replace('\\', "/");
     let allowed_permissions = vec![PluginFunctionPermissions {
         plugin_function_id: "filePlugin.read_file".to_string(),
         permissions: Permissions::new(vec![Permission {
             permission_type: PermissionType::FilesystemRead as i32,
             display_name: "Filesystem Read".to_string(),
             description: "Permission to read files".to_string(),
-            resource: vec![test_file_path.clone()],
+            resource: vec![temp_dir_path],
             permission_level: 1,
         }]),
     }];
 
     // Create workflow code that calls the external plugin
+    // Path already uses forward slashes, so no complex escaping needed
     let workflow_code = format!(
         r#"
         const result = filePlugin.read_file("{}");
         console.log("File content:", result);
     "#,
-        test_file_path.replace('\\', "\\\\").replace('"', "\\\"")
+        test_file_path
     );
 
     let mut code = CoreWorkflowCode::new(
@@ -463,7 +468,8 @@ fn test_integration_workflow_with_permission_denied() {
     let dir = tempdir().expect("create temp dir");
     let test_file = dir.path().join("secret.txt");
     std::fs::write(&test_file, "secret content").expect("write temp file");
-    let test_file_path = test_file.to_string_lossy().to_string();
+    // Convert Windows backslash paths to forward slashes, matching the granted test
+    let test_file_path = test_file.to_string_lossy().replace('\\', "/");
 
     let fixture_path = get_fixture_path("plugin_package_with_permission.js");
     let package_js = std::fs::read_to_string(fixture_path).expect("Failed to read fixture");
@@ -489,12 +495,13 @@ fn test_integration_workflow_with_permission_denied() {
     let allowed_permissions = vec![];
 
     // Create workflow code that calls the external plugin
+    // Path uses forward slashes, so no complex escaping needed
     let workflow_code = format!(
         r#"
         const result = filePlugin.read_file("{}");
         console.log("File content:", result);
     "#,
-        test_file_path.replace('\\', "\\\\").replace('"', "\\\"")
+        test_file_path
     );
 
     let mut code = CoreWorkflowCode::new(
