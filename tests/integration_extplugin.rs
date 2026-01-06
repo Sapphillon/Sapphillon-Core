@@ -1,6 +1,6 @@
 use sapphillon_core::ext_plugin::{RsJsBridgeArgs, RsJsBridgeReturns};
 use sapphillon_core::extplugin_rsjs_bridge::rsjs_bridge_core;
-use sapphillon_core::plugin::CorePluginExternalPackage;
+use sapphillon_core::plugin::{CorePluginExternalPackage, PluginPackageTrait};
 use sapphillon_core::runtime::OpStateWorkflowData;
 use serde_json::json;
 use std::path::PathBuf;
@@ -210,8 +210,7 @@ fn test_integration_workflow_with_external_plugin_add() {
     let mut code = CoreWorkflowCode::new(
         "test_wf_ext".to_string(),
         workflow_code.to_string(),
-        vec![], // no internal plugins
-        vec![ext_package],
+        vec![Arc::new(ext_package) as Arc<dyn PluginPackageTrait>],
         1,
         vec![], // allowed permissions
         vec![], // required permissions
@@ -293,8 +292,7 @@ fn test_integration_workflow_with_external_plugin_process_data() {
     let mut code = CoreWorkflowCode::new(
         "test_wf_ext_complex".to_string(),
         workflow_code.to_string(),
-        vec![], // no internal plugins
-        vec![ext_package],
+        vec![Arc::new(ext_package) as Arc<dyn PluginPackageTrait>],
         1,
         vec![], // allowed permissions
         vec![], // required permissions

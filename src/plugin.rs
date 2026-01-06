@@ -22,17 +22,16 @@ pub trait PluginFunctionTrait {
 }
 /// Trait representing a plugin package.
 pub trait PluginPackageTrait {
-    /// The type of function contained in this package.
-    type Function: PluginFunctionTrait;
-
     /// Returns true if the package is external.
     fn is_external(&self) -> bool;
     /// Returns the unique identifier of the package.
     fn get_package_id(&self) -> String;
     /// Returns the name of the package.
     fn get_package_name(&self) -> String;
-    /// Returns a list of functions included in the package.
-    fn get_functions(&self) -> Vec<Self::Function>;
+    /// Returns a list of functions included in the package as boxed trait objects.
+    fn get_functions(&self) -> Vec<Box<dyn PluginFunctionTrait>>;
+    /// Returns a reference to the underlying CorePluginExternalPackage if this is an external package.
+    fn as_external_package(&self) -> Option<&CorePluginExternalPackage>;
 }
 
 /// Core representation of a plugin function.
@@ -190,8 +189,6 @@ impl CorePluginPackage {
 /// and the list of internal plugin functions. A package is considered external only
 /// if all of its functions are external.
 impl PluginPackageTrait for CorePluginPackage {
-    type Function = CorePluginFunction;
-
     fn is_external(&self) -> bool {
         // A package is external if all of its functions are external
         // If there are no functions, we consider it internal
@@ -206,8 +203,15 @@ impl PluginPackageTrait for CorePluginPackage {
         self.name.clone()
     }
 
-    fn get_functions(&self) -> Vec<Self::Function> {
-        self.functions.clone()
+    fn get_functions(&self) -> Vec<Box<dyn PluginFunctionTrait>> {
+        self.functions
+            .iter()
+            .map(|f| Box::new(f.clone()) as Box<dyn PluginFunctionTrait>)
+            .collect()
+    }
+
+    fn as_external_package(&self) -> Option<&CorePluginExternalPackage> {
+        None
     }
 }
 
@@ -378,8 +382,6 @@ impl CorePluginExternalPackage {
 /// and the list of external plugin functions. External packages always have the `external`
 /// flag set to `true`, and the `is_external()` method always returns `true` for this type.
 impl PluginPackageTrait for CorePluginExternalPackage {
-    type Function = CorePluginExternalFunction;
-
     fn is_external(&self) -> bool {
         self.external
     }
@@ -392,8 +394,15 @@ impl PluginPackageTrait for CorePluginExternalPackage {
         self.name.clone()
     }
 
-    fn get_functions(&self) -> Vec<Self::Function> {
-        self.functions.clone()
+    fn get_functions(&self) -> Vec<Box<dyn PluginFunctionTrait>> {
+        self.functions
+            .iter()
+            .map(|f| Box::new(f.clone()) as Box<dyn PluginFunctionTrait>)
+            .collect()
+    }
+
+    fn as_external_package(&self) -> Option<&CorePluginExternalPackage> {
+        Some(self)
     }
 }
 
@@ -707,8 +716,8 @@ mod tests {
 
         let functions = pkg.get_functions();
         assert_eq!(functions.len(), 2);
-        assert_eq!(functions[0].id, "func1_id");
-        assert_eq!(functions[1].id, "func2_id");
+        assert_eq!(functions[0].get_function_id(), "func1_id");
+        assert_eq!(functions[1].get_function_id(), "func2_id");
     }
 
     #[test]
@@ -930,8 +939,8 @@ mod tests {
 
         let functions = pkg.get_functions();
         assert_eq!(functions.len(), 2);
-        assert_eq!(functions[0].id, "ext_func1_id");
-        assert_eq!(functions[1].id, "ext_func2_id");
+        assert_eq!(functions[0].get_function_id(), "ext_func1_id");
+        assert_eq!(functions[1].get_function_id(), "ext_func2_id");
     }
 
     #[test]
