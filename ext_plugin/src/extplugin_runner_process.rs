@@ -10,12 +10,42 @@ use proto::sapphillon::v1::Permission;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 
+/// Serializable permission for IPC transfer.
+/// This is a simple struct that mirrors proto::Permission but is guaranteed to
+/// be serde-compatible for ipc-channel transfer.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IpcPermission {
+    pub permission_type: i32,
+    pub resource: Vec<String>,
+}
+
+impl From<&proto::sapphillon::v1::Permission> for IpcPermission {
+    fn from(p: &proto::sapphillon::v1::Permission) -> Self {
+        Self {
+            permission_type: p.permission_type,
+            resource: p.resource.clone(),
+        }
+    }
+}
+
+impl From<IpcPermission> for proto::sapphillon::v1::Permission {
+    fn from(p: IpcPermission) -> Self {
+        Self {
+            permission_type: p.permission_type,
+            resource: p.resource,
+            display_name: String::new(),
+            description: String::new(),
+            permission_level: 0,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExternalPluginRunRequest {
     pub package_js: String,
     pub func_name: String,
     pub args_json: String,
-    pub sapphillon_permissions: Vec<Permission>,
+    pub sapphillon_permissions: Vec<IpcPermission>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,7 +71,7 @@ pub fn extplugin_client(
 
     let mut command = Command::new(server_path);
     command.args(server_args);
-    command.arg(server_name);
+    command.arg(&server_name);
 
     let mut child = command.stderr(std::process::Stdio::inherit()).spawn()?;
 
@@ -49,11 +79,17 @@ pub fn extplugin_client(
 
     let (tx_res, rx_res) = ipc::channel()?;
 
+    // Convert Permission to IpcPermission for IPC serialization
+    let ipc_permissions: Vec<IpcPermission> = sapphillon_permissions
+        .iter()
+        .map(IpcPermission::from)
+        .collect();
+
     let request = ExternalPluginRunRequest {
         package_js: sapphillon_package.package_script.clone(),
         func_name: func_name.to_string(),
         args_json: args.to_string()?,
-        sapphillon_permissions,
+        sapphillon_permissions: ipc_permissions,
     };
 
     tx_req.send((tx_res.clone(), request))?;
@@ -75,16 +111,13 @@ pub fn extplugin_server(server_name: &str) -> Result<()> {
 
     let (tx_req, rx_req) = ipc::channel()?;
     {
-        eprintln!("DEBUG: Connecting to bootstrap");
         let tx_bootstrap: IpcSender<
             IpcSender<(
                 IpcSender<ExternalPluginRunResponse>,
                 ExternalPluginRunRequest,
             )>,
         > = IpcSender::connect(server_name.to_string())?;
-        eprintln!("DEBUG: Sending tx_req");
         tx_bootstrap.send(tx_req.clone())?;
-        eprintln!("DEBUG: Sent tx_req");
         std::mem::forget(tx_bootstrap); // Hack to avoid Drop panic?
     }
     std::mem::forget(tx_req);
@@ -94,9 +127,15 @@ pub fn extplugin_server(server_name: &str) -> Result<()> {
         .build()?;
 
     if let Ok((tx_res, request)) = rx_req.recv() {
+        // Convert IpcPermission back to proto::Permission
+        let sapphillon_permissions: Vec<proto::sapphillon::v1::Permission> = request
+            .sapphillon_permissions
+            .into_iter()
+            .map(proto::sapphillon::v1::Permission::from)
+            .collect();
         // Convert Sapphillon permissions to Deno PermissionsOptions
         let permissions_options =
-            permissions_options_from_sapphillon_permissions(&request.sapphillon_permissions);
+            permissions_options_from_sapphillon_permissions(&sapphillon_permissions);
         let permissions_options = if permissions_options == Default::default() {
             None
         } else {

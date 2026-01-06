@@ -3,6 +3,7 @@ use sapphillon_core::extplugin_rsjs_bridge::rsjs_bridge_core;
 use sapphillon_core::permission::{Permission, PermissionType, Permissions, PluginFunctionPermissions};
 use sapphillon_core::plugin::{CorePluginExternalPackage, PluginPackageTrait};
 use sapphillon_core::runtime::OpStateWorkflowData;
+use serial_test::serial;
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -345,6 +346,7 @@ fn test_integration_workflow_with_external_plugin_process_data() {
 /// **Note:** This test is currently ignored because permission checking in external plugins
 /// requires additional implementation in the extplugin_server process.
 #[test]
+#[serial]
 fn test_integration_workflow_with_permission_granted() {
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
@@ -449,6 +451,7 @@ fn test_integration_workflow_with_permission_granted() {
 /// **Note:** This test is currently ignored because permission checking in external plugins
 /// requires additional implementation in the extplugin_server process.
 #[test]
+#[serial]
 fn test_integration_workflow_with_permission_denied() {
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
