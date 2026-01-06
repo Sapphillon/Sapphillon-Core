@@ -33,7 +33,10 @@ impl std::fmt::Debug for CoreWorkflowCode {
         f.debug_struct("CoreWorkflowCode")
             .field("id", &self.id)
             .field("code", &self.code)
-            .field("plugin_packages", &format!("<{} packages>", self.plugin_packages.len()))
+            .field(
+                "plugin_packages",
+                &format!("<{} packages>", self.plugin_packages.len()),
+            )
             .field("code_revision", &self.code_revision)
             .field("result", &self.result)
             .field("allowed_permissions", &self.allowed_permissions)
@@ -144,7 +147,8 @@ impl CoreWorkflowCode {
             .plugin_packages
             .iter()
             .filter_map(|pkg| {
-                pkg.as_external_package().map(|ext_pkg| Arc::new(ext_pkg.clone()))
+                pkg.as_external_package()
+                    .map(|ext_pkg| Arc::new(ext_pkg.clone()))
             })
             .collect();
 
@@ -673,14 +677,8 @@ mod tests {
     fn test_extract_used_plugins_empty_code() {
         let available_plugins = vec![make_test_plugin_package("plugin", &["func"])];
 
-        let code = CoreWorkflowCode::new(
-            "wid".to_string(),
-            "".to_string(),
-            vec![],
-            1,
-            vec![],
-            vec![],
-        );
+        let code =
+            CoreWorkflowCode::new("wid".to_string(), "".to_string(), vec![], 1, vec![], vec![]);
         let plugins = code.extract_used_plugins(&available_plugins);
 
         assert!(plugins.is_empty());

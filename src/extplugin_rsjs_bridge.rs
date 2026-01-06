@@ -124,11 +124,10 @@ pub fn rsjs_bridge_core(
                 .current_dir(&ext_plugin_dir)
                 .status();
 
-            if let Ok(s) = status {
-                if !s.success() {
+            if let Ok(s) = status
+                && !s.success() {
                     anyhow::bail!("Failed to build extplugin_test_server");
                 }
-            }
         }
     }
 

@@ -1,10 +1,12 @@
 use sapphillon_core::ext_plugin::{RsJsBridgeArgs, RsJsBridgeReturns};
 use sapphillon_core::extplugin_rsjs_bridge::rsjs_bridge_core;
-use sapphillon_core::permission::{Permission, PermissionType, Permissions, PluginFunctionPermissions};
+use sapphillon_core::permission::{
+    Permission, PermissionType, Permissions, PluginFunctionPermissions,
+};
 use sapphillon_core::plugin::{CorePluginExternalPackage, PluginPackageTrait};
 use sapphillon_core::runtime::OpStateWorkflowData;
-use serial_test::serial;
 use serde_json::json;
+use serial_test::serial;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -514,8 +516,7 @@ fn test_integration_workflow_with_permission_denied() {
     assert_eq!(
         res.exit_code, 1,
         "Workflow should fail without granted permissions, but got exit code: {} result: {}",
-        res.exit_code,
-        res.result
+        res.exit_code, res.result
     );
     assert!(
         res.result.to_lowercase().contains("permission")
