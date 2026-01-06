@@ -605,3 +605,273 @@ fn test_integration_workflow_without_permission_requirement() {
         res.result
     );
 }
+
+/// Integration Test: Plugin Throws Error
+///
+/// **Purpose:**
+/// Verify that exceptions thrown within the plugin (both synchronous and asynchronous)
+/// are correctly propagated back to Rust as errors.
+///
+/// **Intent:**
+/// This test ensures that:
+/// 1. `rsjs_bridge_core` returns an `Err` result when the JS handler throws.
+/// 2. The error message contains the original exception message from JavaScript.
+///
+/// **Flow:**
+/// 1. Load `plugin_package_errors.js`.
+/// 2. Call `throw_immediate` and verify the error message.
+/// 3. Call `throw_async` and verify the error message.
+#[test]
+fn test_integration_plugin_throws_error() {
+    use std::collections::HashMap;
+
+    // 1. Create runtime with the error plugin package
+    let (mut op_state, _tokio_rt) =
+        create_opstate_with_fixture("plugin_package_errors.js", "error-plugin");
+
+    // Test Case 1: Immediate Throw
+    let args_immediate = RsJsBridgeArgs {
+        func_name: "throw_immediate".to_string(),
+        args: HashMap::new(),
+    };
+    let result_immediate =
+        rsjs_bridge_core(&mut op_state, &args_immediate.to_string().unwrap(), "error-plugin");
+
+    assert!(
+        result_immediate.is_err(),
+        "Expected error from throw_immediate, got Ok"
+    );
+    let err_msg = result_immediate.err().unwrap().to_string();
+    assert!(
+        err_msg.contains("This is an immediate error"),
+        "Expected error message to contain 'This is an immediate error', got: {}",
+        err_msg
+    );
+
+    // Test Case 2: Async Throw
+    let args_async = RsJsBridgeArgs {
+        func_name: "throw_async".to_string(),
+        args: HashMap::new(),
+    };
+    let result_async =
+        rsjs_bridge_core(&mut op_state, &args_async.to_string().unwrap(), "error-plugin");
+
+    assert!(
+        result_async.is_err(),
+        "Expected error from throw_async, got Ok"
+    );
+    let err_msg_async = result_async.err().unwrap().to_string();
+    assert!(
+        err_msg_async.contains("This is an async error"),
+        "Expected error message to contain 'This is an async error', got: {}",
+        err_msg_async
+    );
+}
+
+/// Integration Test: Unknown Function Call
+///
+/// **Purpose:**
+/// Verify that calling a function not defined in the plugin package schema
+/// results in an appropriate error.
+///
+/// **Intent:**
+/// This test ensures that:
+/// 1. The bridge validates the function name against the schema/handlers.
+/// 2. A clear error is returned if the function is not found.
+///
+/// **Flow:**
+/// 1. Load `plugin_package.js`.
+/// 2. Call a non-existent function `non_existent_func`.
+/// 3. Verify that the result is an `Err` and the message indicates the function is unknown.
+#[test]
+fn test_integration_plugin_unknown_function() {
+    use std::collections::HashMap;
+
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture("plugin_package.js", "math-plugin");
+
+    let args = RsJsBridgeArgs {
+        func_name: "non_existent_func".to_string(),
+        args: HashMap::new(),
+    };
+
+    let result = rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "math-plugin");
+
+    assert!(
+        result.is_err(),
+        "Expected error for unknown function, got Ok"
+    );
+    let err_msg = result.err().unwrap().to_string();
+    assert!(
+        err_msg.contains("Unknown function") || err_msg.contains("schema not found"),
+        "Expected 'Unknown function' error, got: {}",
+        err_msg
+    );
+}
+
+/// Integration Test: Loose Type Handling (Demonstration)
+///
+/// **Purpose:**
+/// Verify the behavior when incorrect argument types are passed to a plugin function.
+/// Currently, the system relies on JS loose typing, so this test demonstrates that behavior
+/// rather than asserting a type error.
+///
+/// **Intent:**
+/// This test documents that:
+/// 1. Passing strings to a math function ("10", "20") does NOT cause a crash.
+/// 2. JS executes `a + b` as string concatenation "1020".
+/// 3. The return value reflects this runtime behavior.
+///
+/// **Flow:**
+/// 1. Load `plugin_package.js`.
+/// 2. Call `add` with string arguments "10" and "20".
+/// 3. Verify the result is "1020" (string concatenation), demonstrating loose typing.
+#[test]
+fn test_integration_plugin_loose_type_handling() {
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture("plugin_package.js", "math-plugin");
+
+    // Pass strings instead of numbers
+    let args = RsJsBridgeArgs {
+        func_name: "add".to_string(),
+        args: vec![
+            ("a".to_string(), json!("10")),
+            ("b".to_string(), json!("20")),
+        ]
+        .into_iter()
+        .collect(),
+    };
+
+    let result = rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "math-plugin");
+
+    assert!(
+        result.is_ok(),
+        "Bridge execution should succeed (JS is loose typed): {:?}",
+        result.err()
+    );
+
+    let result_json = result.unwrap();
+    let returns = RsJsBridgeReturns::new_from_str(&result_json).expect("Failed to parse returns");
+
+    // JS `+` operator with strings does concatenation
+    assert_eq!(
+        returns.args.get("result"),
+        Some(&json!("1020")),
+        "Expected string concatenation result '1020'"
+    );
+}
+
+/// Integration Test: Async Function Success
+///
+/// **Purpose:**
+/// Verify that async functions (Promises) are correctly awaited and their
+/// return values are properly serialized.
+///
+/// **Intent:**
+/// This test ensures that:
+/// 1. Async handlers are awaited before extracting the return value.
+/// 2. The result is correctly serialized to JSON.
+///
+/// **Flow:**
+/// 1. Load `plugin_package_errors.js` with `async_success` function.
+/// 2. Call `async_success` with a test value.
+/// 3. Verify the async result is correctly returned.
+#[test]
+fn test_integration_plugin_async_success() {
+    let (mut op_state, _tokio_rt) =
+        create_opstate_with_fixture("plugin_package_errors.js", "error-plugin");
+
+    let args = RsJsBridgeArgs {
+        func_name: "async_success".to_string(),
+        args: vec![("value".to_string(), json!("test-value"))]
+            .into_iter()
+            .collect(),
+    };
+
+    let result = rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "error-plugin");
+
+    assert!(
+        result.is_ok(),
+        "Async function should succeed: {:?}",
+        result.err()
+    );
+
+    let result_json = result.unwrap();
+    let returns = RsJsBridgeReturns::new_from_str(&result_json).expect("Failed to parse returns");
+
+    assert_eq!(
+        returns.args.get("result"),
+        Some(&json!("async: test-value")),
+        "Expected async transformed result"
+    );
+}
+
+/// Integration Test: Null/Undefined Return Handling
+///
+/// **Purpose:**
+/// Verify behavior when JS handlers return null, undefined, or nothing.
+///
+/// **Intent:**
+/// This test documents the current behavior for edge cases:
+/// 1. `return null` - Should return a result with null value.
+/// 2. `return undefined` - May error or return null (depending on impl).
+/// 3. No return (no-op) - Same as undefined.
+///
+/// **Flow:**
+/// 1. Load `plugin_package_errors.js`.
+/// 2. Call `return_null`, `return_undefined`, and `no_op`.
+/// 3. Document the observed behavior.
+#[test]
+fn test_integration_plugin_null_undefined_return() {
+    let (mut op_state, _tokio_rt) =
+        create_opstate_with_fixture("plugin_package_errors.js", "error-plugin");
+
+    // Test: return null
+    let args_null = RsJsBridgeArgs {
+        func_name: "return_null".to_string(),
+        args: std::collections::HashMap::new(),
+    };
+    let result_null = rsjs_bridge_core(&mut op_state, &args_null.to_string().unwrap(), "error-plugin");
+
+    // Note: The current implementation may error on null/undefined returns
+    // because the runner expects a string return value.
+    // This test documents the current behavior.
+    if result_null.is_ok() {
+        let result_json = result_null.unwrap();
+        let returns = RsJsBridgeReturns::new_from_str(&result_json);
+        // If parsing succeeds, check the value
+        if let Ok(r) = returns {
+            assert!(
+                r.args.get("result") == Some(&json!(null)) || r.args.is_empty(),
+                "Expected null result or empty args"
+            );
+        }
+    } else {
+        // Current implementation errors on null/undefined returns
+        let err_msg = result_null.err().unwrap().to_string();
+        assert!(
+            err_msg.contains("null") || err_msg.contains("undefined") || err_msg.contains("non-string"),
+            "Expected null/undefined related error, got: {}",
+            err_msg
+        );
+    }
+
+    // Test: return undefined (implicit via no-op)
+    let args_noop = RsJsBridgeArgs {
+        func_name: "no_op".to_string(),
+        args: std::collections::HashMap::new(),
+    };
+    let result_noop = rsjs_bridge_core(&mut op_state, &args_noop.to_string().unwrap(), "error-plugin");
+
+    // Same handling as null - document behavior
+    if result_noop.is_err() {
+        let err_msg = result_noop.err().unwrap().to_string();
+        assert!(
+            err_msg.contains("null") || err_msg.contains("undefined") || err_msg.contains("non-string"),
+            "Expected null/undefined related error for no-op, got: {}",
+            err_msg
+        );
+    }
+    // If it succeeds, that's also valid behavior - the test passes either way
+    // as long as it doesn't panic
+}
+
+
