@@ -38,6 +38,9 @@ use crate::npm::{NoopExtNodeSys, NoopInNpmPackageChecker, NoopNpmPackageFolderRe
 
 /// The runtime snapshot generated at build time.
 /// This contains the pre-compiled Deno runtime JavaScript/TypeScript code.
+///
+/// If the snapshot file doesn't exist (e.g., on Windows or when snapshot generation failed),
+/// this will be an empty slice and the worker will be created without a snapshot.
 static RUNTIME_SNAPSHOT: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/EXT_PLUGIN_SNAPSHOT.bin"));
 
@@ -88,9 +91,14 @@ pub fn create_main_worker(permissions_options: &Option<PermissionsOptions>) -> R
         bundle_provider: None,
     };
 
-    // Create worker options with the pre-generated snapshot
+    // Create worker options with the pre-generated snapshot (if available)
+    // If snapshot is empty (e.g., on Windows or when generation failed), use None
     let options = WorkerOptions {
-        startup_snapshot: Some(RUNTIME_SNAPSHOT),
+        startup_snapshot: if RUNTIME_SNAPSHOT.is_empty() {
+            None
+        } else {
+            Some(RUNTIME_SNAPSHOT)
+        },
         ..Default::default()
     };
 
