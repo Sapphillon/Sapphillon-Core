@@ -846,8 +846,7 @@ fn test_integration_plugin_null_undefined_return() {
     // Note: The current implementation may error on null/undefined returns
     // because the runner expects a string return value.
     // This test documents the current behavior.
-    if result_null.is_ok() {
-        let result_json = result_null.unwrap();
+    if let Ok(result_json) = result_null {
         let returns = RsJsBridgeReturns::new_from_str(&result_json);
         // If parsing succeeds, check the value
         if let Ok(r) = returns {
