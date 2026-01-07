@@ -10,7 +10,7 @@
 
 use deno_core::{OpState, op2};
 use ext_plugin::{RsJsBridgeArgs, SapphillonPackage};
-use proto;
+use proto::sapphillon::v1::Permission;
 /// Core implementation of the Rs-Js bridge.
 ///
 /// This function:
@@ -77,7 +77,7 @@ pub fn rsjs_bridge_core(
     // Build the plugin_function_id from package_name and func_name
     let plugin_function_id = format!("{}.{}", package_name, args.func_name);
 
-    let sapphillon_permissions: Vec<proto::sapphillon::v1::Permission> = workflow_data
+    let sapphillon_permissions: Vec<Permission> = workflow_data
         .get_allowed_permissions()
         .as_ref()
         .and_then(|allowed_list| {
@@ -99,49 +99,29 @@ pub fn rsjs_bridge_core(
     let sapphillon_package = SapphillonPackage::new(&package_js)?;
 
     // Step 4: Locate the runner process
-    // TODO: Make this configurable or more robust
-    let mut server_path_buf = std::env::current_exe()?;
-    server_path_buf.pop(); // Remove binary name
-    if server_path_buf.file_name().and_then(|s| s.to_str()) == Some("deps") {
-        server_path_buf.pop(); // Remove "deps" if in test
-    }
-    // Use extplugin_test_server binary
-    server_path_buf.push("extplugin_test_server");
-
-    // Build the binary if it doesn't exist
-    if !server_path_buf.exists() {
-        // Find the ext_plugin crate directory relative to workspace root
-        let mut workspace_root = std::env::current_exe()?;
-        // Navigate up from target/debug/deps or target/debug to workspace root
-        for _ in 0..4 {
-            workspace_root.pop();
-        }
-        let ext_plugin_dir = workspace_root.join("ext_plugin");
-
-        if ext_plugin_dir.exists() {
-            let status = std::process::Command::new("cargo")
-                .args(["build", "--bin", "extplugin_test_server"])
-                .current_dir(&ext_plugin_dir)
-                .status();
-
-            if let Ok(s) = status
-                && !s.success()
-            {
-                anyhow::bail!("Failed to build extplugin_test_server");
-            }
-        }
-    }
-
-    let server_path = server_path_buf
-        .to_str()
-        .ok_or_else(|| anyhow::anyhow!("Invalid server path"))?;
+    // Use environment variable to specify the server binary path explicitly
+    // Fall back to a default path for development/testing
+    let server_path = std::env::var("EXTPLUGIN_SERVER_PATH")
+        .unwrap_or_else(|_| {
+            std::env::current_exe()
+                .ok()
+                .and_then(|mut p| {
+                    p.pop(); // Remove binary name
+                    if p.file_name().and_then(|s| s.to_str()) == Some("deps") {
+                        p.pop(); // Remove "deps" if in test
+                    }
+                    p.push("extplugin_test_server");
+                    p.to_str().map(|s| s.to_string())
+                })
+                .unwrap_or_else(|| "extplugin_test_server".to_string())
+        });
 
     // Step 5: Execute via IPC
     let returns = extplugin_client(
         &sapphillon_package,
         &args.func_name,
         &args,
-        server_path,
+        &server_path,
         vec![],
         sapphillon_permissions,
     )?;

@@ -7,6 +7,10 @@ buf_generate:
 	@echo "----------------------------------------------------------"
 
 rust_test:
+	@echo "Build extplugin_test_server binary"
+	@echo "----------------------------------------------------------"
+	cargo build --package ext_plugin --bin extplugin_test_server
+	@echo "----------------------------------------------------------"
 	@echo "Run Rust Tests"
 	@echo "----------------------------------------------------------"
 	cargo test --workspace --all-features --all-targets
