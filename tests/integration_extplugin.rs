@@ -401,10 +401,9 @@ fn test_integration_workflow_with_permission_granted() {
     // Path already uses forward slashes, so no complex escaping needed
     let workflow_code = format!(
         r#"
-        const result = filePlugin.read_file("{}");
+        const result = filePlugin.read_file("{test_file_path}");
         console.log("File content:", result);
-    "#,
-        test_file_path
+    "#
     );
 
     let mut code = CoreWorkflowCode::new(
@@ -498,10 +497,9 @@ fn test_integration_workflow_with_permission_denied() {
     // Path uses forward slashes, so no complex escaping needed
     let workflow_code = format!(
         r#"
-        const result = filePlugin.read_file("{}");
+        const result = filePlugin.read_file("{test_file_path}");
         console.log("File content:", result);
-    "#,
-        test_file_path
+    "#
     );
 
     let mut code = CoreWorkflowCode::new(
@@ -654,8 +652,7 @@ fn test_integration_plugin_throws_error() {
     let err_msg = result_immediate.err().unwrap().to_string();
     assert!(
         err_msg.contains("This is an immediate error"),
-        "Expected error message to contain 'This is an immediate error', got: {}",
-        err_msg
+        "Expected error message to contain 'This is an immediate error', got: {err_msg}"
     );
 
     // Test Case 2: Async Throw
@@ -676,8 +673,7 @@ fn test_integration_plugin_throws_error() {
     let err_msg_async = result_async.err().unwrap().to_string();
     assert!(
         err_msg_async.contains("This is an async error"),
-        "Expected error message to contain 'This is an async error', got: {}",
-        err_msg_async
+        "Expected error message to contain 'This is an async error', got: {err_msg_async}"
     );
 }
 
@@ -716,8 +712,7 @@ fn test_integration_plugin_unknown_function() {
     let err_msg = result.err().unwrap().to_string();
     assert!(
         err_msg.contains("Unknown function") || err_msg.contains("schema not found"),
-        "Expected 'Unknown function' error, got: {}",
-        err_msg
+        "Expected 'Unknown function' error, got: {err_msg}"
     );
 }
 
@@ -868,8 +863,7 @@ fn test_integration_plugin_null_undefined_return() {
             err_msg.contains("null")
                 || err_msg.contains("undefined")
                 || err_msg.contains("non-string"),
-            "Expected null/undefined related error, got: {}",
-            err_msg
+            "Expected null/undefined related error, got: {err_msg}"
         );
     }
 
@@ -891,8 +885,7 @@ fn test_integration_plugin_null_undefined_return() {
             err_msg.contains("null")
                 || err_msg.contains("undefined")
                 || err_msg.contains("non-string"),
-            "Expected null/undefined related error for no-op, got: {}",
-            err_msg
+            "Expected null/undefined related error for no-op, got: {err_msg}"
         );
     }
     // If it succeeds, that's also valid behavior - the test passes either way

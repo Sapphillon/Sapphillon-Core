@@ -449,6 +449,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_run_success() {
         let pkg = dummy_plugin_package();
         let mut code = CoreWorkflowCode::new(
@@ -472,6 +473,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_run_with_pre_script() {
         let pkg = dummy_plugin_package_with_pre_script();
         let mut code = CoreWorkflowCode::new(
@@ -495,6 +497,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_run_failure() {
         let pkg = dummy_plugin_package();
         let mut code = CoreWorkflowCode::new(
@@ -527,6 +530,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_new() {
         let pkg = dummy_plugin_package();
         let code = CoreWorkflowCode::new(
@@ -545,6 +549,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_new_from_proto() {
         let proto = dummy_proto_workflow_code();
         let pkg = dummy_plugin_package();
@@ -557,6 +562,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_workflow_result_initial_state() {
         let pkg = dummy_plugin_package();
         let code = CoreWorkflowCode::new(
