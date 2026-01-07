@@ -9,11 +9,10 @@ use std::path::PathBuf;
 fn main() {
     // Avoid running snapshot generation on Windows runners where required
     // native DLLs or runtimes may be missing at build-script execution time.
-    if let Ok(host) = env::var("HOST") {
-        if host.contains("windows") {
-            println!("cargo:warning=Skipping runtime snapshot generation on Windows host: {host}");
-            return;
-        }
+    if env::var("HOST").is_ok_and(|h| h.contains("windows")) {
+        let host = env::var("HOST").unwrap();
+        println!("cargo:warning=Skipping runtime snapshot generation on Windows host: {host}");
+        return;
     }
 
     // Determine output path for snapshot
