@@ -7,14 +7,15 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    // Avoid running snapshot generation on Windows runners where required
-    // native DLLs or runtimes may be missing at build-script execution time.
-    if env::var("HOST").is_ok_and(|h| h.contains("windows")) {
-        let host = env::var("HOST").unwrap();
-        println!("cargo:warning=Skipping runtime snapshot generation on Windows host: {host}");
-        return;
-    }
+    #[cfg(not(windows))]
+    build_snapshot();
 
+    #[cfg(windows)]
+    println!("cargo:warning=Skipping snapshot generation on Windows to avoid DLL linking issues.");
+}
+
+#[cfg(not(windows))]
+fn build_snapshot() {
     // Determine output path for snapshot
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let snapshot_path = out_dir.join("EXT_PLUGIN_SNAPSHOT.bin");
