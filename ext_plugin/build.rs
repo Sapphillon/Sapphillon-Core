@@ -11,7 +11,9 @@ fn main() {
     // native DLLs or runtimes may be missing at build-script execution time.
     if let Ok(host) = env::var("HOST") {
         if host.contains("windows") {
-            println!("cargo:warning=Skipping runtime snapshot generation on Windows host: {}", host);
+            println!(
+                "cargo:warning=Skipping runtime snapshot generation on Windows host: {host}"
+            );
             return;
         }
     }
@@ -36,6 +38,8 @@ fn main() {
 
     if let Err(e) = res {
         println!("cargo:warning=Runtime snapshot creation panicked: {e:?}");
-        println!("cargo:warning=Proceeding without generated snapshot. Consider generating it on a supported host or ensuring required native runtimes are available.");
+        println!(
+            "cargo:warning=Proceeding without generated snapshot. Consider generating it on a supported host or ensuring required native runtimes are available."
+        );
     }
 }
