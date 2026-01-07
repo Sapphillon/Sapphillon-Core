@@ -101,20 +101,19 @@ pub fn rsjs_bridge_core(
     // Step 4: Locate the runner process
     // Use environment variable to specify the server binary path explicitly
     // Fall back to a default path for development/testing
-    let server_path = std::env::var("EXTPLUGIN_SERVER_PATH")
-        .unwrap_or_else(|_| {
-            std::env::current_exe()
-                .ok()
-                .and_then(|mut p| {
-                    p.pop(); // Remove binary name
-                    if p.file_name().and_then(|s| s.to_str()) == Some("deps") {
-                        p.pop(); // Remove "deps" if in test
-                    }
-                    p.push("extplugin_test_server");
-                    p.to_str().map(|s| s.to_string())
-                })
-                .unwrap_or_else(|| "extplugin_test_server".to_string())
-        });
+    let server_path = std::env::var("EXTPLUGIN_SERVER_PATH").unwrap_or_else(|_| {
+        std::env::current_exe()
+            .ok()
+            .and_then(|mut p| {
+                p.pop(); // Remove binary name
+                if p.file_name().and_then(|s| s.to_str()) == Some("deps") {
+                    p.pop(); // Remove "deps" if in test
+                }
+                p.push("extplugin_test_server");
+                p.to_str().map(|s| s.to_string())
+            })
+            .unwrap_or_else(|| "extplugin_test_server".to_string())
+    });
 
     // Step 5: Execute via IPC
     let returns = extplugin_client(
