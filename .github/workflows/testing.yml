@@ -49,6 +49,9 @@ jobs:
           choco install sqlite --no-progress
           echo "C:\ProgramData\chocolatey\lib\sqlite\tools" >> $env:GITHUB_PATH
 
+          # Install Visual C++ Redistributable for V8/deno_runtime snapshot generation
+          choco install vcredist140 --no-progress
+
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
       - name: Test Build
