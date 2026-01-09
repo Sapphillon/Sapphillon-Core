@@ -33,5 +33,5 @@ windows-sys.workspace = true
 deno_runtime.workspace = true
 
 [dev-dependencies]
-httpmock = "0.7"
+httpmock = "0.8"
 tempfile = "3"
