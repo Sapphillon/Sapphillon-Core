@@ -9,6 +9,9 @@ use std::io::Write;
 use std::path::PathBuf;
 
 fn main() {
+    #[cfg(target_os = "windows")]
+    unimplemented!("Currently, Windows support is supended.");
+
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let snapshot_path = out_dir.join("EXT_PLUGIN_SNAPSHOT.bin");
 
