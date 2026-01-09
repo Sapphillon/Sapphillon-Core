@@ -164,7 +164,15 @@ impl SapphillonPackage {
         return params
             .slice()
             .sort((a, b) => (a?.idx ?? 0) - (b?.idx ?? 0))
-            .map((p) => rawArgs?.[p.name]);
+            .map((p) => {
+                // First try the parameter name (e.g., "a", "b")
+                if (rawArgs?.[p.name] !== undefined) {
+                    return rawArgs[p.name];
+                }
+                // Fallback to indexed format (e.g., "arg0", "arg1")
+                const idx = p?.idx ?? 0;
+                return rawArgs?.[`arg${idx}`];
+            });
     };
 
     const __buildReturns = (schema, value) => {
@@ -376,5 +384,117 @@ mod tests {
 
         assert!(!package.package_script.is_empty());
         assert_eq!(package.package_script, package_script);
+    }
+
+    #[tokio::test]
+    async fn execute_permission_denied_without_fs_read() {
+        use tempfile::tempdir;
+
+        let dir = tempdir().expect("create temp dir");
+        let file_path = dir.path().join("secret.txt");
+        std::fs::write(&file_path, "secret content").expect("write temp file");
+        let file_path_str = file_path.to_string_lossy().to_string();
+
+        let package_script = test_package_script();
+        let package = SapphillonPackage::new_async(&package_script)
+            .await
+            .expect("package creation succeeds");
+
+        let args = RsJsBridgeArgs {
+            func_name: "readSecretFile".to_string(),
+            args: vec![("path".to_string(), json!(file_path_str))]
+                .into_iter()
+                .collect(),
+        };
+
+        // Execute without granting read permissions - should fail
+        let result = package.execute(args, &None).await;
+
+        assert!(result.is_err(), "execution should fail without permissions");
+        let err_msg = result.err().unwrap().to_string().to_lowercase();
+        assert!(
+            err_msg.contains("permission") || err_msg.contains("notcapable"),
+            "expected permission-related error, got: {err_msg}"
+        );
+    }
+
+    #[tokio::test]
+    async fn execute_permission_granted_with_fs_read() {
+        use deno_permissions::PermissionsOptions;
+        use tempfile::tempdir;
+
+        let dir = tempdir().expect("create temp dir");
+        let file_path = dir.path().join("allowed.txt");
+        std::fs::write(&file_path, "allowed content").expect("write temp file");
+        let file_path_str = file_path.to_string_lossy().to_string();
+
+        let package_script = test_package_script();
+        let package = SapphillonPackage::new_async(&package_script)
+            .await
+            .expect("package creation succeeds");
+
+        let args = RsJsBridgeArgs {
+            func_name: "readSecretFile".to_string(),
+            args: vec![("path".to_string(), json!(file_path_str.clone()))]
+                .into_iter()
+                .collect(),
+        };
+
+        // Execute with proper read permissions - should succeed
+        let permissions = PermissionsOptions {
+            allow_read: Some(vec![file_path_str]),
+            ..Default::default()
+        };
+
+        let result = package.execute(args, &Some(permissions)).await;
+
+        assert!(
+            result.is_ok(),
+            "execution should succeed with permissions: {:?}",
+            result.err()
+        );
+        let returns = result.unwrap();
+        assert_eq!(
+            returns.args.get("result"),
+            Some(&json!("allowed content")),
+            "should return file contents"
+        );
+    }
+
+    #[tokio::test]
+    async fn execute_multiple_returns_handled_correctly() {
+        let package_script = test_package_script();
+        let package = SapphillonPackage::new_async(&package_script)
+            .await
+            .expect("package creation succeeds");
+
+        let args = RsJsBridgeArgs {
+            func_name: "getMultipleValues".to_string(),
+            args: vec![("a".to_string(), json!(10)), ("b".to_string(), json!(3))]
+                .into_iter()
+                .collect(),
+        };
+
+        let returns = package
+            .execute(args, &None)
+            .await
+            .expect("execution succeeds");
+
+        // With multiple returns declared in schema, values should be mapped to ret0, ret1, ret2
+        assert_eq!(
+            returns.args.get("ret0"),
+            Some(&json!(13)),
+            "ret0 should be sum: 10 + 3 = 13"
+        );
+        assert_eq!(
+            returns.args.get("ret1"),
+            Some(&json!(30)),
+            "ret1 should be product: 10 * 3 = 30"
+        );
+        assert_eq!(
+            returns.args.get("ret2"),
+            Some(&json!(7)),
+            "ret2 should be difference: 10 - 3 = 7"
+        );
     }
 }

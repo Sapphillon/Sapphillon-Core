@@ -21,6 +21,7 @@ deno_permissions.workspace = true
 proto = { path = "../proto" }
 serde.workspace = true
 serde_json.workspace = true
+ipc-channel = "0.20.2"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys.workspace = true

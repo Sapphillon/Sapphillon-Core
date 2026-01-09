@@ -1,11 +1,5 @@
 .PHONY: rust_test, rust_build, rust_check_format, rust_fix_format, buf_generate
 
-ifeq ($(OS),Windows_NT)
-RUST_TEST_CMD = set "RUST_TEST_THREADS=1" && set "AWS_LC_SYS_PREBUILT_NASM=1" && set "CMAKE_POLICY_VERSION_MINIMUM=3.5" && cargo test --lib --workspace --all-features
-else
-RUST_TEST_CMD = RUST_TEST_THREADS=1 cargo test --lib --workspace --all-features
-endif
-
 buf_generate:
 	@echo "Generate Protocol Buffer Code"
 	@echo "----------------------------------------------------------"
@@ -13,9 +7,13 @@ buf_generate:
 	@echo "----------------------------------------------------------"
 
 rust_test:
+	@echo "Build extplugin_test_server binary"
+	@echo "----------------------------------------------------------"
+	cargo build --package ext_plugin --bin extplugin_test_server
+	@echo "----------------------------------------------------------"
 	@echo "Run Rust Tests"
 	@echo "----------------------------------------------------------"
-	@$(RUST_TEST_CMD)
+	cargo test --workspace --all-features --all-targets
 	@echo "----------------------------------------------------------"
 
 rust_build:

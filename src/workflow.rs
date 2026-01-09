@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
 
 use crate::permission::PluginFunctionPermissions;
-use crate::plugin::CorePluginPackage;
+use crate::plugin::{CorePluginExternalPackage, CorePluginPackage, PluginPackageTrait};
 use crate::proto::google::protobuf::Timestamp;
 use crate::proto::sapphillon;
 use crate::proto::sapphillon::v1::{WorkflowResult, WorkflowResultType};
@@ -14,20 +14,49 @@ use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::runtime::Handle;
 
-#[derive(Debug, Clone)]
 pub struct CoreWorkflowCode {
     /// Unique ID of the workflow code
     pub id: String,
     /// The JavaScript code of the workflow.
     pub code: String,
-    /// List of plugin packages used in the workflow
-    pub plugin_packages: Vec<CorePluginPackage>,
+    pub plugin_packages: Vec<Arc<dyn PluginPackageTrait>>,
 
     pub code_revision: i32,
     pub result: Vec<sapphillon::v1::WorkflowResult>,
 
     pub allowed_permissions: Vec<PluginFunctionPermissions>,
     pub required_permissions: Vec<PluginFunctionPermissions>,
+}
+
+impl std::fmt::Debug for CoreWorkflowCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CoreWorkflowCode")
+            .field("id", &self.id)
+            .field("code", &self.code)
+            .field(
+                "plugin_packages",
+                &format!("<{} packages>", self.plugin_packages.len()),
+            )
+            .field("code_revision", &self.code_revision)
+            .field("result", &self.result)
+            .field("allowed_permissions", &self.allowed_permissions)
+            .field("required_permissions", &self.required_permissions)
+            .finish()
+    }
+}
+
+impl Clone for CoreWorkflowCode {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            code: self.code.clone(),
+            plugin_packages: self.plugin_packages.clone(),
+            code_revision: self.code_revision,
+            result: self.result.clone(),
+            allowed_permissions: self.allowed_permissions.clone(),
+            required_permissions: self.required_permissions.clone(),
+        }
+    }
 }
 
 impl CoreWorkflowCode {
@@ -37,12 +66,12 @@ impl CoreWorkflowCode {
     ///
     /// * `id` - The unique identifier for the workflow code.
     /// * `code` - The JavaScript code for the workflow.
-    /// * `plugin_packages` - A vector of `CorePluginPackage`s used in this workflow.
+    /// * `plugin_packages` - A vector of plugin packages used in this workflow.
     /// * `code_revision` - The revision number of the code.
     pub fn new(
         id: String,
         code: String,
-        plugin_packages: Vec<CorePluginPackage>,
+        plugin_packages: Vec<Arc<dyn PluginPackageTrait>>,
         code_revision: i32,
         allowed_permissions: Vec<PluginFunctionPermissions>,
         required_permissions: Vec<PluginFunctionPermissions>,
@@ -78,8 +107,8 @@ impl CoreWorkflowCode {
         // Collect OpDecls from plugin packages
         let mut ops = Vec::new();
         for pkg in &self.plugin_packages {
-            for func in &pkg.functions {
-                ops.push(func.func.clone().into_owned());
+            for func in pkg.get_functions() {
+                ops.push(func.get_opdecl().into_owned());
             }
         }
 
@@ -105,13 +134,23 @@ impl CoreWorkflowCode {
                 .plugin_packages
                 .iter()
                 .flat_map(|pkg| {
-                    pkg.functions
-                        .iter()
-                        .filter_map(|func| func.pre_run_js.clone())
+                    pkg.get_functions()
+                        .into_iter()
+                        .filter_map(|func| func.get_pre_run_js())
                 })
                 .collect();
+
             if v.is_empty() { None } else { Some(v) }
         };
+
+        let external_packages: Vec<Arc<CorePluginExternalPackage>> = self
+            .plugin_packages
+            .iter()
+            .filter_map(|pkg| {
+                pkg.as_external_package()
+                    .map(|ext_pkg| Arc::new(ext_pkg.clone()))
+            })
+            .collect();
 
         let opstate_workflow_data = OpStateWorkflowData::new(
             &self.id,
@@ -129,6 +168,7 @@ impl CoreWorkflowCode {
                 Some(self.required_permissions.clone())
             },
             handle.clone(),
+            external_packages,
         );
         let result = run_script(
             &self.code,
@@ -170,10 +210,10 @@ impl CoreWorkflowCode {
     /// # Arguments
     ///
     /// * `workflow_code` - The protobuf `WorkflowCode` message.
-    /// * `plugin_packages` - A vector of `CorePluginPackage`s used in this workflow.
+    /// * `plugin_packages` - A vector of plugin packages used in this workflow.
     pub fn new_from_proto(
         workflow_code: &sapphillon::v1::WorkflowCode,
-        plugin_packages: Vec<CorePluginPackage>,
+        plugin_packages: Vec<Arc<dyn PluginPackageTrait>>,
         required_permissions: Vec<PluginFunctionPermissions>,
         allowed_permissions: Vec<PluginFunctionPermissions>,
     ) -> Self {
@@ -299,10 +339,7 @@ pub fn extract_used_plugins_from_code(
 
     let re = RE.get_or_init(|| {
         Regex::new(pattern).unwrap_or_else(|e| {
-            panic!(
-                "Failed to compile plugin call regex pattern {:?}: {}",
-                pattern, e
-            )
+            panic!("Failed to compile plugin call regex pattern {pattern:?}: {e}")
         })
     });
 
@@ -318,7 +355,7 @@ pub fn extract_used_plugins_from_code(
             continue;
         }
 
-        let key = format!("{}.{}", package_name, function_name);
+        let key = format!("{package_name}.{function_name}");
         if seen.insert(key) {
             result.push(PluginIdentifier {
                 package_name,
@@ -412,12 +449,13 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_run_success() {
         let pkg = dummy_plugin_package();
         let mut code = CoreWorkflowCode::new(
             "wid".to_string(),
             "console.log(1 + 1);".to_string(),
-            vec![pkg],
+            vec![Arc::new(pkg)],
             1,
             vec![],
             vec![],
@@ -435,12 +473,13 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_run_with_pre_script() {
         let pkg = dummy_plugin_package_with_pre_script();
         let mut code = CoreWorkflowCode::new(
             "wid".to_string(),
             "console.log(1 + 1);".to_string(),
-            vec![pkg],
+            vec![Arc::new(pkg)],
             1,
             vec![],
             vec![],
@@ -458,12 +497,13 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_run_failure() {
         let pkg = dummy_plugin_package();
         let mut code = CoreWorkflowCode::new(
             "wid".to_string(),
             "throw new Error('fail');".to_string(),
-            vec![pkg],
+            vec![Arc::new(pkg)],
             1,
             vec![],
             vec![],
@@ -490,12 +530,13 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_new() {
         let pkg = dummy_plugin_package();
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
             r"\nconsole.log('test');".to_string(),
-            vec![pkg],
+            vec![Arc::new(pkg)],
             2,
             vec![],
             vec![],
@@ -508,10 +549,11 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_new_from_proto() {
         let proto = dummy_proto_workflow_code();
         let pkg = dummy_plugin_package();
-        let code = CoreWorkflowCode::new_from_proto(&proto, vec![pkg], vec![], vec![]);
+        let code = CoreWorkflowCode::new_from_proto(&proto, vec![Arc::new(pkg)], vec![], vec![]);
         assert_eq!(code.id, proto.id);
         assert_eq!(code.code, proto.code);
         assert_eq!(code.plugin_packages.len(), 1);
@@ -520,12 +562,13 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::arc_with_non_send_sync)]
     fn test_workflow_result_initial_state() {
         let pkg = dummy_plugin_package();
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
             "console.log('test');".to_string(),
-            vec![pkg],
+            vec![Arc::new(pkg)],
             1,
             vec![],
             vec![],
@@ -541,7 +584,7 @@ mod tests {
             0
         }
         CorePluginFunction::new(
-            format!("{}_id", name),
+            format!("{name}_id"),
             name.to_string(),
             "test".to_string(),
             test_op(),
@@ -555,7 +598,7 @@ mod tests {
             .iter()
             .map(|n| make_test_plugin_function(n))
             .collect();
-        CorePluginPackage::new(format!("{}_id", pkg_name), pkg_name.to_string(), functions)
+        CorePluginPackage::new(format!("{pkg_name}_id"), pkg_name.to_string(), functions)
     }
 
     #[test]

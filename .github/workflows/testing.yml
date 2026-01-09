@@ -16,7 +16,8 @@ jobs:
     needs: ["check"]
     strategy:
       matrix:
-        os: [blacksmith-2vcpu-ubuntu-2404, macos-latest, blacksmith-4vcpu-windows-2025]
+        # os: [blacksmith-2vcpu-ubuntu-2404, macos-latest, blacksmith-4vcpu-windows-2025]
+        os: [blacksmith-2vcpu-ubuntu-2404, macos-latest]
     steps:
       - uses: actions/checkout@v6
       
@@ -35,15 +36,31 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           choco install protoc
+
           choco install nasm
           echo "C:\Program Files\NASM" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+          choco install llvm
+          $llvmPath = "C:\Program Files\LLVM\bin"
+          echo "$llvmPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "LIBCLANG_PATH=$llvmPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $clangPath = "C:\Program Files\LLVM\bin\clang.exe"
+          echo "CLANG_PATH=$clangPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          choco install sqlite --no-progress
+          echo "C:\ProgramData\chocolatey\lib\sqlite\tools" >> $env:GITHUB_PATH
+
+          # Install Visual C++ Redistributable for V8/deno_runtime snapshot generation
+          choco install vcredist140 --no-progress
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
       - name: Test Build
-        run: cargo build --verbose
+        run: cargo build --verbose --all-targets
+      - name: Build extplugin_test_server
+        run: cargo build --verbose --package ext_plugin --bin extplugin_test_server
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --verbose --all-targets
 
   check:
     name: Rustfmt

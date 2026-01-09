@@ -12,6 +12,7 @@ use crate::permission::{
     CheckPermissionResult, Permissions, PluginFunctionPermissions, check_permission,
 };
 
+use crate::plugin::CorePluginExternalPackage;
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
 use std::boxed::Box;
 use std::future::Future;
@@ -38,6 +39,7 @@ pub struct OpStateWorkflowData {
     allowed_permissions: Option<Vec<PluginFunctionPermissions>>,
     required_permissions: Option<Vec<PluginFunctionPermissions>>,
     pub tokio_runtime_handle: Handle,
+    pub external_package: Vec<Arc<CorePluginExternalPackage>>,
 }
 
 impl std::fmt::Debug for OpStateWorkflowData {
@@ -60,6 +62,7 @@ impl OpStateWorkflowData {
         allowed_permissions: Option<Vec<PluginFunctionPermissions>>,
         required_permissions: Option<Vec<PluginFunctionPermissions>>,
         tokio_runtime_handle: Handle,
+        external_package: Vec<Arc<CorePluginExternalPackage>>,
     ) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
@@ -68,6 +71,7 @@ impl OpStateWorkflowData {
             allowed_permissions,
             required_permissions,
             tokio_runtime_handle,
+            external_package,
         }
     }
 
@@ -180,6 +184,7 @@ pub(crate) fn run_script(
                 None,
                 None,
                 tokio_runtime.handle().clone(),
+                vec![],
             )));
             tokio_runtime_option = Some(tokio_runtime);
         }
@@ -339,6 +344,7 @@ mod tests {
             allowed_permissions: None,
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
+            external_package: vec![],
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -388,6 +394,7 @@ mod tests {
             allowed_permissions: None,
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
+            external_package: vec![],
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -435,6 +442,7 @@ mod tests {
             allowed_permissions: None,
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
+            external_package: vec![],
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -476,6 +484,7 @@ mod tests {
             allowed_permissions: None,
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
+            external_package: vec![],
         };
         assert_eq!(data.stdout_to_string(), "");
     }
@@ -491,6 +500,7 @@ mod tests {
             allowed_permissions: None,
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
+            external_package: vec![],
         };
         assert_eq!(data.stdout_to_string(), "Hello");
     }
@@ -510,6 +520,7 @@ mod tests {
             allowed_permissions: None,
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
+            external_package: vec![],
         };
         assert_eq!(data.stdout_to_string(), "One\nTwo\nThree");
     }
@@ -527,6 +538,7 @@ mod tests {
             allowed_permissions: None,
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
+            external_package: vec![],
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -568,6 +580,7 @@ mod tests {
             allowed_permissions: None,
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
+            external_package: vec![],
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -621,6 +634,7 @@ mod tests {
             None,
             None,
             tokio_runtime.handle().clone(),
+            vec![],
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -663,6 +677,7 @@ mod tests {
             None,
             None,
             tokio_runtime.handle().clone(),
+            vec![],
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -826,6 +841,7 @@ mod tokio_runtime_tests {
             None,
             None,
             tokio_runtime.handle().clone(),
+            vec![],
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -853,6 +869,7 @@ mod tokio_runtime_tests {
             None,
             None,
             tokio_runtime.handle().clone(),
+            vec![],
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -885,6 +902,7 @@ mod tokio_runtime_tests {
             None,
             None,
             tokio_runtime.handle().clone(),
+            vec![],
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -960,6 +978,7 @@ mod per_plugin_permission_tests {
             Some(vec![allowed_pf1, allowed_pf2]),
             Some(vec![required_pf]),
             tokio_runtime.handle().clone(),
+            vec![],
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -1000,6 +1019,7 @@ mod per_plugin_permission_tests {
             Some(vec![allowed_pf_other]),
             Some(vec![required_pf]),
             tokio_runtime.handle().clone(),
+            vec![],
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 

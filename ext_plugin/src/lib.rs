@@ -193,6 +193,7 @@
 //! ```
 
 mod cert_store;
+mod extplugin_runner_process;
 mod module_loader;
 mod npm;
 mod package;
@@ -210,3 +211,8 @@ pub use rust_js_bridge::{RsJsBridgeArgs, RsJsBridgeReturns};
 
 // Public API: Runner functions for executing JavaScript code
 pub use runner::{run_js, run_js_with_string_arg};
+
+pub use extplugin_runner_process::{
+    ExternalPluginRunRequest, ExternalPluginRunResponse, IpcPermission, extplugin_client,
+    extplugin_server,
+};

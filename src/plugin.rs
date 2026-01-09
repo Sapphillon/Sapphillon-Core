@@ -2,9 +2,37 @@
 // SPDX-FileCopyrightText: 2025 Yuta Takahashi
 // SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
 
+use crate::extplugin_rsjs_bridge;
 use crate::proto::sapphillon::v1::{PluginFunction, PluginPackage};
 use deno_core::OpDecl;
 use std::borrow::Cow;
+
+/// Trait representing a plugin function.
+pub trait PluginFunctionTrait {
+    /// Returns true if the function is external.
+    fn is_external(&self) -> bool;
+    /// Returns the unique identifier of the function.
+    fn get_function_id(&self) -> String;
+    /// Returns the name of the function.
+    fn get_function_name(&self) -> String;
+    /// Returns the Deno operation declaration for the function.
+    fn get_opdecl(&self) -> Cow<'static, OpDecl>;
+    /// Returns an optional JavaScript snippet to be executed before the main function.
+    fn get_pre_run_js(&self) -> Option<String>;
+}
+/// Trait representing a plugin package.
+pub trait PluginPackageTrait {
+    /// Returns true if the package is external.
+    fn is_external(&self) -> bool;
+    /// Returns the unique identifier of the package.
+    fn get_package_id(&self) -> String;
+    /// Returns the name of the package.
+    fn get_package_name(&self) -> String;
+    /// Returns a list of functions included in the package as boxed trait objects.
+    fn get_functions(&self) -> Vec<Box<dyn PluginFunctionTrait>>;
+    /// Returns a reference to the underlying CorePluginExternalPackage if this is an external package.
+    fn as_external_package(&self) -> Option<&CorePluginExternalPackage>;
+}
 
 /// Core representation of a plugin function.
 /// Holds the function's ID, name, and Deno operation.
@@ -20,6 +48,8 @@ pub struct CorePluginFunction {
     pub description: String,
     /// Optional: Pre Run Script
     pub pre_run_js: Option<String>,
+    /// The plugin is external
+    pub external_plugin: bool,
 }
 
 impl std::fmt::Debug for CorePluginFunction {
@@ -36,6 +66,7 @@ impl std::fmt::Debug for CorePluginFunction {
 
 impl CorePluginFunction {
     /// Creates a new `CorePluginFunction`.
+    /// This Function must be internal plugins
     ///
     /// # Arguments
     ///
@@ -57,10 +88,12 @@ impl CorePluginFunction {
             func: Cow::Owned(func),
             pre_run_js,
             description,
+            external_plugin: false,
         }
     }
 
     /// Creates a `CorePluginFunction` from a protobuf `PluginFunction` and an `OpDecl`.
+    /// This function must be internal plugin function
     ///
     /// # Arguments
     ///
@@ -73,7 +106,34 @@ impl CorePluginFunction {
             func: Cow::Owned(function),
             description: plugin_function.description.clone(),
             pre_run_js: None,
+            external_plugin: false,
         }
+    }
+}
+
+/// Implementation of `PluginFunctionTrait` for `CorePluginFunction`.
+///
+/// This implementation provides standard trait methods to access function metadata
+/// and the Deno operation declaration for internal plugin functions.
+impl PluginFunctionTrait for CorePluginFunction {
+    fn is_external(&self) -> bool {
+        self.external_plugin
+    }
+
+    fn get_function_id(&self) -> String {
+        self.id.clone()
+    }
+
+    fn get_function_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_opdecl(&self) -> Cow<'static, OpDecl> {
+        self.func.clone()
+    }
+
+    fn get_pre_run_js(&self) -> Option<String> {
+        self.pre_run_js.clone()
     }
 }
 
@@ -122,6 +182,230 @@ impl CorePluginPackage {
         }
     }
 }
+
+/// Implementation of `PluginPackageTrait` for `CorePluginPackage`.
+///
+/// This implementation provides standard trait methods to access package metadata
+/// and the list of internal plugin functions. A package is considered external only
+/// if all of its functions are external.
+impl PluginPackageTrait for CorePluginPackage {
+    fn is_external(&self) -> bool {
+        // A package is external if all of its functions are external
+        // If there are no functions, we consider it internal
+        !self.functions.is_empty() && self.functions.iter().all(|f| f.is_external())
+    }
+
+    fn get_package_id(&self) -> String {
+        self.id.clone()
+    }
+
+    fn get_package_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_functions(&self) -> Vec<Box<dyn PluginFunctionTrait>> {
+        self.functions
+            .iter()
+            .map(|f| Box::new(f.clone()) as Box<dyn PluginFunctionTrait>)
+            .collect()
+    }
+
+    fn as_external_package(&self) -> Option<&CorePluginExternalPackage> {
+        None
+    }
+}
+
+/// Core representation of an external plugin function.
+/// Holds the function's ID, name, package name, JavaScript code, and external flag.
+#[derive(Debug, Clone)]
+pub struct CorePluginExternalFunction {
+    /// Unique ID of the function
+    pub id: String,
+    /// Function name
+    pub name: String,
+    /// Description of the function
+    pub description: String,
+    /// Name of the parent package (used for generating wrapper functions)
+    pub package_name: String,
+    /// Package JavaScript code to be executed
+    pub package_js: String,
+    /// The plugin is external (always true for this type)
+    pub external: bool,
+}
+
+impl CorePluginExternalFunction {
+    /// Creates a new `CorePluginExternalFunction`.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier for the function.
+    /// * `name` - The name of the function.
+    /// * `description` - A description of what the function does.
+    /// * `package_name` - The name of the parent package.
+    /// * `package_js` - The JavaScript code for the package.
+    pub fn new(
+        id: String,
+        name: String,
+        description: String,
+        package_name: String,
+        package_js: String,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            description,
+            package_name,
+            package_js,
+            external: true,
+        }
+    }
+
+    /// Generates JavaScript code that creates a wrapper function for this external plugin function.
+    ///
+    /// The wrapper function:
+    /// 1. Serializes arguments to RsJsBridgeArgs JSON (using arg0, arg1, ... naming)
+    /// 2. Calls rsjs_bridge_opdecl via Deno.core.ops
+    /// 3. Deserializes RsJsBridgeReturns JSON and returns the result
+    ///
+    /// # Example Generated Code
+    ///
+    /// For a function `greet` in package `myPlugin`:
+    /// ```javascript
+    /// globalThis.myPlugin = globalThis.myPlugin || {};
+    /// globalThis.myPlugin.greet = function(...args) {
+    ///     const bridgeArgs = { func_name: "greet", args: {} };
+    ///     args.forEach((arg, idx) => { bridgeArgs.args[`arg${idx}`] = arg; });
+    ///     const resultJson = Deno.core.ops.rsjs_bridge_opdecl(
+    ///         JSON.stringify(bridgeArgs),
+    ///         <package_js>
+    ///     );
+    ///     const result = JSON.parse(resultJson);
+    ///     return result.args.result !== undefined ? result.args.result : result.args;
+    /// };
+    /// ```
+    fn generate_call_script(&self) -> String {
+        format!(
+            r#"
+        globalThis.{pkg_name} = globalThis.{pkg_name} || {{}};
+        globalThis.{pkg_name}.{func_name} = function(...args) {{
+            const bridgeArgs = {{
+                func_name: "{func_name}",
+                args: {{}}
+            }};
+            args.forEach((arg, idx) => {{
+                bridgeArgs.args[`arg${{idx}}`] = arg;
+            }});
+            const argsJson = JSON.stringify(bridgeArgs);
+            const packageName = "{pkg_name}";
+            const resultJson = Deno.core.ops.rsjs_bridge_opdecl(argsJson, packageName);
+            const result = JSON.parse(resultJson);
+            return result.args.result !== undefined ? result.args.result : result.args;
+        }};
+"#,
+            pkg_name = self.package_name,
+            func_name = self.name,
+        )
+    }
+}
+
+/// Implementation of `PluginFunctionTrait` for `CorePluginExternalFunction`.
+///
+/// This implementation provides standard trait methods to access external function metadata.
+/// External functions always use the `rsjs_bridge_opdecl` operation and do not have pre-run scripts.
+/// The `is_external()` method always returns `true` for this type.
+impl PluginFunctionTrait for CorePluginExternalFunction {
+    fn is_external(&self) -> bool {
+        self.external
+    }
+
+    fn get_function_id(&self) -> String {
+        self.id.clone()
+    }
+
+    fn get_function_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_opdecl(&self) -> Cow<'static, OpDecl> {
+        Cow::Owned(extplugin_rsjs_bridge::rsjs_bridge_opdecl())
+    }
+
+    fn get_pre_run_js(&self) -> Option<String> {
+        Some(self.generate_call_script())
+    }
+}
+
+/// Core representation of an external plugin package.
+/// Holds the package ID, name, functions list, package JavaScript code, and external flag.
+#[derive(Debug, Clone)]
+pub struct CorePluginExternalPackage {
+    /// Unique ID of the package
+    pub id: String,
+    /// Package name
+    pub name: String,
+    /// List of external functions included in the package
+    pub functions: Vec<CorePluginExternalFunction>,
+    /// Package JavaScript code to be executed
+    pub package_js: String,
+    /// The plugin is external (always true for this type)
+    pub external: bool,
+}
+
+impl CorePluginExternalPackage {
+    /// Creates a new `CorePluginExternalPackage`.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier for the package.
+    /// * `name` - The name of the package.
+    /// * `functions` - A vector of `CorePluginExternalFunction` instances included in this package.
+    /// * `package_js` - The JavaScript code for the package.
+    pub fn new(
+        id: String,
+        name: String,
+        functions: Vec<CorePluginExternalFunction>,
+        package_js: String,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            functions,
+            package_js,
+            external: true,
+        }
+    }
+}
+
+/// Implementation of `PluginPackageTrait` for `CorePluginExternalPackage`.
+///
+/// This implementation provides standard trait methods to access external package metadata
+/// and the list of external plugin functions. External packages always have the `external`
+/// flag set to `true`, and the `is_external()` method always returns `true` for this type.
+impl PluginPackageTrait for CorePluginExternalPackage {
+    fn is_external(&self) -> bool {
+        self.external
+    }
+
+    fn get_package_id(&self) -> String {
+        self.id.clone()
+    }
+
+    fn get_package_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_functions(&self) -> Vec<Box<dyn PluginFunctionTrait>> {
+        self.functions
+            .iter()
+            .map(|f| Box::new(f.clone()) as Box<dyn PluginFunctionTrait>)
+            .collect()
+    }
+
+    fn as_external_package(&self) -> Option<&CorePluginExternalPackage> {
+        Some(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -204,5 +488,496 @@ mod tests {
         assert_eq!(pkg.id, pp.package_id);
         assert_eq!(pkg.name, pp.package_name);
         assert_eq!(pkg.functions.len(), 1);
+    }
+
+    #[test]
+    fn test_core_plugin_external_function_new() {
+        let func = CorePluginExternalFunction::new(
+            "ext_id".to_string(),
+            "ext_name".to_string(),
+            "ext_description".to_string(),
+            "ext_package".to_string(),
+            "console.log('external');".to_string(),
+        );
+        assert_eq!(func.id, "ext_id");
+        assert_eq!(func.name, "ext_name");
+        assert_eq!(func.description, "ext_description");
+        assert_eq!(func.package_name, "ext_package");
+        assert_eq!(func.package_js, "console.log('external');");
+        assert!(func.external);
+    }
+
+    #[test]
+    fn test_core_plugin_external_package_new() {
+        let f1 = CorePluginExternalFunction::new(
+            "ext_id1".to_string(),
+            "ext_name1".to_string(),
+            "ext_desc1".to_string(),
+            "ext_pkg_name".to_string(),
+            "const a = 1;".to_string(),
+        );
+        let f2 = CorePluginExternalFunction::new(
+            "ext_id2".to_string(),
+            "ext_name2".to_string(),
+            "ext_desc2".to_string(),
+            "ext_pkg_name".to_string(),
+            "const b = 2;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "ext_pkg_id".to_string(),
+            "ext_pkg_name".to_string(),
+            vec![f1, f2],
+            "export default {};".to_string(),
+        );
+        assert_eq!(pkg.id, "ext_pkg_id");
+        assert_eq!(pkg.name, "ext_pkg_name");
+        assert_eq!(pkg.functions.len(), 2);
+        assert_eq!(pkg.package_js, "export default {};");
+        assert!(pkg.external);
+    }
+
+    #[test]
+    fn test_plugin_function_trait_is_external() {
+        // Test internal plugin function
+        let internal_func = CorePluginFunction::new(
+            "internal_id".to_string(),
+            "internal_name".to_string(),
+            "internal_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        assert!(!internal_func.is_external());
+    }
+
+    #[test]
+    fn test_plugin_function_trait_get_function_id() {
+        let func = CorePluginFunction::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        assert_eq!(func.get_function_id(), "test_id");
+    }
+
+    #[test]
+    fn test_plugin_function_trait_get_function_name() {
+        let func = CorePluginFunction::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        assert_eq!(func.get_function_name(), "test_name");
+    }
+
+    #[test]
+    fn test_plugin_function_trait_get_opdecl() {
+        let func = CorePluginFunction::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let opdecl = func.get_opdecl();
+        // OpDecl should be cloned successfully
+        assert_eq!(opdecl.name, "dummy_op");
+    }
+
+    #[test]
+    fn test_plugin_function_trait_get_pre_run_js() {
+        // Test with Some pre_run_js
+        let func_with_js = CorePluginFunction::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            dummy_op(),
+            Some("console.log('pre-run');".to_string()),
+        );
+        assert_eq!(
+            func_with_js.get_pre_run_js(),
+            Some("console.log('pre-run');".to_string())
+        );
+
+        // Test with None pre_run_js
+        let func_without_js = CorePluginFunction::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        assert_eq!(func_without_js.get_pre_run_js(), None);
+    }
+
+    #[test]
+    fn test_plugin_function_trait_all_methods() {
+        // Comprehensive test of all trait methods together
+        let func = CorePluginFunction::new(
+            "comprehensive_id".to_string(),
+            "comprehensive_name".to_string(),
+            "comprehensive_description".to_string(),
+            dummy_op(),
+            Some("const x = 42;".to_string()),
+        );
+
+        assert!(!func.is_external());
+        assert_eq!(func.get_function_id(), "comprehensive_id");
+        assert_eq!(func.get_function_name(), "comprehensive_name");
+        assert_eq!(func.get_pre_run_js(), Some("const x = 42;".to_string()));
+
+        let opdecl = func.get_opdecl();
+        assert_eq!(opdecl.name, "dummy_op");
+    }
+
+    #[test]
+    fn test_plugin_package_trait_is_external_with_internal_functions() {
+        let func = CorePluginFunction::new(
+            "internal_id".to_string(),
+            "internal_name".to_string(),
+            "internal_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let pkg = CorePluginPackage::new("pkg_id".to_string(), "pkg_name".to_string(), vec![func]);
+        // Package with internal functions should not be external
+        assert!(!pkg.is_external());
+    }
+
+    #[test]
+    fn test_plugin_package_trait_is_external_with_empty_functions() {
+        let pkg = CorePluginPackage::new(
+            "empty_pkg_id".to_string(),
+            "empty_pkg_name".to_string(),
+            vec![],
+        );
+        // Package with no functions should not be external
+        assert!(!pkg.is_external());
+    }
+
+    #[test]
+    fn test_plugin_package_trait_get_package_id() {
+        let func = CorePluginFunction::new(
+            "func_id".to_string(),
+            "func_name".to_string(),
+            "func_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let pkg = CorePluginPackage::new(
+            "test_package_id".to_string(),
+            "test_package_name".to_string(),
+            vec![func],
+        );
+        assert_eq!(pkg.get_package_id(), "test_package_id");
+    }
+
+    #[test]
+    fn test_plugin_package_trait_get_package_name() {
+        let func = CorePluginFunction::new(
+            "func_id".to_string(),
+            "func_name".to_string(),
+            "func_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let pkg = CorePluginPackage::new(
+            "test_package_id".to_string(),
+            "test_package_name".to_string(),
+            vec![func],
+        );
+        assert_eq!(pkg.get_package_name(), "test_package_name");
+    }
+
+    #[test]
+    fn test_plugin_package_trait_get_functions() {
+        let func1 = CorePluginFunction::new(
+            "func1_id".to_string(),
+            "func1_name".to_string(),
+            "func1_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let func2 = CorePluginFunction::new(
+            "func2_id".to_string(),
+            "func2_name".to_string(),
+            "func2_description".to_string(),
+            dummy_op(),
+            Some("pre_run".to_string()),
+        );
+        let pkg = CorePluginPackage::new(
+            "pkg_id".to_string(),
+            "pkg_name".to_string(),
+            vec![func1.clone(), func2.clone()],
+        );
+
+        let functions = pkg.get_functions();
+        assert_eq!(functions.len(), 2);
+        assert_eq!(functions[0].get_function_id(), "func1_id");
+        assert_eq!(functions[1].get_function_id(), "func2_id");
+    }
+
+    #[test]
+    fn test_plugin_package_trait_all_methods() {
+        // Comprehensive test of all trait methods together
+        let func1 = CorePluginFunction::new(
+            "comprehensive_func1_id".to_string(),
+            "comprehensive_func1_name".to_string(),
+            "comprehensive_func1_description".to_string(),
+            dummy_op(),
+            None,
+        );
+        let func2 = CorePluginFunction::new(
+            "comprehensive_func2_id".to_string(),
+            "comprehensive_func2_name".to_string(),
+            "comprehensive_func2_description".to_string(),
+            dummy_op(),
+            Some("const y = 100;".to_string()),
+        );
+        let pkg = CorePluginPackage::new(
+            "comprehensive_pkg_id".to_string(),
+            "comprehensive_pkg_name".to_string(),
+            vec![func1, func2],
+        );
+
+        assert!(!pkg.is_external());
+        assert_eq!(pkg.get_package_id(), "comprehensive_pkg_id");
+        assert_eq!(pkg.get_package_name(), "comprehensive_pkg_name");
+
+        let functions = pkg.get_functions();
+        assert_eq!(functions.len(), 2);
+        assert_eq!(functions[0].get_function_id(), "comprehensive_func1_id");
+        assert_eq!(functions[1].get_function_id(), "comprehensive_func2_id");
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_is_external() {
+        let ext_func = CorePluginExternalFunction::new(
+            "ext_id".to_string(),
+            "ext_name".to_string(),
+            "ext_description".to_string(),
+            "ext_package".to_string(),
+            "console.log('external');".to_string(),
+        );
+        // External function should always return true
+        assert!(ext_func.is_external());
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_get_function_id() {
+        let ext_func = CorePluginExternalFunction::new(
+            "external_test_id".to_string(),
+            "external_test_name".to_string(),
+            "external_test_description".to_string(),
+            "test_package".to_string(),
+            "const x = 1;".to_string(),
+        );
+        assert_eq!(ext_func.get_function_id(), "external_test_id");
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_get_function_name() {
+        let ext_func = CorePluginExternalFunction::new(
+            "external_test_id".to_string(),
+            "external_test_name".to_string(),
+            "external_test_description".to_string(),
+            "test_package".to_string(),
+            "const x = 1;".to_string(),
+        );
+        assert_eq!(ext_func.get_function_name(), "external_test_name");
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_get_opdecl() {
+        let ext_func = CorePluginExternalFunction::new(
+            "external_test_id".to_string(),
+            "external_test_name".to_string(),
+            "external_test_description".to_string(),
+            "test_package".to_string(),
+            "const x = 1;".to_string(),
+        );
+        let opdecl = ext_func.get_opdecl();
+        // OpDecl should be rsjs_bridge_opdecl
+        assert_eq!(opdecl.name, "rsjs_bridge_opdecl");
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_get_pre_run_js() {
+        let ext_func = CorePluginExternalFunction::new(
+            "external_test_id".to_string(),
+            "external_test_name".to_string(),
+            "external_test_description".to_string(),
+            "testPackage".to_string(),
+            "const x = 1;".to_string(),
+        );
+        // External functions should now return Some with generated call script
+        let pre_run_js = ext_func.get_pre_run_js();
+        assert!(pre_run_js.is_some());
+        let script = pre_run_js.unwrap();
+        assert!(script.contains("globalThis.testPackage"));
+        assert!(script.contains("external_test_name"));
+        assert!(script.contains("Deno.core.ops.rsjs_bridge_opdecl"));
+    }
+
+    #[test]
+    fn test_external_plugin_function_trait_all_methods() {
+        // Comprehensive test of all trait methods for external function
+        let ext_func = CorePluginExternalFunction::new(
+            "comprehensive_ext_id".to_string(),
+            "comprehensive_ext_name".to_string(),
+            "comprehensive_ext_description".to_string(),
+            "comprehensivePackage".to_string(),
+            "export default { test: () => 'hello' };".to_string(),
+        );
+
+        assert!(ext_func.is_external());
+        assert_eq!(ext_func.get_function_id(), "comprehensive_ext_id");
+        assert_eq!(ext_func.get_function_name(), "comprehensive_ext_name");
+
+        // Verify pre_run_js is now generated
+        let pre_run_js = ext_func.get_pre_run_js();
+        assert!(pre_run_js.is_some());
+        let script = pre_run_js.unwrap();
+        assert!(script.contains("globalThis.comprehensivePackage"));
+
+        let opdecl = ext_func.get_opdecl();
+        assert_eq!(opdecl.name, "rsjs_bridge_opdecl");
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_is_external() {
+        let func = CorePluginExternalFunction::new(
+            "ext_func_id".to_string(),
+            "ext_func_name".to_string(),
+            "ext_func_description".to_string(),
+            "ext_pkg_name".to_string(),
+            "const a = 1;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "ext_pkg_id".to_string(),
+            "ext_pkg_name".to_string(),
+            vec![func],
+            "export default {};".to_string(),
+        );
+        // External package should always return true
+        assert!(pkg.is_external());
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_is_external_with_empty_functions() {
+        let pkg = CorePluginExternalPackage::new(
+            "empty_ext_pkg_id".to_string(),
+            "empty_ext_pkg_name".to_string(),
+            vec![],
+            "export default {};".to_string(),
+        );
+        // External package should always return true even if empty
+        assert!(pkg.is_external());
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_get_package_id() {
+        let func = CorePluginExternalFunction::new(
+            "ext_func_id".to_string(),
+            "ext_func_name".to_string(),
+            "ext_func_description".to_string(),
+            "test_ext_package_name".to_string(),
+            "const a = 1;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "test_ext_package_id".to_string(),
+            "test_ext_package_name".to_string(),
+            vec![func],
+            "export default {};".to_string(),
+        );
+        assert_eq!(pkg.get_package_id(), "test_ext_package_id");
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_get_package_name() {
+        let func = CorePluginExternalFunction::new(
+            "ext_func_id".to_string(),
+            "ext_func_name".to_string(),
+            "ext_func_description".to_string(),
+            "test_ext_package_name".to_string(),
+            "const a = 1;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "test_ext_package_id".to_string(),
+            "test_ext_package_name".to_string(),
+            vec![func],
+            "export default {};".to_string(),
+        );
+        assert_eq!(pkg.get_package_name(), "test_ext_package_name");
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_get_functions() {
+        let func1 = CorePluginExternalFunction::new(
+            "ext_func1_id".to_string(),
+            "ext_func1_name".to_string(),
+            "ext_func1_description".to_string(),
+            "ext_pkg_name".to_string(),
+            "const a = 1;".to_string(),
+        );
+        let func2 = CorePluginExternalFunction::new(
+            "ext_func2_id".to_string(),
+            "ext_func2_name".to_string(),
+            "ext_func2_description".to_string(),
+            "ext_pkg_name".to_string(),
+            "const b = 2;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "ext_pkg_id".to_string(),
+            "ext_pkg_name".to_string(),
+            vec![func1.clone(), func2.clone()],
+            "export default {};".to_string(),
+        );
+
+        let functions = pkg.get_functions();
+        assert_eq!(functions.len(), 2);
+        assert_eq!(functions[0].get_function_id(), "ext_func1_id");
+        assert_eq!(functions[1].get_function_id(), "ext_func2_id");
+    }
+
+    #[test]
+    fn test_external_plugin_package_trait_all_methods() {
+        // Comprehensive test of all trait methods for external package
+        let func1 = CorePluginExternalFunction::new(
+            "comprehensive_ext_func1_id".to_string(),
+            "comprehensive_ext_func1_name".to_string(),
+            "comprehensive_ext_func1_description".to_string(),
+            "comprehensive_ext_pkg_name".to_string(),
+            "const x = 100;".to_string(),
+        );
+        let func2 = CorePluginExternalFunction::new(
+            "comprehensive_ext_func2_id".to_string(),
+            "comprehensive_ext_func2_name".to_string(),
+            "comprehensive_ext_func2_description".to_string(),
+            "comprehensive_ext_pkg_name".to_string(),
+            "const y = 200;".to_string(),
+        );
+        let pkg = CorePluginExternalPackage::new(
+            "comprehensive_ext_pkg_id".to_string(),
+            "comprehensive_ext_pkg_name".to_string(),
+            vec![func1, func2],
+            "export default { init: () => console.log('initialized') };".to_string(),
+        );
+
+        assert!(pkg.is_external());
+        assert_eq!(pkg.get_package_id(), "comprehensive_ext_pkg_id");
+        assert_eq!(pkg.get_package_name(), "comprehensive_ext_pkg_name");
+
+        let functions = pkg.get_functions();
+        assert_eq!(functions.len(), 2);
+        assert_eq!(functions[0].get_function_id(), "comprehensive_ext_func1_id");
+        assert_eq!(functions[1].get_function_id(), "comprehensive_ext_func2_id");
+
+        // Verify all functions are external
+        assert!(functions[0].is_external());
+        assert!(functions[1].is_external());
     }
 }

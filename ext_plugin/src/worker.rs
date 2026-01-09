@@ -38,6 +38,8 @@ use crate::npm::{NoopExtNodeSys, NoopInNpmPackageChecker, NoopNpmPackageFolderRe
 
 /// The runtime snapshot generated at build time.
 /// This contains the pre-compiled Deno runtime JavaScript/TypeScript code.
+/// The snapshot is generated on all platforms (including Windows) and is required
+/// for deno_runtime to function properly.
 static RUNTIME_SNAPSHOT: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/EXT_PLUGIN_SNAPSHOT.bin"));
 
