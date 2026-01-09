@@ -38,12 +38,11 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
+      - name: Install cargo-edit
+        run: cargo install cargo-edit --locked
+
       - name: Bump version
-        id: version
-        uses: tj-actions/cargo-bump@v3
-        with:
-          release_type: ${{ github.event.inputs.version_type }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo set-version --workspace --bump ${{ github.event.inputs.version_type }}
 
       - name: Get version
         id: get_version
