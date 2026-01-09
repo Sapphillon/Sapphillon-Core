@@ -3209,7 +3209,7 @@ dependencies = [
 
 [[package]]
 name = "ext_plugin"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "deno_core",
@@ -6016,7 +6016,7 @@ dependencies = [
 
 [[package]]
 name = "proto"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bytes",
  "pbjson",
@@ -6627,7 +6627,7 @@ dependencies = [
 
 [[package]]
 name = "sapphillon_core"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "async-trait",
