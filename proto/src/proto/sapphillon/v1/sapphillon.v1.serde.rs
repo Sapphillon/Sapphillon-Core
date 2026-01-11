@@ -2678,6 +2678,9 @@ impl serde::Serialize for PluginFunction {
         if self.function_define.is_some() {
             len += 1;
         }
+        if !self.version.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("sapphillon.v1.PluginFunction", len)?;
         if !self.function_id.is_empty() {
             struct_ser.serialize_field("functionId", &self.function_id)?;
@@ -2693,6 +2696,9 @@ impl serde::Serialize for PluginFunction {
         }
         if let Some(v) = self.function_define.as_ref() {
             struct_ser.serialize_field("functionDefine", v)?;
+        }
+        if !self.version.is_empty() {
+            struct_ser.serialize_field("version", &self.version)?;
         }
         struct_ser.end()
     }
@@ -2712,6 +2718,7 @@ impl<'de> serde::Deserialize<'de> for PluginFunction {
             "permissions",
             "function_define",
             "functionDefine",
+            "version",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2721,6 +2728,7 @@ impl<'de> serde::Deserialize<'de> for PluginFunction {
             Description,
             Permissions,
             FunctionDefine,
+            Version,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2747,6 +2755,7 @@ impl<'de> serde::Deserialize<'de> for PluginFunction {
                             "description" => Ok(GeneratedField::Description),
                             "permissions" => Ok(GeneratedField::Permissions),
                             "functionDefine" | "function_define" => Ok(GeneratedField::FunctionDefine),
+                            "version" => Ok(GeneratedField::Version),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2771,6 +2780,7 @@ impl<'de> serde::Deserialize<'de> for PluginFunction {
                 let mut description__ = None;
                 let mut permissions__ = None;
                 let mut function_define__ = None;
+                let mut version__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::FunctionId => {
@@ -2803,6 +2813,12 @@ impl<'de> serde::Deserialize<'de> for PluginFunction {
                             }
                             function_define__ = map_.next_value()?;
                         }
+                        GeneratedField::Version => {
+                            if version__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("version"));
+                            }
+                            version__ = Some(map_.next_value()?);
+                        }
                     }
                 }
                 Ok(PluginFunction {
@@ -2811,6 +2827,7 @@ impl<'de> serde::Deserialize<'de> for PluginFunction {
                     description: description__.unwrap_or_default(),
                     permissions: permissions__.unwrap_or_default(),
                     function_define: function_define__,
+                    version: version__.unwrap_or_default(),
                 })
             }
         }
@@ -2858,6 +2875,9 @@ impl serde::Serialize for PluginPackage {
         if self.updated_at.is_some() {
             len += 1;
         }
+        if !self.provider_id.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("sapphillon.v1.PluginPackage", len)?;
         if !self.package_id.is_empty() {
             struct_ser.serialize_field("packageId", &self.package_id)?;
@@ -2892,6 +2912,9 @@ impl serde::Serialize for PluginPackage {
         if let Some(v) = self.updated_at.as_ref() {
             struct_ser.serialize_field("updatedAt", v)?;
         }
+        if !self.provider_id.is_empty() {
+            struct_ser.serialize_field("providerId", &self.provider_id)?;
+        }
         struct_ser.end()
     }
 }
@@ -2920,6 +2943,8 @@ impl<'de> serde::Deserialize<'de> for PluginPackage {
             "installedAt",
             "updated_at",
             "updatedAt",
+            "provider_id",
+            "providerId",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2935,6 +2960,7 @@ impl<'de> serde::Deserialize<'de> for PluginPackage {
             Deprecated,
             InstalledAt,
             UpdatedAt,
+            ProviderId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2967,6 +2993,7 @@ impl<'de> serde::Deserialize<'de> for PluginPackage {
                             "deprecated" => Ok(GeneratedField::Deprecated),
                             "installedAt" | "installed_at" => Ok(GeneratedField::InstalledAt),
                             "updatedAt" | "updated_at" => Ok(GeneratedField::UpdatedAt),
+                            "providerId" | "provider_id" => Ok(GeneratedField::ProviderId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2997,6 +3024,7 @@ impl<'de> serde::Deserialize<'de> for PluginPackage {
                 let mut deprecated__ = None;
                 let mut installed_at__ = None;
                 let mut updated_at__ = None;
+                let mut provider_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PackageId => {
@@ -3065,6 +3093,12 @@ impl<'de> serde::Deserialize<'de> for PluginPackage {
                             }
                             updated_at__ = map_.next_value()?;
                         }
+                        GeneratedField::ProviderId => {
+                            if provider_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("providerId"));
+                            }
+                            provider_id__ = Some(map_.next_value()?);
+                        }
                     }
                 }
                 Ok(PluginPackage {
@@ -3079,6 +3113,7 @@ impl<'de> serde::Deserialize<'de> for PluginPackage {
                     deprecated: deprecated__,
                     installed_at: installed_at__,
                     updated_at: updated_at__,
+                    provider_id: provider_id__.unwrap_or_default(),
                 })
             }
         }

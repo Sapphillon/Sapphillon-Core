@@ -22,7 +22,7 @@ plugins:
 
 inputs:
   - git_repo: https://github.com/Walkmana-25/Sapphillon_API.git
-    branch: v0.11.0
+    branch: v0.12.0
     subdir: proto
   - module: buf.build/googleapis/googleapis:61b203b9a9164be9a834f58c37be6f62
   - module: buf.build/protocolbuffers/wellknowntypes:v21.12
