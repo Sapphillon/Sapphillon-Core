@@ -418,6 +418,7 @@ mod tests {
             description: "desc".to_string(),
             permissions: vec![],
             function_define: None,
+            version: String::new(),
         }
     }
 
@@ -434,6 +435,7 @@ mod tests {
             deprecated: None,
             installed_at: None,
             updated_at: None,
+            provider_id: String::new(),
         }
     }
 
