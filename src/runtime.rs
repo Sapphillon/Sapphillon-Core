@@ -40,7 +40,7 @@ pub struct OpStateWorkflowData {
     required_permissions: Option<Vec<PluginFunctionPermissions>>,
     pub tokio_runtime_handle: Handle,
     pub external_package: Vec<Arc<CorePluginExternalPackage>>,
-    
+
     external_package_runner_path: Option<String>,
     external_package_runner_args: Option<Vec<String>>,
 }
@@ -53,8 +53,14 @@ impl std::fmt::Debug for OpStateWorkflowData {
             .field("capture_stdout", &self.capture_stdout)
             .field("allowed_permissions", &self.allowed_permissions)
             .field("required_permissions", &self.required_permissions)
-            .field("external_package_runner_path", &self.external_package_runner_path)
-            .field("external_package_runner_args", &self.external_package_runner_args)
+            .field(
+                "external_package_runner_path",
+                &self.external_package_runner_path,
+            )
+            .field(
+                "external_package_runner_args",
+                &self.external_package_runner_args,
+            )
             .finish()
     }
 }
