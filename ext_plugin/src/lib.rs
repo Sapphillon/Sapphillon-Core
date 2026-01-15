@@ -45,7 +45,8 @@
 //!                 name: "example-plugin",
 //!                 version: "1.0.0",
 //!                 description: "An example plugin",
-//!                 package_id: "com.example.plugin"
+//!                 author_id: "com.example",
+//!                 package_id: "com.example.example-plugin"
 //!             },
 //!             functions: {
 //!                 greet: {
@@ -100,7 +101,8 @@
 //! #                 name: "example-plugin",
 //! #                 version: "1.0.0",
 //! #                 description: "An example plugin",
-//! #                 package_id: "com.example.plugin"
+//! #                 author_id: "com.example",
+//! #                 package_id: "com.example.example-plugin"
 //! #             },
 //! #             functions: {
 //! #                 greet: {
@@ -160,7 +162,8 @@
 //!                 name: "fs-plugin",
 //!                 version: "1.0.0",
 //!                 description: "File system operations",
-//!                 package_id: "com.example.fs"
+//!                 author_id: "com.example",
+//!                 package_id: "com.example.fs-plugin"
 //!             },
 //!             functions: {
 //!                 readConfig: {

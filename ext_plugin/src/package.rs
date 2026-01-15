@@ -48,6 +48,8 @@ pub struct Meta {
     pub version: String,
     /// Package description.
     pub description: String,
+    /// Author identifier (reverse domain notation).
+    pub author_id: String,
     /// Unique package identifier (e.g. reverse domain notation).
     pub package_id: String,
 }
@@ -279,8 +281,8 @@ impl fmt::Display for Meta {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "meta: name={} version={} package_id={} description={}",
-            self.name, self.version, self.package_id, self.description
+            "meta: name={} version={} author_id={} package_id={} description={}",
+            self.name, self.version, self.author_id, self.package_id, self.description
         )
     }
 }

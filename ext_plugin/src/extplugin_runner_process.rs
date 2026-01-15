@@ -179,7 +179,8 @@ mod tests {
                         name: "test-plugin",
                         version: "1.0.0",
                         description: "Test plugin",
-                        package_id: "com.example.test"
+                        author_id: "com.example",
+                        package_id: "com.example.test-plugin"
                     },
                     functions: {
                         echo: {

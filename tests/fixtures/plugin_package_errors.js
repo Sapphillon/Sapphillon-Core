@@ -5,7 +5,8 @@ globalThis.Sapphillon = {
             name: "error-plugin",
             version: "1.0.0",
             description: "A plugin that always fails for testing",
-            package_id: "com.sapphillon.test.error"
+            author_id: "com.sapphillon.test",
+            package_id: "com.sapphillon.test.error-plugin"
         },
         functions: {
             throw_immediate: {

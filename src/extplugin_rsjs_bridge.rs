@@ -173,7 +173,8 @@ mod tests {
                     name: "test-plugin",
                     version: "1.0.0",
                     description: "A test plugin",
-                    package_id: "com.test.plugin"
+                    author_id: "com.test",
+                    package_id: "com.test.test-plugin"
                 },
                 functions: {
                     greet: {
@@ -222,7 +223,7 @@ mod tests {
 
         // Create the external package
         let package = CorePluginExternalPackage::new(
-            "com.test.plugin".to_string(),
+            "com.test.test-plugin".to_string(),
             "test-plugin".to_string(),
             vec![], // functions list not needed for this test
             get_test_package_js(),

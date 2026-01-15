@@ -5,7 +5,8 @@ globalThis.Sapphillon = {
             name: "file-plugin",
             version: "1.0.0",
             description: "A file plugin for permission testing",
-            package_id: "com.sapphillon.test.file"
+            author_id: "com.sapphillon.test",
+            package_id: "com.sapphillon.test.file-plugin"
         },
         functions: {
             read_file: {

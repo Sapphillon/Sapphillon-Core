@@ -41,7 +41,8 @@ Sapphillon.Package = {
     name: "math-plugin",
     version: "1.0.0",
     description: "desc",
-    package_id: "com.example"
+    author_id: "com.example",
+    package_id: "com.example.math-plugin"
   },
   // Schema information generated from JSDoc
   functions: {
