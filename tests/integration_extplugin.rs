@@ -22,8 +22,8 @@ fn get_fixture_path(filename: &str) -> PathBuf {
 /// Returns the OpState and the tokio Runtime to keep the runtime alive
 fn create_opstate_with_fixture(
     fixture_filename: &str,
-    package_id: &str,
     package_name: &str,
+    author_id: &str,
 ) -> (deno_core::OpState, tokio::runtime::Runtime) {
     use deno_core::OpState;
 
@@ -33,8 +33,10 @@ fn create_opstate_with_fixture(
     let mut op_state = OpState::new(None);
 
     // Create the external package
+    let package_id = format!("{author_id}.{package_name}");
+
     let package = CorePluginExternalPackage::new(
-        package_id.to_string(),
+        package_id,
         package_name.to_string(),
         vec![], // functions list not needed for this test
         package_js,
@@ -80,8 +82,8 @@ fn test_integration_math_plugin_add() {
     // 1. Create runtime with the plugin package
     let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
         "plugin_package.js",
-        "com.sapphillon.test.math-plugin",
         "math-plugin",
+        "com.sapphillon.test",
     );
 
     // 2. Prepare arguments for the 'add' function
@@ -129,8 +131,8 @@ fn test_integration_math_plugin_process_data() {
     // 1. Create runtime with the plugin package
     let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
         "plugin_package.js",
-        "com.sapphillon.test.math-plugin",
         "math-plugin",
+        "com.sapphillon.test",
     );
 
     // 2. Prepare complex input data
@@ -647,8 +649,8 @@ fn test_integration_plugin_throws_error() {
     // 1. Create runtime with the error plugin package
     let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
         "plugin_package_errors.js",
-        "com.sapphillon.test.error-plugin",
         "error-plugin",
+        "com.sapphillon.test",
     );
 
     // Test Case 1: Immediate Throw
@@ -715,8 +717,8 @@ fn test_integration_plugin_unknown_function() {
 
     let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
         "plugin_package.js",
-        "com.sapphillon.test.math-plugin",
         "math-plugin",
+        "com.sapphillon.test",
     );
 
     let args = RsJsBridgeArgs {
@@ -759,8 +761,8 @@ fn test_integration_plugin_unknown_function() {
 fn test_integration_plugin_loose_type_handling() {
     let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
         "plugin_package.js",
-        "com.sapphillon.test.math-plugin",
         "math-plugin",
+        "com.sapphillon.test",
     );
 
     // Pass strings instead of numbers
@@ -813,8 +815,8 @@ fn test_integration_plugin_loose_type_handling() {
 fn test_integration_plugin_async_success() {
     let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
         "plugin_package_errors.js",
-        "com.sapphillon.test.error-plugin",
         "error-plugin",
+        "com.sapphillon.test",
     );
 
     let args = RsJsBridgeArgs {
@@ -862,8 +864,8 @@ fn test_integration_plugin_async_success() {
 fn test_integration_plugin_null_undefined_return() {
     let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
         "plugin_package_errors.js",
-        "com.sapphillon.test.error-plugin",
         "error-plugin",
+        "com.sapphillon.test",
     );
 
     // Test: return null
