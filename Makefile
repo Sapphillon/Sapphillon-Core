@@ -1,4 +1,4 @@
-.PHONY: help buf_generate test build fmt fix_fmt build_release clean
+.PHONY: help buf_generate test build fmt fix_fmt build_release clean full_test
 
 help:
 	@echo "Usage: make <target>"
@@ -11,6 +11,8 @@ help:
 	@echo "  fmt             : Check Rust format and run clippy (non-fatal)"
 	@echo "  fix_fmt         : Fix Rust format and run clippy fixes"
 	@echo "  build_release   : Build Rust project in release mode"
+	@echo "  clean           : Clean build artifacts"
+	@echo "  full_test       : Run build, test, fix_fmt, and build_release sequentially"
 
 buf_generate:
 	@echo "Generate Protocol Buffer Code"
@@ -60,5 +62,7 @@ clean:
 	@echo "Cleaning build artifacts"
 	@echo "----------------------------------------------------------"
 	cargo clean
-	rm -rf target
 	@echo "----------------------------------------------------------"
+
+full_test: build test fix_fmt build_release
+	@echo "Full test completed"

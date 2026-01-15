@@ -358,7 +358,7 @@ pub fn extract_used_plugins_from_code(
         let key = format!("{package_id}.{function_name}");
         if seen.insert(key) {
             result.push(PluginIdentifier {
-                package_name: package_id,
+                package_id,
                 function_name,
             });
         }
@@ -373,23 +373,23 @@ pub fn extract_used_plugins_from_code(
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PluginIdentifier {
     /// The ID of the plugin package
-    pub package_name: String,
+    pub package_id: String,
     /// The name of the function within the package
     pub function_name: String,
 }
 
 impl PluginIdentifier {
     /// Creates a new PluginIdentifier using a package ID and function name.
-    pub fn new(package_name: String, function_name: String) -> Self {
+    pub fn new(package_id: String, function_name: String) -> Self {
         Self {
-            package_name,
+            package_id,
             function_name,
         }
     }
 
     /// Returns the full identifier in the format "package_id.function_name".
     pub fn full_name(&self) -> String {
-        format!("{}.{}", self.package_name, self.function_name)
+        format!("{}.{}", self.package_id, self.function_name)
     }
 }
 #[cfg(test)]
@@ -626,13 +626,13 @@ mod tests {
         assert!(
             plugins
                 .iter()
-                .any(|p| p.package_name == "com.example.myPlugin"
+                .any(|p| p.package_id == "com.example.myPlugin"
                     && p.function_name == "doSomething")
         );
         assert!(
             plugins
                 .iter()
-                .any(|p| p.package_name == "com.example.anotherPlugin" && p.function_name == "run")
+                .any(|p| p.package_id == "com.example.anotherPlugin" && p.function_name == "run")
         );
     }
 
@@ -655,12 +655,12 @@ mod tests {
         assert!(
             plugins
                 .iter()
-                .any(|p| p.package_name == "com.example.plugin" && p.function_name == "func")
+                .any(|p| p.package_id == "com.example.plugin" && p.function_name == "func")
         );
         assert!(
             plugins
                 .iter()
-                .any(|p| p.package_name == "com.example.plugin" && p.function_name == "other")
+                .any(|p| p.package_id == "com.example.plugin" && p.function_name == "other")
         );
     }
 
@@ -682,7 +682,7 @@ mod tests {
 
         // Only myPlugin.action should be detected
         assert_eq!(plugins.len(), 1);
-        assert_eq!(plugins[0].package_name, "com.example.myPlugin");
+        assert_eq!(plugins[0].package_id, "com.example.myPlugin");
         assert_eq!(plugins[0].function_name, "action");
     }
 
@@ -746,17 +746,17 @@ mod tests {
         assert!(
             plugins
                 .iter()
-                .any(|p| p.package_name == "com.example.filePlugin" && p.function_name == "read")
+                .any(|p| p.package_id == "com.example.filePlugin" && p.function_name == "read")
         );
         assert!(
             plugins
                 .iter()
-                .any(|p| p.package_name == "com.example.networkPlugin" && p.function_name == "send")
+                .any(|p| p.package_id == "com.example.networkPlugin" && p.function_name == "send")
         );
         assert!(
             plugins
                 .iter()
-                .any(|p| p.package_name == "com.example.dbPlugin" && p.function_name == "save")
+                .any(|p| p.package_id == "com.example.dbPlugin" && p.function_name == "save")
         );
     }
 
@@ -778,7 +778,7 @@ mod tests {
 
         // Only registeredFunc should be detected
         assert_eq!(plugins.len(), 1);
-        assert_eq!(plugins[0].package_name, "com.example.myPlugin");
+        assert_eq!(plugins[0].package_id, "com.example.myPlugin");
         assert_eq!(plugins[0].function_name, "registeredFunc");
     }
 
@@ -804,7 +804,7 @@ mod tests {
         );
         let plugins = code.extract_used_plugins(&available_plugins);
         assert_eq!(plugins.len(), 1);
-        assert_eq!(plugins[0].package_name, "com.example.plugin");
+        assert_eq!(plugins[0].package_id, "com.example.plugin");
         assert_eq!(plugins[0].function_name, "func");
     }
 
@@ -825,7 +825,7 @@ mod tests {
         );
         let plugins = code.extract_used_plugins(&available_plugins);
         assert_eq!(plugins.len(), 1);
-        assert_eq!(plugins[0].package_name, "sapphillon.core.exec");
+        assert_eq!(plugins[0].package_id, "sapphillon.core.exec");
         assert_eq!(plugins[0].function_name, "exec");
     }
 }
