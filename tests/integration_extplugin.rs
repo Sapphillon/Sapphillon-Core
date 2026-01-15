@@ -386,12 +386,12 @@ fn test_integration_workflow_with_permission_granted() {
         "Reads a file".to_string(),
         "filePlugin".to_string(),
         package_js.clone(),
-        "test".to_string(),
+        "com.sapphillon.test".to_string(),
     );
 
     // Create external package
     let ext_package = CorePluginExternalPackage::new(
-        "test.file-plugin".to_string(),
+        "com.sapphillon.test.filePlugin".to_string(),
         "filePlugin".to_string(),
         vec![read_file_func],
         package_js,
@@ -401,7 +401,7 @@ fn test_integration_workflow_with_permission_granted() {
     // Use forward slash path format for consistency with Deno
     let temp_dir_path = dir.path().to_string_lossy().replace('\\', "/");
     let allowed_permissions = vec![PluginFunctionPermissions {
-        plugin_function_id: "filePlugin.read_file".to_string(),
+        plugin_function_id: "com.sapphillon.test.filePlugin.read_file".to_string(),
         permissions: Permissions::new(vec![Permission {
             permission_type: PermissionType::FilesystemRead as i32,
             display_name: "Filesystem Read".to_string(),
@@ -415,7 +415,7 @@ fn test_integration_workflow_with_permission_granted() {
     // Path already uses forward slashes, so no complex escaping needed
     let workflow_code = format!(
         r#"
-        const result = filePlugin.read_file("{test_file_path}");
+        const result = com.sapphillon.test.filePlugin.read_file("{test_file_path}");
         console.log("File content:", result);
     "#
     );
@@ -494,12 +494,12 @@ fn test_integration_workflow_with_permission_denied() {
         "Reads a file".to_string(),
         "filePlugin".to_string(),
         package_js.clone(),
-        "test".to_string(),
+        "com.sapphillon.test".to_string(),
     );
 
     // Create external package
     let ext_package = CorePluginExternalPackage::new(
-        "test.file-plugin".to_string(),
+        "com.sapphillon.test.filePlugin".to_string(),
         "filePlugin".to_string(),
         vec![read_file_func],
         package_js,
@@ -512,7 +512,7 @@ fn test_integration_workflow_with_permission_denied() {
     // Path uses forward slashes, so no complex escaping needed
     let workflow_code = format!(
         r#"
-        const result = filePlugin.read_file("{test_file_path}");
+        const result = com.sapphillon.test.filePlugin.read_file("{test_file_path}");
         console.log("File content:", result);
     "#
     );
@@ -579,12 +579,12 @@ fn test_integration_workflow_without_permission_requirement() {
         "A simple function".to_string(),
         "filePlugin".to_string(),
         package_js.clone(),
-        "test".to_string(),
+        "com.sapphillon.test".to_string(),
     );
 
     // Create external package
     let ext_package = CorePluginExternalPackage::new(
-        "test.file-plugin".to_string(),
+        "com.sapphillon.test.filePlugin".to_string(),
         "filePlugin".to_string(),
         vec![simple_func],
         package_js,
@@ -595,7 +595,7 @@ fn test_integration_workflow_without_permission_requirement() {
 
     // Create workflow code that calls the external plugin
     let workflow_code = r#"
-        const result = filePlugin.simple_function("Hello World");
+        const result = com.sapphillon.test.filePlugin.simple_function("Hello World");
         console.log("Result:", result);
     "#;
 
@@ -910,7 +910,7 @@ fn test_integration_plugin_null_undefined_return() {
     let result_noop = rsjs_bridge_core(
         &mut op_state,
         &args_noop.to_string().unwrap(),
-        "error-plugin",
+        "com.sapphillon.test.error-plugin",
     );
 
     // Same handling as null - document behavior
