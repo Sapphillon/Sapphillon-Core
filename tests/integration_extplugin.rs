@@ -195,6 +195,7 @@ fn test_integration_workflow_with_external_plugin_add() {
         "Adds two numbers".to_string(),
         "mathPlugin".to_string(),
         package_js.clone(),
+        "test".to_string(),
     );
 
     // Create external package
@@ -275,6 +276,7 @@ fn test_integration_workflow_with_external_plugin_process_data() {
         "Processes data object".to_string(),
         "mathPlugin".to_string(),
         package_js.clone(),
+        "test".to_string(),
     );
 
     // Create external package
@@ -373,6 +375,7 @@ fn test_integration_workflow_with_permission_granted() {
         "Reads a file".to_string(),
         "filePlugin".to_string(),
         package_js.clone(),
+        "test".to_string(),
     );
 
     // Create external package
@@ -480,6 +483,7 @@ fn test_integration_workflow_with_permission_denied() {
         "Reads a file".to_string(),
         "filePlugin".to_string(),
         package_js.clone(),
+        "test".to_string(),
     );
 
     // Create external package
@@ -564,6 +568,7 @@ fn test_integration_workflow_without_permission_requirement() {
         "A simple function".to_string(),
         "filePlugin".to_string(),
         package_js.clone(),
+        "test".to_string(),
     );
 
     // Create external package
