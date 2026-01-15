@@ -169,6 +169,8 @@ impl CoreWorkflowCode {
             },
             handle.clone(),
             external_packages,
+            None, // external_package_runner_path
+            None, // external_package_runner_args
         );
         let result = run_script(
             &self.code,

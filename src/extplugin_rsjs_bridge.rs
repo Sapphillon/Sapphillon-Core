@@ -90,38 +90,51 @@ pub fn rsjs_bridge_core(
         })
         .unwrap_or_default();
 
+    // Step 4: Get external package runner path and args from OpStateWorkflowData
+    // If provided, use them; otherwise use default values
+    let runner_path_from_data = workflow_data.get_external_package_runner_path().clone();
+    let runner_args_from_data = workflow_data.get_external_package_runner_args().clone();
+
     // Drop the lock
     drop(workflow_data);
 
-    // Step 4: Create SapphillonPackage (lightweight, just parsing JS)
+    // Step 5: Create SapphillonPackage (lightweight, just parsing JS)
     // We need this because extplugin_client expects it.
     // Note: SapphillonPackage::new parses the JS.
     let sapphillon_package = SapphillonPackage::new(&package_js)?;
 
-    // Step 4: Locate the runner process
-    // Use environment variable to specify the server binary path explicitly
+    // Step 6: Locate the runner process
+    // If external_package_runner_path is set in OpStateWorkflowData, use it.
+    // Otherwise, use environment variable to specify the server binary path explicitly
     // Fall back to a default path for development/testing
-    let server_path = std::env::var("EXTPLUGIN_SERVER_PATH").unwrap_or_else(|_| {
-        std::env::current_exe()
-            .ok()
-            .and_then(|mut p| {
-                p.pop(); // Remove binary name
-                if p.file_name().and_then(|s| s.to_str()) == Some("deps") {
-                    p.pop(); // Remove "deps" if in test
-                }
-                p.push("extplugin_test_server");
-                p.to_str().map(|s| s.to_string())
-            })
-            .unwrap_or_else(|| "extplugin_test_server".to_string())
+    let server_path = runner_path_from_data.unwrap_or_else(|| {
+        std::env::var("EXTPLUGIN_SERVER_PATH").unwrap_or_else(|_| {
+            std::env::current_exe()
+                .ok()
+                .and_then(|mut p| {
+                    p.pop(); // Remove binary name
+                    if p.file_name().and_then(|s| s.to_str()) == Some("deps") {
+                        p.pop(); // Remove "deps" if in test
+                    }
+                    p.push("extplugin_test_server");
+                    p.to_str().map(|s| s.to_string())
+                })
+                .unwrap_or_else(|| "extplugin_test_server".to_string())
+        })
     });
 
-    // Step 5: Execute via IPC
+    // If external_package_runner_args is set in OpStateWorkflowData, use it.
+    // Otherwise, use empty args
+    let server_args = runner_args_from_data.unwrap_or_else(Vec::new);
+    let server_args_refs: Vec<&str> = server_args.iter().map(|s| s.as_str()).collect();
+
+    // Step 7: Execute via IPC
     let returns = extplugin_client(
         &sapphillon_package,
         &args.func_name,
         &args,
         &server_path,
-        vec![],
+        server_args_refs,
         sapphillon_permissions,
     )?;
 
@@ -238,6 +251,8 @@ mod tests {
             None,
             tokio_runtime.handle().clone(),
             vec![Arc::new(package)],
+            None,
+            None,
         );
 
         // Put workflow data into OpState
