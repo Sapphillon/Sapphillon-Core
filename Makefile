@@ -1,4 +1,4 @@
-.PHONY: test, build, fmt, fix_fmt, buf_generate, build_release
+.PHONY: help buf_generate test build fmt fix_fmt build_release
 
 buf_generate:
 	@echo "Generate Protocol Buffer Code"
@@ -43,3 +43,15 @@ build_release:
 	@echo "----------------------------------------------------------"
 	cargo build --workspace --all-features --release
 	@echo "----------------------------------------------------------"
+
+help:
+	@echo "Usage: make <target>"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  help            : Show this help message"
+	@echo "  buf_generate    : Generate Protocol Buffer Code"
+	@echo "  test            : Build extplugin_test_server binary and run Rust tests"
+	@echo "  build           : Build Rust project (all features)"
+	@echo "  fmt             : Check Rust format and run clippy (non-fatal)"
+	@echo "  fix_fmt         : Fix Rust format and run clippy fixes"
+	@echo "  build_release   : Build Rust project in release mode"
