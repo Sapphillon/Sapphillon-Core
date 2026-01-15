@@ -51,6 +51,8 @@ fn create_opstate_with_fixture(
         None,
         tokio_runtime.handle().clone(),
         vec![Arc::new(package)],
+        None,
+        None,
     );
 
     // Put workflow data into OpState

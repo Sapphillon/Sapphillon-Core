@@ -40,6 +40,9 @@ pub struct OpStateWorkflowData {
     required_permissions: Option<Vec<PluginFunctionPermissions>>,
     pub tokio_runtime_handle: Handle,
     pub external_package: Vec<Arc<CorePluginExternalPackage>>,
+
+    external_package_runner_path: Option<String>,
+    external_package_runner_args: Option<Vec<String>>,
 }
 
 impl std::fmt::Debug for OpStateWorkflowData {
@@ -50,12 +53,21 @@ impl std::fmt::Debug for OpStateWorkflowData {
             .field("capture_stdout", &self.capture_stdout)
             .field("allowed_permissions", &self.allowed_permissions)
             .field("required_permissions", &self.required_permissions)
+            .field(
+                "external_package_runner_path",
+                &self.external_package_runner_path,
+            )
+            .field(
+                "external_package_runner_args",
+                &self.external_package_runner_args,
+            )
             .finish()
     }
 }
 
 impl OpStateWorkflowData {
     /// Creates a new `OpStateWorkflowData` instance with the specified workflow ID and stdout capture flag.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         workflow_id: &str,
         capture_stdout: bool,
@@ -63,6 +75,8 @@ impl OpStateWorkflowData {
         required_permissions: Option<Vec<PluginFunctionPermissions>>,
         tokio_runtime_handle: Handle,
         external_package: Vec<Arc<CorePluginExternalPackage>>,
+        external_package_runner_path: Option<String>,
+        external_package_runner_args: Option<Vec<String>>,
     ) -> Self {
         Self {
             workflow_id: workflow_id.to_string(),
@@ -72,6 +86,8 @@ impl OpStateWorkflowData {
             required_permissions,
             tokio_runtime_handle,
             external_package,
+            external_package_runner_path,
+            external_package_runner_args,
         }
     }
 
@@ -123,6 +139,16 @@ impl OpStateWorkflowData {
     /// Runs the provided future on the stored Tokio runtime using `block_on`.
     pub fn block_on<F: Future>(&self, fut: F) -> F::Output {
         self.tokio_runtime_handle.block_on(fut)
+    }
+
+    /// Returns a reference to the external package runner path.
+    pub fn get_external_package_runner_path(&self) -> &Option<String> {
+        &self.external_package_runner_path
+    }
+
+    /// Returns a reference to the external package runner args.
+    pub fn get_external_package_runner_args(&self) -> &Option<Vec<String>> {
+        &self.external_package_runner_args
     }
 }
 
@@ -185,6 +211,8 @@ pub(crate) fn run_script(
                 None,
                 tokio_runtime.handle().clone(),
                 vec![],
+                None,
+                None,
             )));
             tokio_runtime_option = Some(tokio_runtime);
         }
@@ -345,6 +373,8 @@ mod tests {
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
             external_package: vec![],
+            external_package_runner_path: None,
+            external_package_runner_args: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -395,6 +425,8 @@ mod tests {
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
             external_package: vec![],
+            external_package_runner_path: None,
+            external_package_runner_args: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -443,6 +475,8 @@ mod tests {
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
             external_package: vec![],
+            external_package_runner_path: None,
+            external_package_runner_args: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -485,6 +519,8 @@ mod tests {
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
             external_package: vec![],
+            external_package_runner_path: None,
+            external_package_runner_args: None,
         };
         assert_eq!(data.stdout_to_string(), "");
     }
@@ -501,6 +537,8 @@ mod tests {
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
             external_package: vec![],
+            external_package_runner_path: None,
+            external_package_runner_args: None,
         };
         assert_eq!(data.stdout_to_string(), "Hello");
     }
@@ -521,6 +559,8 @@ mod tests {
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
             external_package: vec![],
+            external_package_runner_path: None,
+            external_package_runner_args: None,
         };
         assert_eq!(data.stdout_to_string(), "One\nTwo\nThree");
     }
@@ -539,6 +579,8 @@ mod tests {
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
             external_package: vec![],
+            external_package_runner_path: None,
+            external_package_runner_args: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -581,6 +623,8 @@ mod tests {
             required_permissions: None,
             tokio_runtime_handle: tokio_runtime.handle().clone(),
             external_package: vec![],
+            external_package_runner_path: None,
+            external_package_runner_args: None,
         };
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data.clone()));
 
@@ -635,6 +679,8 @@ mod tests {
             None,
             tokio_runtime.handle().clone(),
             vec![],
+            None,
+            None,
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -678,6 +724,8 @@ mod tests {
             None,
             tokio_runtime.handle().clone(),
             vec![],
+            None,
+            None,
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -842,6 +890,8 @@ mod tokio_runtime_tests {
             None,
             tokio_runtime.handle().clone(),
             vec![],
+            None,
+            None,
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -870,6 +920,8 @@ mod tokio_runtime_tests {
             None,
             tokio_runtime.handle().clone(),
             vec![],
+            None,
+            None,
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -903,6 +955,8 @@ mod tokio_runtime_tests {
             None,
             tokio_runtime.handle().clone(),
             vec![],
+            None,
+            None,
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -979,6 +1033,8 @@ mod per_plugin_permission_tests {
             Some(vec![required_pf]),
             tokio_runtime.handle().clone(),
             vec![],
+            None,
+            None,
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
@@ -1020,6 +1076,8 @@ mod per_plugin_permission_tests {
             Some(vec![required_pf]),
             tokio_runtime.handle().clone(),
             vec![],
+            None,
+            None,
         );
         let workflow_data_arc = Arc::new(Mutex::new(workflow_data));
 
