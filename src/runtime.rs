@@ -67,6 +67,7 @@ impl std::fmt::Debug for OpStateWorkflowData {
 
 impl OpStateWorkflowData {
     /// Creates a new `OpStateWorkflowData` instance with the specified workflow ID and stdout capture flag.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         workflow_id: &str,
         capture_stdout: bool,
