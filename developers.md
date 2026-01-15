@@ -10,4 +10,6 @@ This file documents the `Makefile` targets and their purpose so contributors kno
 - `fix_fmt`: Automatically format code (`cargo fmt`) and attempt to fix clippy warnings (`cargo clippy --fix --allow-dirty`).
 - `build_release`: Build the Rust project in release mode (`cargo build --workspace --all-features --release`).
 
+- `clean`: Remove build artifacts (`cargo clean` and `rm -rf target`).
+
 If you update targets in the `Makefile`, please keep this document in sync.
