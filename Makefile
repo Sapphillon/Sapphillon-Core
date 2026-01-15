@@ -1,4 +1,4 @@
-.PHONY: rust_test, rust_build, rust_check_format, rust_fix_format, buf_generate
+.PHONY: test, build, fmt, fix_fmt, buf_generate, build_release
 
 buf_generate:
 	@echo "Generate Protocol Buffer Code"
@@ -6,7 +6,7 @@ buf_generate:
 	buf generate
 	@echo "----------------------------------------------------------"
 
-rust_test:
+test:
 	@echo "Build extplugin_test_server binary"
 	@echo "----------------------------------------------------------"
 	cargo build --package ext_plugin --bin extplugin_test_server
@@ -16,13 +16,13 @@ rust_test:
 	cargo test --workspace --all-features --all-targets
 	@echo "----------------------------------------------------------"
 
-rust_build:
+build:
 	@echo "Build Rust Project"
 	@echo "----------------------------------------------------------"
 	cargo build --workspace --all-features
 	@echo "----------------------------------------------------------"
 
-rust_check_format:
+fmt:
 	@echo "Check Rust Format"
 	@echo "----------------------------------------------------------"
 	cargo fmt --check || true
@@ -30,10 +30,16 @@ rust_check_format:
 	cargo clippy --workspace || true
 	@echo "----------------------------------------------------------"
 
-rust_fix_format:
+fix_fmt:
 	@echo "Fix Rust Format"
 	@echo "----------------------------------------------------------"
 	cargo fmt || true
 	@echo "----------------------------------------------------------"
 	cargo clippy --workspace --fix --allow-dirty || true
+	@echo "----------------------------------------------------------"
+
+build_release:
+	@echo "Build Rust Project in Release Mode"
+	@echo "----------------------------------------------------------"
+	cargo build --workspace --all-features --release
 	@echo "----------------------------------------------------------"
