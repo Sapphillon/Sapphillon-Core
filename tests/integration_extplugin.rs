@@ -80,11 +80,8 @@ fn create_opstate_with_fixture(
 #[test]
 fn test_integration_math_plugin_add() {
     // 1. Create runtime with the plugin package
-    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
-        "plugin_package.js",
-        "math-plugin",
-        "com.sapphillon.test",
-    );
+    let (mut op_state, _tokio_rt) =
+        create_opstate_with_fixture("plugin_package.js", "math-plugin", "com.sapphillon.test");
 
     // 2. Prepare arguments for the 'add' function
     let args = RsJsBridgeArgs {
@@ -129,11 +126,8 @@ fn test_integration_math_plugin_add() {
 #[test]
 fn test_integration_math_plugin_process_data() {
     // 1. Create runtime with the plugin package
-    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
-        "plugin_package.js",
-        "math-plugin",
-        "com.sapphillon.test",
-    );
+    let (mut op_state, _tokio_rt) =
+        create_opstate_with_fixture("plugin_package.js", "math-plugin", "com.sapphillon.test");
 
     // 2. Prepare complex input data
     let input_data = json!({
@@ -715,19 +709,19 @@ fn test_integration_plugin_throws_error() {
 fn test_integration_plugin_unknown_function() {
     use std::collections::HashMap;
 
-    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
-        "plugin_package.js",
-        "math-plugin",
-        "com.sapphillon.test",
-    );
+    let (mut op_state, _tokio_rt) =
+        create_opstate_with_fixture("plugin_package.js", "math-plugin", "com.sapphillon.test");
 
     let args = RsJsBridgeArgs {
         func_name: "non_existent_func".to_string(),
         args: HashMap::new(),
     };
 
-    let result =
-        rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "com.sapphillon.test.math-plugin");
+    let result = rsjs_bridge_core(
+        &mut op_state,
+        &args.to_string().unwrap(),
+        "com.sapphillon.test.math-plugin",
+    );
 
     assert!(
         result.is_err(),
@@ -759,11 +753,8 @@ fn test_integration_plugin_unknown_function() {
 /// 3. Verify the result is "1020" (string concatenation), demonstrating loose typing.
 #[test]
 fn test_integration_plugin_loose_type_handling() {
-    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
-        "plugin_package.js",
-        "math-plugin",
-        "com.sapphillon.test",
-    );
+    let (mut op_state, _tokio_rt) =
+        create_opstate_with_fixture("plugin_package.js", "math-plugin", "com.sapphillon.test");
 
     // Pass strings instead of numbers
     let args = RsJsBridgeArgs {
@@ -776,8 +767,11 @@ fn test_integration_plugin_loose_type_handling() {
         .collect(),
     };
 
-    let result =
-        rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "com.sapphillon.test.math-plugin");
+    let result = rsjs_bridge_core(
+        &mut op_state,
+        &args.to_string().unwrap(),
+        "com.sapphillon.test.math-plugin",
+    );
 
     assert!(
         result.is_ok(),
@@ -826,8 +820,11 @@ fn test_integration_plugin_async_success() {
             .collect(),
     };
 
-    let result =
-        rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "com.sapphillon.test.error-plugin");
+    let result = rsjs_bridge_core(
+        &mut op_state,
+        &args.to_string().unwrap(),
+        "com.sapphillon.test.error-plugin",
+    );
 
     assert!(
         result.is_ok(),

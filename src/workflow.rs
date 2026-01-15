@@ -598,7 +598,11 @@ mod tests {
             .iter()
             .map(|n| make_test_plugin_function(n))
             .collect();
-        CorePluginPackage::new(format!("com.example.{pkg_name}"), pkg_name.to_string(), functions)
+        CorePluginPackage::new(
+            format!("com.example.{pkg_name}"),
+            pkg_name.to_string(),
+            functions,
+        )
     }
 
     #[test]
@@ -622,7 +626,8 @@ mod tests {
         assert!(
             plugins
                 .iter()
-                .any(|p| p.package_name == "com.example.myPlugin" && p.function_name == "doSomething")
+                .any(|p| p.package_name == "com.example.myPlugin"
+                    && p.function_name == "doSomething")
         );
         assert!(
             plugins
@@ -779,7 +784,10 @@ mod tests {
 
     #[test]
     fn test_plugin_identifier_full_name() {
-        let plugin = PluginIdentifier::new("com.example.myPackage".to_string(), "myFunction".to_string());
+        let plugin = PluginIdentifier::new(
+            "com.example.myPackage".to_string(),
+            "myFunction".to_string(),
+        );
         assert_eq!(plugin.full_name(), "com.example.myPackage.myFunction");
     }
 
