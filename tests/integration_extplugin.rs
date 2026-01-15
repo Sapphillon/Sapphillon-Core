@@ -22,6 +22,7 @@ fn get_fixture_path(filename: &str) -> PathBuf {
 /// Returns the OpState and the tokio Runtime to keep the runtime alive
 fn create_opstate_with_fixture(
     fixture_filename: &str,
+    package_id: &str,
     package_name: &str,
 ) -> (deno_core::OpState, tokio::runtime::Runtime) {
     use deno_core::OpState;
@@ -33,7 +34,7 @@ fn create_opstate_with_fixture(
 
     // Create the external package
     let package = CorePluginExternalPackage::new(
-        format!("test.{package_name}"),
+        package_id.to_string(),
         package_name.to_string(),
         vec![], // functions list not needed for this test
         package_js,
@@ -77,7 +78,11 @@ fn create_opstate_with_fixture(
 #[test]
 fn test_integration_math_plugin_add() {
     // 1. Create runtime with the plugin package
-    let (mut op_state, _tokio_rt) = create_opstate_with_fixture("plugin_package.js", "math-plugin");
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
+        "plugin_package.js",
+        "com.sapphillon.test.math-plugin",
+        "math-plugin",
+    );
 
     // 2. Prepare arguments for the 'add' function
     let args = RsJsBridgeArgs {
@@ -89,7 +94,7 @@ fn test_integration_math_plugin_add() {
     let args_json = args.to_string().unwrap();
 
     // 3. Execute the bridge
-    let result = rsjs_bridge_core(&mut op_state, &args_json, "math-plugin");
+    let result = rsjs_bridge_core(&mut op_state, &args_json, "com.sapphillon.test.math-plugin");
     assert!(
         result.is_ok(),
         "Bridge execution failed: {:?}",
@@ -122,7 +127,11 @@ fn test_integration_math_plugin_add() {
 #[test]
 fn test_integration_math_plugin_process_data() {
     // 1. Create runtime with the plugin package
-    let (mut op_state, _tokio_rt) = create_opstate_with_fixture("plugin_package.js", "math-plugin");
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
+        "plugin_package.js",
+        "com.sapphillon.test.math-plugin",
+        "math-plugin",
+    );
 
     // 2. Prepare complex input data
     let input_data = json!({
@@ -137,7 +146,7 @@ fn test_integration_math_plugin_process_data() {
     let args_json = args.to_string().unwrap();
 
     // 3. Execute the bridge
-    let result = rsjs_bridge_core(&mut op_state, &args_json, "math-plugin");
+    let result = rsjs_bridge_core(&mut op_state, &args_json, "com.sapphillon.test.math-plugin");
     assert!(
         result.is_ok(),
         "Bridge execution failed: {:?}",
@@ -171,7 +180,7 @@ fn test_integration_math_plugin_process_data() {
 ///
 /// **Flow:**
 /// 1. Create a `CorePluginExternalPackage` with the `add` function from the fixture.
-/// 2. Create a `CoreWorkflowCode` with workflow code that calls `mathPlugin.add(5, 7)`.
+/// 2. Create a `CoreWorkflowCode` with workflow code that calls `com.sapphillon.test.mathPlugin.add(5, 7)`.
 /// 3. Execute the workflow via `CoreWorkflowCode::run()`.
 /// 4. Verify that the workflow result contains the expected output (`12`).
 ///
@@ -195,12 +204,12 @@ fn test_integration_workflow_with_external_plugin_add() {
         "Adds two numbers".to_string(),
         "mathPlugin".to_string(),
         package_js.clone(),
-        "test".to_string(),
+        "com.sapphillon.test".to_string(),
     );
 
     // Create external package
     let ext_package = CorePluginExternalPackage::new(
-        "test.math-plugin".to_string(),
+        "com.sapphillon.test.mathPlugin".to_string(),
         "mathPlugin".to_string(),
         vec![add_func],
         package_js,
@@ -208,7 +217,7 @@ fn test_integration_workflow_with_external_plugin_add() {
 
     // Create workflow code that calls the external plugin
     let workflow_code = r#"
-        const result = mathPlugin.add(5, 7);
+        const result = com.sapphillon.test.mathPlugin.add(5, 7);
         console.log(result);
     "#;
 
@@ -254,7 +263,7 @@ fn test_integration_workflow_with_external_plugin_add() {
 ///
 /// **Flow:**
 /// 1. Create a `CorePluginExternalPackage` with the `process_data` function.
-/// 2. Create a `CoreWorkflowCode` with workflow code that calls `mathPlugin.process_data()`.
+/// 2. Create a `CoreWorkflowCode` with workflow code that calls `com.sapphillon.test.mathPlugin.process_data()`.
 /// 3. Execute the workflow via `CoreWorkflowCode::run()`.
 /// 4. Verify that the workflow result contains the expected processed data.
 ///
@@ -276,12 +285,12 @@ fn test_integration_workflow_with_external_plugin_process_data() {
         "Processes data object".to_string(),
         "mathPlugin".to_string(),
         package_js.clone(),
-        "test".to_string(),
+        "com.sapphillon.test".to_string(),
     );
 
     // Create external package
     let ext_package = CorePluginExternalPackage::new(
-        "test.math-plugin".to_string(),
+        "com.sapphillon.test.mathPlugin".to_string(),
         "mathPlugin".to_string(),
         vec![process_func],
         package_js,
@@ -290,7 +299,7 @@ fn test_integration_workflow_with_external_plugin_process_data() {
     // Create workflow code that calls the external plugin with complex data
     let workflow_code = r#"
         const data = { value: 25, multiplier: 4 };
-        const result = mathPlugin.process_data(data);
+        const result = com.sapphillon.test.mathPlugin.process_data(data);
         console.log("Original:", result.original);
         console.log("Result:", result.result);
     "#;
@@ -636,8 +645,11 @@ fn test_integration_plugin_throws_error() {
     use std::collections::HashMap;
 
     // 1. Create runtime with the error plugin package
-    let (mut op_state, _tokio_rt) =
-        create_opstate_with_fixture("plugin_package_errors.js", "error-plugin");
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
+        "plugin_package_errors.js",
+        "com.sapphillon.test.error-plugin",
+        "error-plugin",
+    );
 
     // Test Case 1: Immediate Throw
     let args_immediate = RsJsBridgeArgs {
@@ -647,7 +659,7 @@ fn test_integration_plugin_throws_error() {
     let result_immediate = rsjs_bridge_core(
         &mut op_state,
         &args_immediate.to_string().unwrap(),
-        "error-plugin",
+        "com.sapphillon.test.error-plugin",
     );
 
     assert!(
@@ -668,7 +680,7 @@ fn test_integration_plugin_throws_error() {
     let result_async = rsjs_bridge_core(
         &mut op_state,
         &args_async.to_string().unwrap(),
-        "error-plugin",
+        "com.sapphillon.test.error-plugin",
     );
 
     assert!(
@@ -701,14 +713,19 @@ fn test_integration_plugin_throws_error() {
 fn test_integration_plugin_unknown_function() {
     use std::collections::HashMap;
 
-    let (mut op_state, _tokio_rt) = create_opstate_with_fixture("plugin_package.js", "math-plugin");
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
+        "plugin_package.js",
+        "com.sapphillon.test.math-plugin",
+        "math-plugin",
+    );
 
     let args = RsJsBridgeArgs {
         func_name: "non_existent_func".to_string(),
         args: HashMap::new(),
     };
 
-    let result = rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "math-plugin");
+    let result =
+        rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "com.sapphillon.test.math-plugin");
 
     assert!(
         result.is_err(),
@@ -740,7 +757,11 @@ fn test_integration_plugin_unknown_function() {
 /// 3. Verify the result is "1020" (string concatenation), demonstrating loose typing.
 #[test]
 fn test_integration_plugin_loose_type_handling() {
-    let (mut op_state, _tokio_rt) = create_opstate_with_fixture("plugin_package.js", "math-plugin");
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
+        "plugin_package.js",
+        "com.sapphillon.test.math-plugin",
+        "math-plugin",
+    );
 
     // Pass strings instead of numbers
     let args = RsJsBridgeArgs {
@@ -753,7 +774,8 @@ fn test_integration_plugin_loose_type_handling() {
         .collect(),
     };
 
-    let result = rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "math-plugin");
+    let result =
+        rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "com.sapphillon.test.math-plugin");
 
     assert!(
         result.is_ok(),
@@ -789,8 +811,11 @@ fn test_integration_plugin_loose_type_handling() {
 /// 3. Verify the async result is correctly returned.
 #[test]
 fn test_integration_plugin_async_success() {
-    let (mut op_state, _tokio_rt) =
-        create_opstate_with_fixture("plugin_package_errors.js", "error-plugin");
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
+        "plugin_package_errors.js",
+        "com.sapphillon.test.error-plugin",
+        "error-plugin",
+    );
 
     let args = RsJsBridgeArgs {
         func_name: "async_success".to_string(),
@@ -799,7 +824,8 @@ fn test_integration_plugin_async_success() {
             .collect(),
     };
 
-    let result = rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "error-plugin");
+    let result =
+        rsjs_bridge_core(&mut op_state, &args.to_string().unwrap(), "com.sapphillon.test.error-plugin");
 
     assert!(
         result.is_ok(),
@@ -834,8 +860,11 @@ fn test_integration_plugin_async_success() {
 /// 3. Document the observed behavior.
 #[test]
 fn test_integration_plugin_null_undefined_return() {
-    let (mut op_state, _tokio_rt) =
-        create_opstate_with_fixture("plugin_package_errors.js", "error-plugin");
+    let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
+        "plugin_package_errors.js",
+        "com.sapphillon.test.error-plugin",
+        "error-plugin",
+    );
 
     // Test: return null
     let args_null = RsJsBridgeArgs {
@@ -845,7 +874,7 @@ fn test_integration_plugin_null_undefined_return() {
     let result_null = rsjs_bridge_core(
         &mut op_state,
         &args_null.to_string().unwrap(),
-        "error-plugin",
+        "com.sapphillon.test.error-plugin",
     );
 
     // Note: The current implementation may error on null/undefined returns

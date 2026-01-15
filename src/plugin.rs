@@ -279,25 +279,46 @@ impl CorePluginExternalFunction {
     ///
     /// # Example Generated Code
     ///
-    /// For a function `greet` in package `myPlugin`:
+    /// For a function `greet` in package `com.example.myPlugin`:
     /// ```javascript
-    /// globalThis.myPlugin = globalThis.myPlugin || {};
-    /// globalThis.myPlugin.greet = function(...args) {
+    /// (function() {
+    ///     const packageId = "com.example.myPlugin";
+    ///     const parts = packageId.split(".");
+    ///     let current = globalThis;
+    ///     for (const part of parts) {
+    ///         current[part] = current[part] || {};
+    ///         current = current[part];
+    ///     }
+    ///     current["greet"] = function(...args) {
     ///     const bridgeArgs = { func_name: "greet", args: {} };
     ///     args.forEach((arg, idx) => { bridgeArgs.args[`arg${idx}`] = arg; });
     ///     const resultJson = Deno.core.ops.rsjs_bridge_opdecl(
     ///         JSON.stringify(bridgeArgs),
-    ///         <package_js>
+    ///         packageId
     ///     );
     ///     const result = JSON.parse(resultJson);
     ///     return result.args.result !== undefined ? result.args.result : result.args;
     /// };
+    /// })();
     /// ```
     fn generate_call_script(&self) -> String {
         format!(
             r#"
-        globalThis.{pkg_name} = globalThis.{pkg_name} || {{}};
-        globalThis.{pkg_name}.{func_name} = function(...args) {{
+        (function() {{
+            const packageId = "{package_id}";
+            const parts = packageId.split(".");
+            let current = globalThis;
+            for (const part of parts) {{
+                if (
+                    !Object.prototype.hasOwnProperty.call(current, part) ||
+                    typeof current[part] !== "object" ||
+                    current[part] === null
+                ) {{
+                    current[part] = {{}};
+                }}
+                current = current[part];
+            }}
+            current["{func_name}"] = function(...args) {{
             const bridgeArgs = {{
                 func_name: "{func_name}",
                 args: {{}}
@@ -306,13 +327,13 @@ impl CorePluginExternalFunction {
                 bridgeArgs.args[`arg${{idx}}`] = arg;
             }});
             const argsJson = JSON.stringify(bridgeArgs);
-            const packageName = "{pkg_name}";
-            const resultJson = Deno.core.ops.rsjs_bridge_opdecl(argsJson, packageName);
+            const resultJson = Deno.core.ops.rsjs_bridge_opdecl(argsJson, packageId);
             const result = JSON.parse(resultJson);
             return result.args.result !== undefined ? result.args.result : result.args;
-        }};
+            }};
+        }})();
 "#,
-            pkg_name = self.package_name,
+            package_id = self.get_package_id(),
             func_name = self.name,
         )
     }
@@ -839,7 +860,7 @@ mod tests {
         let pre_run_js = ext_func.get_pre_run_js();
         assert!(pre_run_js.is_some());
         let script = pre_run_js.unwrap();
-        assert!(script.contains("globalThis.testPackage"));
+        assert!(script.contains("test_author.testPackage"));
         assert!(script.contains("external_test_name"));
         assert!(script.contains("Deno.core.ops.rsjs_bridge_opdecl"));
     }
@@ -864,7 +885,7 @@ mod tests {
         let pre_run_js = ext_func.get_pre_run_js();
         assert!(pre_run_js.is_some());
         let script = pre_run_js.unwrap();
-        assert!(script.contains("globalThis.comprehensivePackage"));
+        assert!(script.contains("test_author.comprehensivePackage"));
 
         let opdecl = ext_func.get_opdecl();
         assert_eq!(opdecl.name, "rsjs_bridge_opdecl");
