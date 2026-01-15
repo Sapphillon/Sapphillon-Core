@@ -78,7 +78,8 @@ mod tests {
             name: "math-plugin".to_string(),
             version: "1.0.0".to_string(),
             description: "desc".to_string(),
-            package_id: "com.example".to_string(),
+            author_id: "com.example".to_string(),
+            package_id: "com.example.math-plugin".to_string(),
         };
 
         let add = FunctionSchema {

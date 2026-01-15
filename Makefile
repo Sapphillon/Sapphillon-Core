@@ -1,4 +1,18 @@
-.PHONY: rust_test, rust_build, rust_check_format, rust_fix_format, buf_generate
+.PHONY: help buf_generate test build fmt fix_fmt build_release clean full_test
+
+help:
+	@echo "Usage: make <target>"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  help            : Show this help message"
+	@echo "  buf_generate    : Generate Protocol Buffer Code"
+	@echo "  test            : Build extplugin_test_server binary and run Rust tests"
+	@echo "  build           : Build Rust project (all features)"
+	@echo "  fmt             : Check Rust format and run clippy (non-fatal)"
+	@echo "  fix_fmt         : Fix Rust format and run clippy fixes"
+	@echo "  build_release   : Build Rust project in release mode"
+	@echo "  clean           : Clean build artifacts"
+	@echo "  full_test       : Run build, test, fix_fmt, and build_release sequentially"
 
 buf_generate:
 	@echo "Generate Protocol Buffer Code"
@@ -6,7 +20,7 @@ buf_generate:
 	buf generate
 	@echo "----------------------------------------------------------"
 
-rust_test:
+test:
 	@echo "Build extplugin_test_server binary"
 	@echo "----------------------------------------------------------"
 	cargo build --package ext_plugin --bin extplugin_test_server
@@ -16,13 +30,13 @@ rust_test:
 	cargo test --workspace --all-features --all-targets
 	@echo "----------------------------------------------------------"
 
-rust_build:
+build:
 	@echo "Build Rust Project"
 	@echo "----------------------------------------------------------"
 	cargo build --workspace --all-features
 	@echo "----------------------------------------------------------"
 
-rust_check_format:
+fmt:
 	@echo "Check Rust Format"
 	@echo "----------------------------------------------------------"
 	cargo fmt --check || true
@@ -30,10 +44,25 @@ rust_check_format:
 	cargo clippy --workspace || true
 	@echo "----------------------------------------------------------"
 
-rust_fix_format:
+fix_fmt:
 	@echo "Fix Rust Format"
 	@echo "----------------------------------------------------------"
 	cargo fmt || true
 	@echo "----------------------------------------------------------"
 	cargo clippy --workspace --fix --allow-dirty || true
 	@echo "----------------------------------------------------------"
+
+build_release:
+	@echo "Build Rust Project in Release Mode"
+	@echo "----------------------------------------------------------"
+	cargo build --workspace --all-features --release
+	@echo "----------------------------------------------------------"
+
+clean:
+	@echo "Cleaning build artifacts"
+	@echo "----------------------------------------------------------"
+	cargo clean
+	@echo "----------------------------------------------------------"
+
+full_test: build test fix_fmt build_release
+	@echo "Full test completed"

@@ -2,10 +2,11 @@
 globalThis.Sapphillon = {
     Package: {
         meta: {
-            name: "file-plugin",
+            name: "filePlugin",
             version: "1.0.0",
             description: "A file plugin for permission testing",
-            package_id: "com.sapphillon.test.file"
+            author_id: "com.sapphillon.test",
+            package_id: "com.sapphillon.test.filePlugin"
         },
         functions: {
             read_file: {

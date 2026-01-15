@@ -14,7 +14,7 @@ use proto::sapphillon::v1::Permission;
 /// Core implementation of the Rs-Js bridge.
 ///
 /// This function:
-/// 1. Retrieves the external package from `OpState` using the package name
+/// 1. Retrieves the external package from `OpState` using the package ID
 /// 2. Parses `RsJsBridgeArgs` from the input JSON string
 /// 3. Creates a `SapphillonPackage` from the package JavaScript code
 /// 4. Executes the specified function synchronously
@@ -24,7 +24,7 @@ use proto::sapphillon::v1::Permission;
 ///
 /// * `state` - Mutable reference to the Deno `OpState`
 /// * `args_json` - JSON string containing serialized `RsJsBridgeArgs`
-/// * `package_name` - Name of the external plugin package to execute
+/// * `package_id` - ID of the external plugin package to execute
 ///
 /// # Returns
 ///
@@ -36,13 +36,13 @@ use proto::sapphillon::v1::Permission;
 ///
 /// ```ignore
 /// let args_json = r#"{"func_name":"greet","args":{"arg0":"World"}}"#;
-/// let package_name = "test-plugin";
-/// let result = rsjs_bridge_core(&mut state, args_json, package_name)?;
+/// let package_id = "com.test.test-plugin";
+/// let result = rsjs_bridge_core(&mut state, args_json, package_id)?;
 /// ```
 pub fn rsjs_bridge_core(
     state: &mut OpState,
     args_json: &str,
-    package_name: &str,
+    package_id: &str,
 ) -> anyhow::Result<String> {
     use crate::runtime::OpStateWorkflowData;
     use ext_plugin::extplugin_client;
@@ -57,8 +57,8 @@ pub fn rsjs_bridge_core(
     let package = workflow_data
         .external_package
         .iter()
-        .find(|pkg| pkg.name == package_name)
-        .ok_or_else(|| anyhow::anyhow!("Package not found: {package_name}"))?;
+        .find(|pkg| pkg.id == package_id)
+        .ok_or_else(|| anyhow::anyhow!("Package not found: {package_id}"))?;
 
     // Clone the data we need before dropping the lock
     // We need the SapphillonPackage itself, but it's wrapped in Arc<CorePluginExternalPackage>.
@@ -74,8 +74,8 @@ pub fn rsjs_bridge_core(
     let args = RsJsBridgeArgs::new_from_str(args_json)?;
 
     // Step 3: Get allowed permissions for this function
-    // Build the plugin_function_id from package_name and func_name
-    let plugin_function_id = format!("{}.{}", package_name, args.func_name);
+    // Build the plugin_function_id from package_id and func_name
+    let plugin_function_id = format!("{}.{}", package_id, args.func_name);
 
     let sapphillon_permissions: Vec<Permission> = workflow_data
         .get_allowed_permissions()
@@ -139,7 +139,7 @@ pub fn rsjs_bridge_core(
 ///
 /// * `state` - Mutable reference to the Deno `OpState`
 /// * `args_json` - JSON string containing serialized `RsJsBridgeArgs`
-/// * `package_name` - Name of the external plugin package to execute
+/// * `package_id` - ID of the external plugin package to execute
 ///
 /// # Returns
 ///
@@ -150,9 +150,9 @@ pub fn rsjs_bridge_core(
 pub fn rsjs_bridge_opdecl(
     state: &mut OpState,
     #[string] args_json: String,
-    #[string] package_name: String,
+    #[string] package_id: String,
 ) -> Result<String, deno_error::JsErrorBox> {
-    rsjs_bridge_core(state, &args_json, &package_name)
+    rsjs_bridge_core(state, &args_json, &package_id)
         .map_err(|e| deno_error::JsErrorBox::generic(format!("Rs-Js Bridge Error: {e}")))
 }
 
@@ -173,7 +173,8 @@ mod tests {
                     name: "test-plugin",
                     version: "1.0.0",
                     description: "A test plugin",
-                    package_id: "com.test.plugin"
+                    author_id: "com.test",
+                    package_id: "com.test.test-plugin"
                 },
                 functions: {
                     greet: {
@@ -222,7 +223,7 @@ mod tests {
 
         // Create the external package
         let package = CorePluginExternalPackage::new(
-            "com.test.plugin".to_string(),
+            "com.test.test-plugin".to_string(),
             "test-plugin".to_string(),
             vec![], // functions list not needed for this test
             get_test_package_js(),
@@ -257,7 +258,7 @@ mod tests {
         };
         let args_json = args.to_string().unwrap();
 
-        let result = rsjs_bridge_core(&mut op_state, &args_json, "test-plugin");
+        let result = rsjs_bridge_core(&mut op_state, &args_json, "com.test.test-plugin");
         assert!(result.is_ok(), "Expected Ok, got {result:?}");
 
         let result_json = result.unwrap();
@@ -280,7 +281,7 @@ mod tests {
         };
         let args_json = args.to_string().unwrap();
 
-        let result = rsjs_bridge_core(&mut op_state, &args_json, "test-plugin");
+        let result = rsjs_bridge_core(&mut op_state, &args_json, "com.test.test-plugin");
         assert!(result.is_ok(), "Expected Ok, got {result:?}");
 
         let result_json = result.unwrap();
@@ -292,7 +293,7 @@ mod tests {
     fn test_rsjs_bridge_core_invalid_json() {
         let (mut op_state, _tokio_rt) = create_opstate_with_package();
 
-        let result = rsjs_bridge_core(&mut op_state, "invalid json", "test-plugin");
+        let result = rsjs_bridge_core(&mut op_state, "invalid json", "com.test.test-plugin");
         assert!(result.is_err());
     }
 

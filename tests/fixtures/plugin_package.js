@@ -5,7 +5,8 @@ globalThis.Sapphillon = {
             name: "math-plugin",
             version: "1.0.0",
             description: "A practical math plugin for integration testing",
-            package_id: "com.sapphillon.test.math"
+            author_id: "com.sapphillon.test",
+            package_id: "com.sapphillon.test.math-plugin"
         },
         functions: {
             add: {
