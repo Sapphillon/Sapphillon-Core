@@ -103,7 +103,15 @@ impl CoreWorkflowCode {
     ///
     /// # Side Effects
     /// - Modifies the `result` field by adding a new `WorkflowResult`.
-    pub fn run(&mut self, handle: Handle) {
+    /// - Conditionally launches the external plugin runner if `external_plugin_runner_path` is provided;
+    ///   omitting that path skips external package execution (or falls back to the test stub runner when
+    ///   the workflow is exercised via the tests).
+    pub fn run(
+        &mut self,
+        handle: Handle,
+        external_plugin_runner_path: Option<String>,
+        external_plugin_runner_args: Option<Vec<String>>,
+    ) {
         // Collect OpDecls from plugin packages
         let mut ops = Vec::new();
         for pkg in &self.plugin_packages {
@@ -169,8 +177,8 @@ impl CoreWorkflowCode {
             },
             handle.clone(),
             external_packages,
-            None, // external_package_runner_path
-            None, // external_package_runner_args
+            external_plugin_runner_path, // external_package_runner_path
+            external_plugin_runner_args, // external_package_runner_args
         );
         let result = run_script(
             &self.code,
@@ -463,7 +471,7 @@ mod tests {
             vec![],
         );
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-        code.run(tokio_runtime.handle().clone());
+        code.run(tokio_runtime.handle().clone(), None, None);
         assert_eq!(code.result.len(), 1);
         let res = &code.result[0];
         assert_eq!(res.exit_code, 0);
@@ -487,7 +495,7 @@ mod tests {
             vec![],
         );
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-        code.run(tokio_runtime.handle().clone());
+        code.run(tokio_runtime.handle().clone(), None, None);
         assert_eq!(code.result.len(), 1);
         let res = &code.result[0];
         assert_eq!(res.exit_code, 0);
@@ -511,7 +519,7 @@ mod tests {
             vec![],
         );
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-        code.run(tokio_runtime.handle().clone());
+        code.run(tokio_runtime.handle().clone(), None, None);
         assert_eq!(code.result.len(), 1);
         let res = &code.result[0];
         assert_eq!(res.exit_code, 1);
@@ -895,7 +903,7 @@ mod permission_tests {
             }],
         );
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-        code.run(tokio_runtime.handle().clone());
+        code.run(tokio_runtime.handle().clone(), None, None);
         code
     }
 
@@ -913,7 +921,7 @@ mod permission_tests {
             required,
         );
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-        code.run(tokio_runtime.handle().clone());
+        code.run(tokio_runtime.handle().clone(), None, None);
         code
     }
 

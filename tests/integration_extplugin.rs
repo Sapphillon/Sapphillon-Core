@@ -230,7 +230,7 @@ fn test_integration_workflow_with_external_plugin_add() {
 
     // Run the workflow
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-    code.run(tokio_runtime.handle().clone());
+    code.run(tokio_runtime.handle().clone(), None, None);
 
     // Verify the result
     assert_eq!(code.result.len(), 1);
@@ -313,7 +313,7 @@ fn test_integration_workflow_with_external_plugin_process_data() {
 
     // Run the workflow
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-    code.run(tokio_runtime.handle().clone());
+    code.run(tokio_runtime.handle().clone(), None, None);
 
     // Verify the result
     assert_eq!(code.result.len(), 1);
@@ -427,7 +427,7 @@ fn test_integration_workflow_with_permission_granted() {
 
     // Run the workflow
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-    code.run(tokio_runtime.handle().clone());
+    code.run(tokio_runtime.handle().clone(), None, None);
 
     // Verify the result - should succeed
     assert_eq!(code.result.len(), 1);
@@ -524,7 +524,7 @@ fn test_integration_workflow_with_permission_denied() {
 
     // Run the workflow
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-    code.run(tokio_runtime.handle().clone());
+    code.run(tokio_runtime.handle().clone(), None, None);
 
     // Verify the result - should fail with permission error
     assert_eq!(code.result.len(), 1);
@@ -606,7 +606,7 @@ fn test_integration_workflow_without_permission_requirement() {
 
     // Run the workflow
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-    code.run(tokio_runtime.handle().clone());
+    code.run(tokio_runtime.handle().clone(), None, None);
 
     // Verify the result - should succeed even without permissions
     assert_eq!(code.result.len(), 1);
