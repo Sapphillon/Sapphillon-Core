@@ -178,9 +178,17 @@ pub(crate) fn run_script(
     pre_script: Option<Vec<String>>,
 ) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<SapphillonError>> {
     // Register the extension with the provided operations
+    // Deduplicate operations by name to prevent registration errors when multiple
+    // external plugins use the same bridge op.
+    let mut unique_ops = std::collections::HashMap::new();
+    for op in ext_func {
+        unique_ops.insert(op.name.to_string(), op);
+    }
+    let deduped_ops: Vec<OpDecl> = unique_ops.into_values().collect();
+
     let extension = Extension {
         name: "ext",
-        ops: ext_func.into(),
+        ops: deduped_ops.into(),
         middleware_fn: Some(Box::new(|op| match op.name {
             "op_print" => op_print_wrapper(),
             _ => op,
@@ -1092,5 +1100,23 @@ mod per_plugin_permission_tests {
             SapphillonError::PermissionDeniedError(_) => {}
             _ => panic!("expected PermissionDeniedError"),
         }
+    }
+
+    #[serial]
+    #[test]
+    fn test_run_script_duplicate_ops_handled() {
+        use deno_core::op2;
+
+        #[op2(fast)]
+        fn test_op_dup() {}
+
+        // Pass the same op twice
+        let ops = vec![test_op_dup(), test_op_dup()];
+        let script = "1 + 1;";
+        let result = run_script(script, ops, None, None);
+        assert!(
+            result.is_ok(),
+            "run_script should handle duplicate ops by ignoring duplicates"
+        );
     }
 }
