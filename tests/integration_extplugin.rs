@@ -1014,7 +1014,10 @@ globalThis.Sapphillon = {
     code.run(tokio_runtime.handle().clone(), None, None);
 
     if code.result[0].exit_code != 0 {
-        println!("Workflow failed with exit code {}", code.result[0].exit_code);
+        println!(
+            "Workflow failed with exit code {}",
+            code.result[0].exit_code
+        );
         println!("Result: {}", code.result[0].result);
         println!("Description: {}", code.result[0].description);
     }
