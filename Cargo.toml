@@ -28,6 +28,7 @@ thiserror = "2.0.17"
 url = "2.5.7"
 windows-sys = { version = "0.61.2", features = ["Win32_System_SystemInformation"] }
 regex = "1.11.1"
+indexmap = "2.7"
 
 sys_traits = "0.1.17"
 deno_lib = "0.39.0"
@@ -89,6 +90,7 @@ serde_json = "1.0.145"
 regex.workspace = true
 serde.workspace = true
 ipc-channel = { version = "0.20.2", features = ["async"] }
+indexmap.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 windows-sys.workspace = true

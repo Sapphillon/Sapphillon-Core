@@ -14,6 +14,7 @@ use crate::permission::{
 
 use crate::plugin::CorePluginExternalPackage;
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
+use indexmap::IndexMap;
 use std::boxed::Box;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
@@ -180,9 +181,10 @@ pub(crate) fn run_script(
     // Register the extension with the provided operations
     // Deduplicate operations by name to prevent registration errors when multiple
     // external plugins use the same bridge op.
-    let mut unique_ops = std::collections::HashMap::new();
+    // Use IndexMap to preserve insertion order - the first occurrence is kept.
+    let mut unique_ops = IndexMap::new();
     for op in ext_func {
-        unique_ops.insert(op.name.to_string(), op);
+        unique_ops.entry(op.name.to_string()).or_insert(op);
     }
     let deduped_ops: Vec<OpDecl> = unique_ops.into_values().collect();
 
@@ -1112,11 +1114,12 @@ mod per_plugin_permission_tests {
 
         // Pass the same op twice
         let ops = vec![test_op_dup(), test_op_dup()];
-        let script = "1 + 1;";
+        // Call the operation from JavaScript to verify it's registered and functional
+        let script = "Deno.core.ops.test_op_dup();";
         let result = run_script(script, ops, None, None);
         assert!(
             result.is_ok(),
-            "run_script should handle duplicate ops by ignoring duplicates"
+            "run_script should handle duplicate ops by ignoring duplicates and the op should be accessible from JavaScript"
         );
     }
 }
