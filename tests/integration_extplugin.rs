@@ -925,3 +925,106 @@ fn test_integration_plugin_null_undefined_return() {
     // If it succeeds, that's also valid behavior - the test passes either way
     // as long as it doesn't panic
 }
+
+/// Integration Test: Serde V8 Error Reproduction
+///
+/// **Purpose:**
+/// Verify that calling `rsjs_bridge_opdecl` from JavaScript via a generated wrapper
+/// does not cause a `serde_v8` error (invalid type; expected: string, got: array).
+///
+/// **Intent:**
+/// This test ensures that:
+/// 1. The generated JavaScript wrapper correctly calls `rsjs_bridge_opdecl`.
+/// 2. The `rsjs_bridge_opdecl` implementation correctly handles the arguments passed from JS.
+/// 3. No serialization/deserialization errors occur during the call.
+///
+/// **Flow:**
+/// 1. Define a simple plugin inline.
+/// 2. Create a `CoreWorkflowCode` that calls this plugin.
+/// 3. Execute the workflow.
+/// 4. Verify success.
+#[test]
+fn test_integration_repro_serde_v8_error() {
+    use sapphillon_core::plugin::{
+        CorePluginExternalFunction, CorePluginExternalPackage, PluginPackageTrait,
+    };
+    use sapphillon_core::workflow::CoreWorkflowCode;
+
+    let plugin_js = r#"
+globalThis.Sapphillon = {
+    Package: {
+        meta: {
+            name: "test-plugin",
+            version: "1.0.0",
+            description: "A test plugin",
+            author_id: "com.test",
+            package_id: "com.test.test-plugin"
+        },
+        functions: {
+            simple_function: {
+                description: "A simple function",
+                permissions: [],
+                parameters: [
+                    { idx: 0, name: "message", type: "string", description: "Message to echo" }
+                ],
+                returns: [{
+                    idx: 0,
+                    type: "string",
+                    description: "Echoed message"
+                }],
+                handler: (message) => {
+                    return `Echo: ${message}`;
+                }
+            }
+        }
+    }
+};
+"#;
+
+    let func = CorePluginExternalFunction::new(
+        "test-function".to_string(),
+        "simple_function".to_string(),
+        "A simple function".to_string(),
+        "testPlugin".to_string(),
+        plugin_js.to_string(),
+        "com.test".to_string(),
+    );
+    let package = CorePluginExternalPackage::new(
+        "com.test.testPlugin".to_string(),
+        "testPlugin".to_string(),
+        vec![func],
+        plugin_js.to_string(),
+    );
+
+    let workflow_code = r#"
+        const result = com.test.testPlugin.simple_function("Hello World");
+        console.log("Result:", result);
+    "#;
+
+    let mut code = CoreWorkflowCode::new(
+        "test_workflow_repro".to_string(),
+        workflow_code.to_string(),
+        vec![Arc::new(package) as Arc<dyn PluginPackageTrait>],
+        1,
+        vec![],
+        vec![],
+    );
+
+    let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+    code.run(tokio_runtime.handle().clone(), None, None);
+
+    if code.result[0].exit_code != 0 {
+        println!(
+            "Workflow failed with exit code {}",
+            code.result[0].exit_code
+        );
+        println!("Result: {}", code.result[0].result);
+        println!("Description: {}", code.result[0].description);
+    }
+    assert_eq!(code.result[0].exit_code, 0, "Workflow failed");
+    assert!(
+        code.result[0].result.contains("Echo: Hello World"),
+        "Expected result to contain 'Echo: Hello World', got: {}",
+        code.result[0].result
+    );
+}

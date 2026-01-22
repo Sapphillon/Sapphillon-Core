@@ -162,10 +162,19 @@ pub fn rsjs_bridge_core(
 #[string]
 pub fn rsjs_bridge_opdecl(
     state: &mut OpState,
-    #[string] args_json: String,
-    #[string] package_id: String,
+    #[serde] args_json_val: serde_json::Value,
+    #[serde] package_id_val: serde_json::Value,
 ) -> Result<String, deno_error::JsErrorBox> {
-    rsjs_bridge_core(state, &args_json, &package_id)
+    // Use serde_json::Value and manual string conversion to avoid issues with #[string]
+    // attribute on arguments in reentrant ops, which can cause serde_v8 errors.
+    let args_json = args_json_val
+        .as_str()
+        .ok_or_else(|| deno_error::JsErrorBox::type_error("Expected string for args_json"))?;
+    let package_id = package_id_val
+        .as_str()
+        .ok_or_else(|| deno_error::JsErrorBox::type_error("Expected string for package_id"))?;
+
+    rsjs_bridge_core(state, args_json, package_id)
         .map_err(|e| deno_error::JsErrorBox::generic(format!("Rs-Js Bridge Error: {e}")))
 }
 
