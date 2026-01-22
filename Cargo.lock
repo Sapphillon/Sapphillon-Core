@@ -6639,6 +6639,7 @@ dependencies = [
  "deno_runtime",
  "env_logger",
  "ext_plugin",
+ "indexmap 2.12.1",
  "ipc-channel",
  "log",
  "node_resolver",

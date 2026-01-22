@@ -14,6 +14,7 @@ use crate::permission::{
 
 use crate::plugin::CorePluginExternalPackage;
 use deno_core::{Extension, JsRuntime, OpDecl, RuntimeOptions, error::JsError};
+use indexmap::IndexMap;
 use std::boxed::Box;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
@@ -178,9 +179,18 @@ pub(crate) fn run_script(
     pre_script: Option<Vec<String>>,
 ) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<SapphillonError>> {
     // Register the extension with the provided operations
+    // Deduplicate operations by name to prevent registration errors when multiple
+    // external plugins use the same bridge op.
+    // Use IndexMap to preserve insertion order - the first occurrence is kept.
+    let mut unique_ops = IndexMap::new();
+    for op in ext_func {
+        unique_ops.entry(op.name.to_string()).or_insert(op);
+    }
+    let deduped_ops: Vec<OpDecl> = unique_ops.into_values().collect();
+
     let extension = Extension {
         name: "ext",
-        ops: ext_func.into(),
+        ops: deduped_ops.into(),
         middleware_fn: Some(Box::new(|op| match op.name {
             "op_print" => op_print_wrapper(),
             _ => op,
@@ -1092,5 +1102,24 @@ mod per_plugin_permission_tests {
             SapphillonError::PermissionDeniedError(_) => {}
             _ => panic!("expected PermissionDeniedError"),
         }
+    }
+
+    #[serial]
+    #[test]
+    fn test_run_script_duplicate_ops_handled() {
+        use deno_core::op2;
+
+        #[op2(fast)]
+        fn test_op_dup() {}
+
+        // Pass the same op twice
+        let ops = vec![test_op_dup(), test_op_dup()];
+        // Call the operation from JavaScript to verify it's registered and functional
+        let script = "Deno.core.ops.test_op_dup();";
+        let result = run_script(script, ops, None, None);
+        assert!(
+            result.is_ok(),
+            "run_script should handle duplicate ops by ignoring duplicates and the op should be accessible from JavaScript"
+        );
     }
 }
