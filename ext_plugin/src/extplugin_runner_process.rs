@@ -94,10 +94,28 @@ pub fn extplugin_client(
 
     tx_req.send((tx_res.clone(), request))?;
 
-    let response = rx_res.recv()?;
+    // Wait for either the response or the server process termination
+    let response = loop {
+        if let Some(status) = child.try_wait()? {
+            if !status.success() {
+                panic!("Server process terminated abnormally");
+            }
+            anyhow::bail!("Server process terminated before response");
+        }
+
+        match rx_res.try_recv_timeout(std::time::Duration::from_millis(100)) {
+            Ok(resp) => break resp,
+            Err(ipc::TryRecvError::Empty) => continue,
+            Err(ipc::TryRecvError::IpcError(err)) => anyhow::bail!(err),
+        }
+    };
 
     let _ = child.kill();
-    let _ = child.wait();
+    // TODO: Improve error handling for server process termination
+    let exit_status = child.wait()?;
+    if !exit_status.success() {
+        panic!("Server process terminated abnormally");
+    }
 
     if let Some(err) = response.error_message {
         anyhow::bail!(err);
