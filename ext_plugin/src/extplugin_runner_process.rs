@@ -106,7 +106,7 @@ pub fn extplugin_client(
     RsJsBridgeReturns::new_from_str(&response.returns_json)
 }
 
-pub fn extplugin_server(server_name: &str) -> Result<()> {
+pub async fn extplugin_server(server_name: &str) -> Result<()> {
     use crate::permissions::permissions_options_from_sapphillon_permissions;
 
     let (tx_req, rx_req) = ipc::channel()?;
@@ -121,10 +121,6 @@ pub fn extplugin_server(server_name: &str) -> Result<()> {
         std::mem::forget(tx_bootstrap); // Hack to avoid Drop panic?
     }
     std::mem::forget(tx_req);
-
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
 
     if let Ok((tx_res, request)) = rx_req.recv() {
         // Convert IpcPermission back to proto::Permission
@@ -142,11 +138,13 @@ pub fn extplugin_server(server_name: &str) -> Result<()> {
             Some(permissions_options)
         };
 
-        let result = rt.block_on(async {
+        let excuter =  async {
             let package = SapphillonPackage::new_async(&request.package_js).await?;
             let args = RsJsBridgeArgs::new_from_str(&request.args_json)?;
             package.execute(args, &permissions_options).await
-        });
+        };
+        
+        let result = excuter.await;
 
         let response = match result {
             Ok(returns) => ExternalPluginRunResponse {
