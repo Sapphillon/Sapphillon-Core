@@ -96,10 +96,10 @@ pub fn extplugin_client(
 
     // Wait for either the response or the server process termination
     let response = loop {
-        if let Some(status) = child.try_wait()? {
-            if !status.success() {
-                panic!("Server process terminated abnormally");
-            }
+        if let Some(status) = child.try_wait()?
+            && !status.success()
+        {
+            panic!("Server process terminated abnormally");
         }
 
         match rx_res.try_recv_timeout(std::time::Duration::from_millis(100)) {
