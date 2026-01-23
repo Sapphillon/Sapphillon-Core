@@ -100,7 +100,6 @@ pub fn extplugin_client(
             if !status.success() {
                 panic!("Server process terminated abnormally");
             }
-            anyhow::bail!("Server process terminated before response");
         }
 
         match rx_res.try_recv_timeout(std::time::Duration::from_millis(100)) {
@@ -110,11 +109,15 @@ pub fn extplugin_client(
         }
     };
 
-    let _ = child.kill();
+    let mut killed = false;
+    if child.try_wait()?.is_none() {
+        let _ = child.kill();
+        killed = true;
+    }
     // TODO: Improve error handling for server process termination
     let exit_status = child.wait()?;
-    if !exit_status.success() {
-        panic!("Server process terminated abnormally");
+    if !exit_status.success() && !killed {
+        panic!("Server process terminated abnormally: {exit_status:?}");
     }
 
     if let Some(err) = response.error_message {
@@ -185,9 +188,20 @@ pub async fn extplugin_server(server_name: &str) -> Result<()> {
 mod tests {
     use super::*;
     use serde_json::json;
+    use std::sync::{Mutex, OnceLock};
+
+    static TEST_SERVER_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
+
+    fn test_server_lock() -> std::sync::MutexGuard<'static, ()> {
+        TEST_SERVER_MUTEX
+            .get_or_init(|| Mutex::new(()))
+            .lock()
+            .unwrap_or_else(|err| err.into_inner())
+    }
 
     #[test]
     fn test_extplugin_runner_process() -> Result<()> {
+        let _guard = test_server_lock();
         let package_script = r#"
             globalThis.Sapphillon = {
                 Package: {
@@ -219,6 +233,10 @@ mod tests {
                 }
             };
         "#;
+        if std::env::var("SAPPHILLON_TEST_SERVER_ABORT").is_ok() {
+            // Skip this test if the abort environment variable is set
+            return Ok(());
+        }
 
         let package = SapphillonPackage::new(package_script)?;
 
@@ -268,6 +286,97 @@ mod tests {
         )?;
 
         assert_eq!(returns.args.get("result"), Some(&json!("Hello, World!")));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_extplugin_runner_process_abnormal_exit_panics() -> Result<()> {
+        let _guard = test_server_lock();
+        let package_script = r#"
+            globalThis.Sapphillon = {
+                Package: {
+                    meta: {
+                        name: "test-plugin",
+                        version: "1.0.0",
+                        description: "Test plugin",
+                        author_id: "com.example",
+                        package_id: "com.example.test-plugin"
+                    },
+                    functions: {
+                        echo: {
+                            description: "Echoes the input",
+                            permissions: [],
+                            parameters: [{
+                                idx: 0,
+                                name: "message",
+                                type: "string",
+                                description: "Message to echo"
+                            }],
+                            returns: [{
+                                idx: 0,
+                                type: "string",
+                                description: "Echoed message"
+                            }],
+                            handler: (message) => message
+                        }
+                    }
+                }
+            };
+        "#;
+
+        let package = SapphillonPackage::new(package_script)?;
+
+        let args = RsJsBridgeArgs {
+            func_name: "echo".to_string(),
+            args: vec![("message".to_string(), json!("Hello, World!"))]
+                .into_iter()
+                .collect(),
+        };
+
+        let mut server_path_buf = std::env::current_exe()?;
+        server_path_buf.pop();
+        if server_path_buf.file_name().and_then(|s| s.to_str()) == Some("deps") {
+            server_path_buf.pop();
+        }
+        server_path_buf.push("extplugin_test_server");
+
+        if !server_path_buf.exists() {
+            let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let status = std::process::Command::new("cargo")
+                .args(["build", "--bin", "extplugin_test_server"])
+                .current_dir(&manifest_dir)
+                .status()
+                .expect("Failed to execute cargo build");
+            if !status.success() {
+                anyhow::bail!("Failed to build extplugin_test_server");
+            }
+        }
+
+        let server_path = server_path_buf
+            .to_str()
+            .ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
+        let server_args = vec![];
+        let sapphillon_permissions = vec![];
+
+        unsafe {
+            std::env::set_var("SAPPHILLON_TEST_SERVER_ABORT", "1");
+        }
+        let result = std::panic::catch_unwind(|| {
+            let _ = extplugin_client(
+                &package,
+                "echo",
+                &args,
+                server_path,
+                server_args,
+                sapphillon_permissions,
+            );
+        });
+        unsafe {
+            std::env::remove_var("SAPPHILLON_TEST_SERVER_ABORT");
+        }
+
+        assert!(result.is_err(), "Expected panic on abnormal server exit");
 
         Ok(())
     }
