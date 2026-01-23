@@ -96,10 +96,14 @@ pub fn extplugin_client(
 
     // Wait for either the response or the server process termination
     let response = loop {
-        if let Some(status) = child.try_wait()?
-            && !status.success()
-        {
-            panic!("Server process terminated abnormally");
+        if let Some(status) = child.try_wait()? {
+            if !status.success() {
+                anyhow::bail!("Server process terminated abnormally");
+            } else {
+                // サーバーは応答を送信せずに正常に終了しました。
+                // 決して届かないメッセージを無期限に待つのを避けます。
+                anyhow::bail!("Server process exited successfully without sending a response");
+            }
         }
 
         match rx_res.try_recv_timeout(std::time::Duration::from_millis(100)) {
@@ -117,7 +121,7 @@ pub fn extplugin_client(
     // TODO: Improve error handling for server process termination
     let exit_status = child.wait()?;
     if !exit_status.success() && !killed {
-        panic!("Server process terminated abnormally: {exit_status:?}");
+        anyhow::bail!("Server process terminated abnormally: {exit_status:?}");
     }
 
     if let Some(err) = response.error_message {
@@ -159,13 +163,12 @@ pub async fn extplugin_server(server_name: &str) -> Result<()> {
             Some(permissions_options)
         };
 
-        let excuter = async {
+        let result = async {
             let package = SapphillonPackage::new_async(&request.package_js).await?;
             let args = RsJsBridgeArgs::new_from_str(&request.args_json)?;
             package.execute(args, &permissions_options).await
-        };
-
-        let result = excuter.await;
+        }
+        .await;
 
         let response = match result {
             Ok(returns) => ExternalPluginRunResponse {
@@ -291,7 +294,7 @@ mod tests {
     }
 
     #[test]
-    fn test_extplugin_runner_process_abnormal_exit_panics() -> Result<()> {
+    fn test_extplugin_runner_process_abnormal_exit_returns_error() -> Result<()> {
         let _guard = test_server_lock();
         let package_script = r#"
             globalThis.Sapphillon = {
@@ -362,21 +365,26 @@ mod tests {
         unsafe {
             std::env::set_var("SAPPHILLON_TEST_SERVER_ABORT", "1");
         }
-        let result = std::panic::catch_unwind(|| {
-            let _ = extplugin_client(
-                &package,
-                "echo",
-                &args,
-                server_path,
-                server_args,
-                sapphillon_permissions,
-            );
-        });
+        let result = extplugin_client(
+            &package,
+            "echo",
+            &args,
+            server_path,
+            server_args,
+            sapphillon_permissions,
+        );
         unsafe {
             std::env::remove_var("SAPPHILLON_TEST_SERVER_ABORT");
         }
 
-        assert!(result.is_err(), "Expected panic on abnormal server exit");
+        assert!(result.is_err(), "Expected error on abnormal server exit");
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("terminated abnormally"),
+            "Expected error message to contain 'terminated abnormally'"
+        );
 
         Ok(())
     }
