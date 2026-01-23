@@ -159,12 +159,12 @@ pub async fn extplugin_server(server_name: &str) -> Result<()> {
             Some(permissions_options)
         };
 
-        let excuter =  async {
+        let excuter = async {
             let package = SapphillonPackage::new_async(&request.package_js).await?;
             let args = RsJsBridgeArgs::new_from_str(&request.args_json)?;
             package.execute(args, &permissions_options).await
         };
-        
+
         let result = excuter.await;
 
         let response = match result {
