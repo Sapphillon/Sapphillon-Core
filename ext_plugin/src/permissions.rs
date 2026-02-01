@@ -72,6 +72,7 @@ pub(crate) fn permissions_options_from_sapphillon_permissions(
     let mut allow_write: Option<Vec<String>> = None;
     let mut allow_net: Option<Vec<String>> = None;
     let mut allow_run: Option<Vec<String>> = None;
+    let mut allow_env: Option<Vec<String>> = None;
 
     for permission in permissions {
         let Ok(permission_type) = PermissionType::try_from(permission.permission_type) else {
@@ -96,6 +97,7 @@ pub(crate) fn permissions_options_from_sapphillon_permissions(
                 allow_write = Some(vec![]);
                 allow_net = Some(vec![]);
                 allow_run = Some(vec![]);
+                allow_env = Some(vec![]); // Also allow all env vars
             }
             PermissionType::AllowMcp | PermissionType::Unspecified => {
                 // Not a Deno runtime permission; ignore here.
@@ -107,6 +109,7 @@ pub(crate) fn permissions_options_from_sapphillon_permissions(
     options.allow_write = allow_write;
     options.allow_net = allow_net;
     options.allow_run = allow_run;
+    options.allow_env = allow_env;
     options
 }
 

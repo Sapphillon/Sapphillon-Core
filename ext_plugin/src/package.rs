@@ -135,10 +135,27 @@ impl SapphillonPackage {
     }
 
     pub fn new(package_script: &str) -> Result<SapphillonPackage> {
-        let rt = tokio::runtime::Runtime::new()?;
-        let mut package = rt.block_on(crate::parse_package::parse_package_info(package_script))?;
-        package.package_script = package_script.to_string();
-        Ok(package)
+        // Check if we're already inside a tokio runtime
+        if tokio::runtime::Handle::try_current().is_ok() {
+            // We're inside an async runtime - use spawn_blocking with a new thread-local runtime
+            let script = package_script.to_string();
+            let result = std::thread::spawn(move || {
+                let rt = tokio::runtime::Runtime::new()?;
+                let mut package = rt.block_on(crate::parse_package::parse_package_info(&script))?;
+                package.package_script = script;
+                Ok::<_, anyhow::Error>(package)
+            })
+            .join()
+            .map_err(|e| anyhow::anyhow!("Thread panicked: {e:?}"))??;
+            Ok(result)
+        } else {
+            // Not inside a runtime - create one directly
+            let rt = tokio::runtime::Runtime::new()?;
+            let mut package =
+                rt.block_on(crate::parse_package::parse_package_info(package_script))?;
+            package.package_script = package_script.to_string();
+            Ok(package)
+        }
     }
 
     /// Generate JavaScript code that installs `globalThis.entrypoint`.

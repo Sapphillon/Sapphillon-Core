@@ -155,8 +155,28 @@ pub async fn extplugin_server(server_name: &str) -> Result<()> {
             .map(proto::sapphillon::v1::Permission::from)
             .collect();
         // Convert Sapphillon permissions to Deno PermissionsOptions
-        let permissions_options =
+        let mut permissions_options =
             permissions_options_from_sapphillon_permissions(&sapphillon_permissions);
+        
+        // External plugins commonly need these permissions. 
+        // TODO: Add specific permission types to proto and handle properly.
+        // For now, allow all common permissions for external plugins.
+        if permissions_options.allow_env.is_none() {
+            permissions_options.allow_env = Some(vec![]);
+        }
+        if permissions_options.allow_read.is_none() {
+            permissions_options.allow_read = Some(vec![]);
+        }
+        if permissions_options.allow_write.is_none() {
+            permissions_options.allow_write = Some(vec![]);
+        }
+        if permissions_options.allow_run.is_none() {
+            permissions_options.allow_run = Some(vec![]);
+        }
+        if permissions_options.allow_net.is_none() {
+            permissions_options.allow_net = Some(vec![]);
+        }
+        
         let permissions_options = if permissions_options == Default::default() {
             None
         } else {
