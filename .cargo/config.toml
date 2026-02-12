@@ -2,6 +2,9 @@
 linker = "rust-lld"
 # rustflags = ["-C", "link-arg=/NODEFAULTLIB:libucrt.lib", "-C", "link-arg=/NODEFAULTLIB:libvcruntime.lib", "-C", "link-arg=/NODEFAULTLIB:libcmt.lib"]
 
+[build]
+rustc-wrapper = "sccache"
+
 [env]
 CMAKE_POLICY_VERSION_MINIMUM = "3.5"
 RUST_TEST_THREADS = "1"
