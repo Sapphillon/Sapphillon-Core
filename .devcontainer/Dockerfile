@@ -32,3 +32,7 @@ ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 RUN go install github.com/ktr0731/evans@latest \
     && go install github.com/bufbuild/buf/cmd/buf@latest
 
+# Install cargo-binstall and use it to install tokei and sccache
+RUN cargo install cargo-binstall \
+    && cargo binstall tokei sccache -y
+
