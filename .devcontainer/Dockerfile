@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/devcontainers/rust:1-1-bookworm
 # Include lld linker to improve build times either by using environment variable
 # RUSTFLAGS="-C link-arg=-fuse-ld=lld" or with Cargo's configuration file (i.e see .cargo/config.toml).
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-   && apt-get -y install clang busybox protobuf-compiler mold wget \
+   && apt-get -y install clang busybox protobuf-compiler mold wget sccache \
    && apt-get upgrade -y \
    && apt-get autoremove -y && apt-get clean -y \
    && rm -rf /var/lib/apt/lists/*
@@ -32,7 +32,9 @@ ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 RUN go install github.com/ktr0731/evans@latest \
     && go install github.com/bufbuild/buf/cmd/buf@latest
 
-# Install cargo-binstall and use it to install tokei and sccache
-RUN cargo install cargo-binstall \
-    && cargo binstall tokei sccache -y
+
+# Fix cargo registry permissions for non-root users
+# This ensures that the vscode user can write to the cargo registry cache
+RUN chown -R 1000:rustlang /usr/local/cargo/registry/ \
+    && chmod -R g+w /usr/local/cargo/registry/
 
