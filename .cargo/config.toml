@@ -4,6 +4,7 @@ linker = "rust-lld"
 
 [build]
 rustc-wrapper = "sccache"
+incremental = false
 
 [env]
 CMAKE_POLICY_VERSION_MINIMUM = "3.5"
