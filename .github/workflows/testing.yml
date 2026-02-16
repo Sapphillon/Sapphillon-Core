@@ -8,12 +8,11 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTC_WRAPPER: sccache
+  SCCACHE_GHA_ENABLED: "true"
 
 jobs:
   test:
-    env:
-      RUSTC_WRAPPER: sccache
-      SCCACHE_GHA_ENABLED: "true"
     name: Test
     runs-on: ${{ matrix.os }}
     needs: ["check"]
@@ -75,6 +74,9 @@ jobs:
   check:
     name: Rustfmt
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    env:
+      RUSTC_WRAPPER: ""
+      SCCACHE_GHA_ENABLED: "false"
     steps:
       - uses: actions/checkout@v6
 
@@ -93,8 +95,4 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Run clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: Show sccache statistics
-        if: always()
-        run: sccache --show-stats
 
