@@ -331,7 +331,7 @@ mod tests {
         let input = Path::new("/../etc/passwd");
         let out = normalize_forgiving(input);
         // Should normalize to '/etc/passwd' on unix-like systems
-        assert!(out.ends_with("etc/passwd") || out == PathBuf::from("etc/passwd"));
+        assert!(out.ends_with("etc/passwd") || out == "etc/passwd");
     }
 
     #[test]
