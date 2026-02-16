@@ -58,8 +58,7 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
-          version: "v0.18.0"
-          cache: true
+          version: "v0.14.0"
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
@@ -83,8 +82,7 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
-          version: "v0.18.0"
-          cache: true
+          version: "v0.14.0"
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
