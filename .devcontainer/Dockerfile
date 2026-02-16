@@ -31,6 +31,7 @@ ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 
 RUN go install github.com/ktr0731/evans@latest \
     && go install github.com/bufbuild/buf/cmd/buf@latest
+RUN cargo install tokei
 
 
 # Fix cargo registry permissions for non-root users
