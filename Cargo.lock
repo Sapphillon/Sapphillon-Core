@@ -5631,18 +5631,6 @@ dependencies = [
 
 [[package]]
 name = "pbjson-build"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af22d08a625a2213a78dbb0ffa253318c5c79ce3133d32d296655a7bdfb02095"
-dependencies = [
- "heck",
- "itertools 0.14.0",
- "prost 0.14.1",
- "prost-types",
-]
-
-[[package]]
-name = "pbjson-build"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ed4d5c6ae95e08ac768883c8401cf0e8deb4e6e1d6a4e1fd3d2ec4f0ec63200"
@@ -5662,7 +5650,7 @@ dependencies = [
  "bytes",
  "chrono",
  "pbjson",
- "pbjson-build 0.9.0",
+ "pbjson-build",
  "prost 0.14.1",
  "prost-build",
  "serde",
@@ -5978,7 +5966,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac6c3320f9abac597dcbc668774ef006702672474aad53c6d596b62e487b40b1"
 dependencies = [
  "heck",
- "itertools 0.14.0",
+ "itertools 0.12.1",
  "log",
  "multimap",
  "once_cell",
@@ -5998,7 +5986,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.14.0",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.112",
@@ -6011,7 +5999,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9120690fafc389a67ba3803df527d0ec9cbbc9cc45e4cc20b332996dfb672425"
 dependencies = [
  "anyhow",
- "itertools 0.14.0",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.112",
@@ -6032,7 +6020,7 @@ version = "0.10.0"
 dependencies = [
  "bytes",
  "pbjson",
- "pbjson-build 0.8.0",
+ "pbjson-build",
  "pbjson-types",
  "prost 0.14.1",
  "prost-types",
