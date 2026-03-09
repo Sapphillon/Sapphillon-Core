@@ -1,6 +1,9 @@
 # This workflow runs Rust tests and checks on push and pull request events
 name: Rust Testing
 
+permissions:
+  contents: read
+
 on:
   pull_request:
   workflow_dispatch:
