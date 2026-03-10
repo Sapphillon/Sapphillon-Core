@@ -18,6 +18,9 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: read
+
 jobs:
   test:
     uses: ./.github/workflows/testing.yml
