@@ -84,37 +84,56 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
+# Workspace Internal Packages
 proto.workspace = true
 ext_plugin.workspace = true
+
+# Error Handling
 anyhow.workspace = true
+thiserror.workspace = true
+deno_error.workspace = true
+
+# Async Runtime & Utilities
 tokio.workspace = true
+async-trait.workspace = true
+
+# Logging
 log.workspace = true
-chrono.workspace = true
 env_logger.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Protobuf / gRPC
 tonic.workspace = true
 prost.workspace = true
 prost-types.workspace = true
-async-trait.workspace = true
+
+# Deno Dependencies
 deno_core.workspace = true
-deno_error.workspace = true
-unescaper.workspace = true
-thiserror.workspace = true
-url.workspace = true
 deno_runtime.workspace = true
 deno_lib.workspace = true
-node_resolver.workspace = true
 deno_resolver.workspace = true
-once_cell.workspace = true
-serde_json.workspace = true
+node_resolver.workspace = true
+
+# Utilities
+chrono.workspace = true
+url.workspace = true
 regex.workspace = true
-serde.workspace = true
-ipc-channel.workspace = true
 indexmap.workspace = true
+once_cell.workspace = true
+unescaper.workspace = true
+
+# IPC
+ipc-channel.workspace = true
 
 [target.'cfg(windows)'.dependencies]
+# Platform-Specific
 windows-sys.workspace = true
 
 [dev-dependencies]
+# Testing
 serial_test = "3.2"
 tempfile = "3"
 
