@@ -19,7 +19,7 @@
 //! Permission Related Operation
 
 use anyhow::Result;
-use deno_permissions::{Permissions, PermissionsOptions};
+use deno_runtime::deno_permissions::{Permissions, PermissionsOptions};
 use deno_runtime::permissions::RuntimePermissionDescriptorParser;
 use proto::sapphillon::v1::{Permission as SapphillonPermission, PermissionType};
 use std::sync::Arc;
@@ -113,7 +113,7 @@ pub(crate) fn permissions_options_from_sapphillon_permissions(
 #[cfg(test)]
 mod tests {
     use super::permissions_options_from_sapphillon_permissions;
-    use deno_permissions::PermissionsOptions;
+    use deno_runtime::deno_permissions::PermissionsOptions;
     use proto::sapphillon::v1::{Permission, PermissionType};
 
     fn perm(permission_type: PermissionType, resource: Vec<&str>) -> Permission {

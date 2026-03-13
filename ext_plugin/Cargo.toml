@@ -20,13 +20,8 @@ serde.workspace = true
 serde_json.workspace = true
 
 # Deno Dependencies
-deno_core.workspace = true
 deno_runtime.workspace = true
 deno_lib.workspace = true
-deno_web.workspace = true
-deno_permissions.workspace = true
-deno_resolver.workspace = true
-deno_tls.workspace = true
 sys_traits.workspace = true
 node_resolver.workspace = true
 

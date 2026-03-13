@@ -22,8 +22,8 @@
 use anyhow::Result;
 use deno_error::JsErrorBox;
 use deno_lib::args::get_root_cert_store;
-use deno_tls::RootCertStoreProvider;
-use deno_tls::rustls::RootCertStore;
+use deno_runtime::deno_tls::RootCertStoreProvider;
+use deno_runtime::deno_tls::rustls::RootCertStore;
 use once_cell::sync::OnceCell;
 
 /// Root certificate store provider for Sapphillon.

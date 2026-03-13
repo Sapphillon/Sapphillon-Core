@@ -257,7 +257,7 @@ impl SapphillonPackage {
     pub async fn execute(
         &self,
         args: crate::rust_js_bridge::RsJsBridgeArgs,
-        permissions_options: &Option<deno_permissions::PermissionsOptions>,
+        permissions_options: &Option<deno_runtime::deno_permissions::PermissionsOptions>,
     ) -> Result<crate::rust_js_bridge::RsJsBridgeReturns> {
         // Combine package script with entrypoint
         let entry_script = self.entrypoint_script()?;
@@ -422,7 +422,7 @@ mod tests {
 
     #[tokio::test]
     async fn execute_permission_granted_with_fs_read() {
-        use deno_permissions::PermissionsOptions;
+        use deno_runtime::deno_permissions::PermissionsOptions;
         use tempfile::tempdir;
 
         let dir = tempdir().expect("create temp dir");

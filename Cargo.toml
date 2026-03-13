@@ -24,16 +24,10 @@ deno_error = "0.7.0"
 
 # Async Runtime & Utilities
 tokio = "1"
-async-trait = "0.1"
-
-# Logging
-log = "0.4"
-env_logger = { version = "0.11", default-features = false }
 
 # Serialization
 serde = "1.0.228"
 serde_json = "1.0.149"
-bytes = "1.11.1"
 
 # Protobuf / gRPC
 tonic = { version = "0.14.1", default-features = false, features = ["codegen", "transport"] }
@@ -41,26 +35,15 @@ tonic-prost = "0.14.1"
 prost = { version = "0.14.1", default-features = false, features = ["std"] }
 prost-types = { version = "0.14.1", default-features = false }
 pbjson = "0.9.0"
-pbjson-build = "0.9.0"
-pbjson-types = "0.9.0"
 
 # Deno Dependencies
 deno_core = { version = "0.363.0", default-features = false }
 deno_runtime = { version = "0.229.0", features = ["snapshot"] }
 deno_lib = "0.39.0"
-deno_web = "0.252.0"
-deno_permissions = "0.80.0"
-deno_fs = "0.131.0"
-deno_broadcast_channel = "0.215.0"
-deno_fetch = "0.245.0"
-deno_node = "0.159.0"
-deno_resolver = "0.52.0"
-deno_tls = "0.208.0"
 node_resolver = "0.59.0"
 sys_traits = "0.1.17"
 
 # Utilities
-chrono = { version = "0.4", default-features = false }
 url = "2.5.8"
 regex = "1.11.1"
 indexmap = "2.7"
@@ -69,9 +52,6 @@ unescaper = "0.1.8"
 
 # Platform-Specific
 windows-sys = { version = "0.61.2", features = ["Win32_System_SystemInformation"] }
-
-# IPC
-ipc-channel = { version = "0.20.2", features = ["async"] }
 
 [package]
 name = "sapphillon_core"
@@ -95,42 +75,18 @@ deno_error.workspace = true
 
 # Async Runtime & Utilities
 tokio.workspace = true
-async-trait.workspace = true
-
-# Logging
-log.workspace = true
-env_logger.workspace = true
 
 # Serialization
-serde.workspace = true
 serde_json.workspace = true
-
-# Protobuf / gRPC
-tonic.workspace = true
-prost.workspace = true
-prost-types.workspace = true
 
 # Deno Dependencies
 deno_core.workspace = true
-deno_runtime.workspace = true
-deno_lib.workspace = true
-deno_resolver.workspace = true
-node_resolver.workspace = true
 
 # Utilities
-chrono.workspace = true
 url.workspace = true
 regex.workspace = true
 indexmap.workspace = true
-once_cell.workspace = true
 unescaper.workspace = true
-
-# IPC
-ipc-channel.workspace = true
-
-[target.'cfg(windows)'.dependencies]
-# Platform-Specific
-windows-sys.workspace = true
 
 [dev-dependencies]
 # Testing
