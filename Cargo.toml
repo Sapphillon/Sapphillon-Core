@@ -28,7 +28,7 @@ thiserror = "2.0.18"
 url = "2.5.8"
 windows-sys = { version = "0.61.2", features = ["Win32_System_SystemInformation"] }
 regex = "1.11.1"
-indexmap = "2.7"
+indexmap = "2.13"
 
 sys_traits = "0.1.17"
 deno_lib = "0.39.0"
