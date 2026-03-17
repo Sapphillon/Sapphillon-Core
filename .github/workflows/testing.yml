@@ -2,10 +2,6 @@
 name: Rust Testing
 permissions:
   contents: read
-  actions: write
-
-permissions:
-  contents: read
 
 on:
   pull_request:
