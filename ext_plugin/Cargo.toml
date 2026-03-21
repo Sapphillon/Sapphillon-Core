@@ -21,6 +21,7 @@ serde_json.workspace = true
 
 # Deno Dependencies
 deno_runtime.workspace = true
+deno_semver.workspace = true
 node_resolver.workspace = true
 sys_traits.workspace = true
 

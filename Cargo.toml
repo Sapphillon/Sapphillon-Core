@@ -37,10 +37,11 @@ prost-types = { version = "0.14.1", default-features = false }
 pbjson = "0.9.0"
 
 # Deno Dependencies
-deno_core = { version = "0.363.0", default-features = false }
-deno_runtime = { version = "0.229.0", features = ["snapshot"] }
-node_resolver = "0.59.0"
-sys_traits = "0.1.17"
+deno_core = "0.393.0"
+deno_runtime = { version = "0.248.0", features = ["snapshot"] }
+node_resolver = "0.78.0"
+sys_traits = "=0.1.25"
+deno_semver = "0.9.1"
 
 # Utilities
 url = "^2.5.8"
@@ -92,7 +93,3 @@ unescaper.workspace = true
 serial_test = "3.2"
 tempfile = "3"
 
-# Patch to fix temporal_rs 0.0.11 and timezone_provider version mismatch
-# temporal_rs 0.0.11 requires timezone_provider ~0.0.11, but deno_runtime brings in 0.0.16
-[patch.crates-io]
-timezone_provider = { git = "https://github.com/boa-dev/temporal", tag = "v0.0.11" }

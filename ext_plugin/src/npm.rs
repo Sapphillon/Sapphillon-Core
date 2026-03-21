@@ -19,6 +19,7 @@
 
 //! Dummy implementations for npm-related traits (not used in this environment)
 
+use deno_semver::Version;
 use node_resolver::errors::{PackageFolderResolveError, PackageNotFoundError};
 use node_resolver::{InNpmPackageChecker, NpmPackageFolderResolver, UrlOrPathRef};
 use std::path::PathBuf;
@@ -52,6 +53,15 @@ impl NpmPackageFolderResolver for NoopNpmPackageFolderResolver {
             referrer_extra: None,
         }
         .into())
+    }
+
+    fn resolve_types_package_folder(
+        &self,
+        _package_name: &str,
+        _version: Option<&Version>,
+        _referrer: Option<&UrlOrPathRef<'_>>,
+    ) -> Option<PathBuf> {
+        None
     }
 }
 

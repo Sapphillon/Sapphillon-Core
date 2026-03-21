@@ -21,7 +21,7 @@
 
 use deno_error::JsErrorBox;
 use deno_runtime::deno_core::{
-    ModuleLoadResponse, ModuleLoader, ModuleSpecifier, RequestedModuleType, ResolutionKind,
+    ModuleLoadOptions, ModuleLoadResponse, ModuleLoader, ModuleSpecifier, ResolutionKind,
 };
 
 /// A module loader that doesn't support loading any modules.
@@ -44,8 +44,7 @@ impl ModuleLoader for NoopModuleLoader {
         &self,
         module_specifier: &ModuleSpecifier,
         _maybe_referrer: Option<&deno_runtime::deno_core::ModuleLoadReferrer>,
-        _is_dyn_import: bool,
-        _requested_module_type: RequestedModuleType,
+        _options: ModuleLoadOptions,
     ) -> ModuleLoadResponse {
         let specifier = module_specifier.clone();
         ModuleLoadResponse::Sync(Err(JsErrorBox::generic(format!(

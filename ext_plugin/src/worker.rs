@@ -21,13 +21,13 @@
 
 use anyhow::Result;
 use deno_runtime::FeatureChecker;
-use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
 use deno_runtime::deno_core::ModuleSpecifier;
 use deno_runtime::deno_fs::RealFs;
 use deno_runtime::deno_permissions::PermissionsContainer;
 use deno_runtime::deno_permissions::PermissionsOptions;
 use deno_runtime::deno_tls::RootCertStoreProvider;
 use deno_runtime::deno_web::BlobStore;
+use deno_runtime::deno_web::InMemoryBroadcastChannel;
 use deno_runtime::worker::{MainWorker, WorkerOptions, WorkerServiceOptions};
 use std::rc::Rc;
 use std::sync::Arc;
