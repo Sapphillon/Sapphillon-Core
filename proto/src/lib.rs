@@ -3,9 +3,11 @@
 // SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later
 
 // Re-export dependencies for use by sapphillon_core
+pub use pbjson;
 pub use prost;
 pub use prost_types;
 pub use tonic;
+pub use tonic_prost;
 
 // Re-export the generated protobuf code
 
