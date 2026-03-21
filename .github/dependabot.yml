@@ -14,6 +14,17 @@ updates:
    directory: "/"
    schedule:
      interval: weekly
+   groups:
+     deno-dependencies:
+       patterns:
+         - "deno_*"
+         - "node_resolver"
+         - "sys_traits"
+     protobuf-grpc:
+       patterns:
+         - "tonic*"
+         - "prost*"
+         - "pbjson"
  - package-ecosystem: "github-actions"
    directory: "/"
    schedule:
