@@ -4,34 +4,49 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-anyhow.workspace = true
-deno_runtime.workspace = true
-deno_core.workspace = true
-sys_traits.workspace = true
-deno_lib.workspace = true
-deno_web.workspace = true
-deno_resolver.workspace = true
-node_resolver.workspace = true
-url.workspace = true
-tokio.workspace = true
-deno_error.workspace = true
-once_cell.workspace = true
-deno_tls.workspace = true
-deno_permissions.workspace = true
+# Workspace Internal Packages
 proto = { path = "../proto" }
+
+# Error Handling
+anyhow.workspace = true
+deno_error.workspace = true
+
+# Async Runtime & Utilities
+tokio.workspace = true
+once_cell.workspace = true
+
+# Serialization
 serde.workspace = true
 serde_json.workspace = true
+
+# Deno Dependencies
+deno_runtime.workspace = true
+deno_semver.workspace = true
+node_resolver.workspace = true
+sys_traits.workspace = true
+
+# TLS
+rustls-native-certs = "0.8"
+
+# Utilities
+url.workspace = true
+
+# IPC
 ipc-channel = "0.20.2"
 
 [target.'cfg(windows)'.dependencies]
+# Platform-Specific
 windows-sys.workspace = true
 
 [target.'cfg(windows)'.build-dependencies]
+# Platform-Specific
 windows-sys.workspace = true
 
 [build-dependencies]
+# Deno Dependencies
 deno_runtime.workspace = true
 
 [dev-dependencies]
+# Testing
 httpmock = "0.8"
 tempfile = "3"

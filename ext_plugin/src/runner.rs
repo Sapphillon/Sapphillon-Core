@@ -20,9 +20,9 @@
 //! JavaScript execution with Deno's MainWorker
 
 use deno_error::JsErrorBox;
-use deno_permissions::PermissionsOptions;
 use deno_runtime::deno_core::PollEventLoopOptions;
 use deno_runtime::deno_core::v8;
+use deno_runtime::deno_permissions::PermissionsOptions;
 
 use crate::worker::create_main_worker;
 

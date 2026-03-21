@@ -9,15 +9,12 @@ repository = "https://github.com/Walkmana-25/Sapphillon-Core"
 homepage = "https://github.com/Walkmana-25/Sapphillon-Core"
 
 [dependencies]
+# Protobuf / gRPC
 tonic.workspace = true
 tonic-prost.workspace = true
-
 prost.workspace = true
 prost-types.workspace = true
-
-pbjson-build.workspace = true
 pbjson.workspace = true
-pbjson-types.workspace = true
 
-bytes.workspace = true
+# Serialization
 serde.workspace = true
