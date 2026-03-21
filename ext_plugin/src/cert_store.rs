@@ -21,10 +21,30 @@
 
 use anyhow::Result;
 use deno_error::JsErrorBox;
-use deno_lib::args::get_root_cert_store;
 use deno_runtime::deno_tls::RootCertStoreProvider;
 use deno_runtime::deno_tls::rustls::RootCertStore;
 use once_cell::sync::OnceCell;
+
+/// Load system root certificates into a rustls RootCertStore.
+/// This replaces deno_lib::args::get_root_cert_store with a direct implementation.
+fn load_root_cert_store() -> Result<RootCertStore> {
+    let mut store = RootCertStore::empty();
+
+    // Load the default Mozilla root certificates from the system
+    // These are loaded from the OS certificate store
+    let result = rustls_native_certs::load_native_certs();
+    for cert in result.certs {
+        store.add(cert)
+            .map_err(|e| anyhow::anyhow!("Failed to add certificate to store: {}", e))?;
+    }
+
+    // Log any errors from certificate loading (use eprintln to avoid log dependency)
+    for error in result.errors {
+        eprintln!("Failed to load certificate: {}", error);
+    }
+
+    Ok(store)
+}
 
 /// Root certificate store provider for Sapphillon.
 /// Lazily initializes the root certificate store on first access.
@@ -49,7 +69,7 @@ impl Default for SapphillonRootCertStoreProvider {
 impl RootCertStoreProvider for SapphillonRootCertStoreProvider {
     fn get_or_try_init(&self) -> Result<&RootCertStore, JsErrorBox> {
         self.cell
-            .get_or_try_init(|| get_root_cert_store(None, None, None))
+            .get_or_try_init(|| load_root_cert_store())
             .map_err(|e| JsErrorBox::generic(e.to_string()))
     }
 }

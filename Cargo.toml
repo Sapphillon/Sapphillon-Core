@@ -39,7 +39,6 @@ pbjson = "0.9.0"
 # Deno Dependencies
 deno_core = { version = "0.363.0", default-features = false }
 deno_runtime = { version = "0.229.0", features = ["snapshot"] }
-deno_lib = "0.39.0"
 node_resolver = "0.59.0"
 sys_traits = "0.1.17"
 
@@ -94,6 +93,6 @@ serial_test = "3.2"
 tempfile = "3"
 
 # Patch to fix temporal_rs 0.0.11 and timezone_provider version mismatch
-# temporal_rs 0.0.11 requires timezone_provider ~0.0.11, but deno_lib brings in 0.0.16
+# temporal_rs 0.0.11 requires timezone_provider ~0.0.11, but deno_runtime brings in 0.0.16
 [patch.crates-io]
 timezone_provider = { git = "https://github.com/boa-dev/temporal", tag = "v0.0.11" }

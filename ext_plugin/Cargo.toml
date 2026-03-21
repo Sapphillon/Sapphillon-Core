@@ -21,9 +21,11 @@ serde_json.workspace = true
 
 # Deno Dependencies
 deno_runtime.workspace = true
-deno_lib.workspace = true
-sys_traits.workspace = true
 node_resolver.workspace = true
+sys_traits.workspace = true
+
+# TLS
+rustls-native-certs = "0.8"
 
 # Utilities
 url.workspace = true
