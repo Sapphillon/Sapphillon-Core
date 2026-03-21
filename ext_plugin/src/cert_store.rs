@@ -39,9 +39,9 @@ fn load_root_cert_store() -> Result<RootCertStore> {
             .map_err(|e| anyhow::anyhow!("Failed to add certificate to store: {e}"))?;
     }
 
-    // Log any errors from certificate loading (use eprintln to avoid log dependency)
-    for error in result.errors {
-        eprintln!("Failed to load certificate: {error}");
+    // Log that there were certificate loading errors without exposing sensitive details
+    for _error in result.errors {
+        eprintln!("Failed to load one or more system certificates");
     }
 
     Ok(store)
