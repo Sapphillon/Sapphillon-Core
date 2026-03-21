@@ -34,13 +34,14 @@ fn load_root_cert_store() -> Result<RootCertStore> {
     // These are loaded from the OS certificate store
     let result = rustls_native_certs::load_native_certs();
     for cert in result.certs {
-        store.add(cert)
-            .map_err(|e| anyhow::anyhow!("Failed to add certificate to store: {}", e))?;
+        store
+            .add(cert)
+            .map_err(|e| anyhow::anyhow!("Failed to add certificate to store: {e}"))?;
     }
 
     // Log any errors from certificate loading (use eprintln to avoid log dependency)
     for error in result.errors {
-        eprintln!("Failed to load certificate: {}", error);
+        eprintln!("Failed to load certificate: {error}");
     }
 
     Ok(store)
@@ -69,7 +70,7 @@ impl Default for SapphillonRootCertStoreProvider {
 impl RootCertStoreProvider for SapphillonRootCertStoreProvider {
     fn get_or_try_init(&self) -> Result<&RootCertStore, JsErrorBox> {
         self.cell
-            .get_or_try_init(|| load_root_cert_store())
+            .get_or_try_init(load_root_cert_store)
             .map_err(|e| JsErrorBox::generic(e.to_string()))
     }
 }
