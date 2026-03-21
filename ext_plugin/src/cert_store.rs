@@ -30,8 +30,8 @@ use once_cell::sync::OnceCell;
 fn load_root_cert_store() -> Result<RootCertStore> {
     let mut store = RootCertStore::empty();
 
-    // Load the default Mozilla root certificates from the system
-    // These are loaded from the OS certificate store
+    // Load root certificates from the OS/native certificate store
+    // via rustls_native_certs (contents depend on the underlying platform)
     let result = rustls_native_certs::load_native_certs();
     for cert in result.certs {
         store
