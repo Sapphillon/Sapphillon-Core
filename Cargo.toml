@@ -53,6 +53,9 @@ unescaper = "0.1.8"
 # Platform-Specific
 windows-sys = { version = "0.61.2", features = ["Win32_System_SystemInformation"] }
 
+[patch.crates-io]
+deno_io = { path = "vendor/deno_io" }
+
 [package]
 name = "sapphillon_core"
 version.workspace = true
