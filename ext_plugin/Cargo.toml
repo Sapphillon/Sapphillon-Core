@@ -32,7 +32,7 @@ rustls-native-certs = "0.8"
 url.workspace = true
 
 # IPC
-ipc-channel = "0.20.2"
+ipc-channel = "0.21.0"
 
 [target.'cfg(windows)'.dependencies]
 # Platform-Specific
