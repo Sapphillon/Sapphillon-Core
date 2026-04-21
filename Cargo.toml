@@ -22,7 +22,7 @@ anyhow = { version = "^1.0", default-features = false }
 thiserror = "^2.0.18"
 
 # Async Runtime & Utilities
-tokio = "^1.0"
+tokio = "^1.52"
 
 # Serialization
 serde = "^1.0.228"
