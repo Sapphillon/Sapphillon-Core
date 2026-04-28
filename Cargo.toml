@@ -36,7 +36,7 @@ prost-types = { version = "0.14.1", default-features = false }
 pbjson = "0.9.0"
 
 # Deno Dependencies
-deno_core = "0.395.0"
+deno_core = "0.397.0"
 deno_runtime = { version = "0.250.0", features = ["snapshot"] }
 node_resolver = "0.80.0"
 sys_traits = "=0.1.25"
