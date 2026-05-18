@@ -36,6 +36,7 @@ ipc-channel = "0.20.2"
 
 # Logging
 tracing.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [target.'cfg(windows)'.dependencies]
 # Platform-Specific

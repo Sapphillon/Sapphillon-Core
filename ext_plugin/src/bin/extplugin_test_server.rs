@@ -4,6 +4,10 @@ use std::env;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::TRACE)
+        .with_target(false)
+        .init();
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         anyhow::bail!("Usage: extplugin_test_server <server_name>");
