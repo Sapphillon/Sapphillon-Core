@@ -43,6 +43,9 @@ sys_traits = "=0.1.25"
 deno_semver = "0.9.1"
 deno_error = "0.7.0"
 
+# Logging
+tracing = "0.1"
+
 # Utilities
 url = "^2.5.8"
 regex = "^1.11.1"
@@ -96,4 +99,7 @@ unescaper.workspace = true
 # Testing
 serial_test = "3.2"
 tempfile = "3"
+
+# Logging (test only)
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 

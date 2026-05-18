@@ -34,6 +34,9 @@ url.workspace = true
 # IPC
 ipc-channel = "0.20.2"
 
+# Logging
+tracing.workspace = true
+
 [target.'cfg(windows)'.dependencies]
 # Platform-Specific
 windows-sys.workspace = true
@@ -50,3 +53,6 @@ deno_runtime.workspace = true
 # Testing
 httpmock = "0.8"
 tempfile = "3"
+
+# Logging (test only)
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

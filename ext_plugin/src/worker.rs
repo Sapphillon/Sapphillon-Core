@@ -54,6 +54,8 @@ static RUNTIME_SNAPSHOT: &[u8] =
 ///
 /// Note: ES module imports are NOT supported. Only inline script execution works.
 pub fn create_main_worker(permissions_options: &Option<PermissionsOptions>) -> Result<MainWorker> {
+    tracing::debug!("Creating Deno MainWorker");
+
     // Initialize rustls crypto provider for TLS/HTTPS support (required for fetch)
     // Use ring as the crypto backend (ignore error if already installed)
     let _ = deno_runtime::deno_tls::rustls::crypto::ring::default_provider().install_default();
@@ -91,6 +93,7 @@ pub fn create_main_worker(permissions_options: &Option<PermissionsOptions>) -> R
     };
 
     // Create worker options with the pre-generated snapshot
+    tracing::debug!(snapshot_size = RUNTIME_SNAPSHOT.len(), "Loaded runtime snapshot");
     let options = WorkerOptions {
         startup_snapshot: Some(RUNTIME_SNAPSHOT),
         ..Default::default()
@@ -99,5 +102,6 @@ pub fn create_main_worker(permissions_options: &Option<PermissionsOptions>) -> R
     // Bootstrap the worker with the snapshot
     let worker = MainWorker::bootstrap_from_options(&main_module, services, options);
 
+    tracing::info!("Deno MainWorker created successfully");
     Ok(worker)
 }

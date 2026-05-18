@@ -32,7 +32,9 @@ use deno_runtime::deno_core::{JsRuntime, RuntimeOptions, serde_v8, v8};
 /// The provided `package_script` must set `Sapphillon.Package` to a plain JS
 /// object compatible with the `SapphillonPackage` schema.
 #[allow(dead_code)]
+#[tracing::instrument(skip(package_script), fields(script_len = package_script.len()))]
 pub async fn parse_package_info(package_script: &str) -> Result<SapphillonPackage> {
+    tracing::debug!("Parsing package info from script");
     // NOTE: The JS schema may include non-serializable values (e.g. `handler: function`).
     // `serde_v8` cannot reliably deserialize function values, even if the field is
     // otherwise ignored. To make package parsing robust, we project `Sapphillon.Package`
@@ -56,12 +58,15 @@ pub async fn parse_package_info(package_script: &str) -> Result<SapphillonPackag
     let package_script = format!("{package_script}\n{package_init_script}");
 
     let mut runtime = JsRuntime::new(RuntimeOptions::default());
+    tracing::debug!("Executing projection IIFE to extract schema");
     let output = runtime.execute_script("<init>", package_script)?;
 
     // Use the runtime's handle scope (returns a pinned HandleScope reference)
+    tracing::debug!("Deserializing package from V8 value");
     deno_runtime::deno_core::scope!(scope, &mut runtime);
     let local = v8::Local::new(scope, output);
     let package: SapphillonPackage = serde_v8::from_v8(scope, local)?;
+    tracing::info!("Package info parsed successfully");
     Ok(package)
 }
 
@@ -206,6 +211,7 @@ mod tests {
 
     #[tokio::test]
     async fn parse_package_info_parses_test_package_js() {
+        crate::init_test_logging();
         let fixture = include_str!("test_package.js");
         let package_script =
             format!("globalThis.Sapphillon = globalThis.Sapphillon || {{}};\n{fixture}",);

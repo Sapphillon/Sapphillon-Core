@@ -71,6 +71,7 @@ mod tests {
 
     #[test]
     fn args_serialize_round_trip() -> Result<(), anyhow::Error> {
+        crate::init_test_logging();
         let args = RsJsBridgeArgs {
             func_name: "handleEvent".to_string(),
             args: vec![
@@ -89,6 +90,7 @@ mod tests {
 
     #[test]
     fn returns_serialize_round_trip() -> Result<(), anyhow::Error> {
+        crate::init_test_logging();
         let returns = RsJsBridgeReturns {
             args: vec![
                 ("status".to_string(), json!("ok")),

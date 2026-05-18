@@ -51,10 +51,12 @@ fn to_js_error<E: std::fmt::Display>(err: E) -> JsError {
 /// ```rust,ignore
 /// let exit_code = run_js("console.log('Hello from Deno!')").await?;
 /// ```
+#[tracing::instrument(skip(script), fields(script_len = script.len()))]
 pub async fn run_js(
     script: &str,
     permissions_options: &Option<PermissionsOptions>,
 ) -> JsResult<i32> {
+    tracing::debug!("Starting JavaScript execution");
     let mut worker = create_main_worker(permissions_options).map_err(to_js_error)?;
 
     // Execute the script
@@ -63,9 +65,11 @@ pub async fn run_js(
         .map_err(to_js_error)?;
 
     // Dispatch load event
+    tracing::debug!("Dispatching load event");
     worker.dispatch_load_event().map_err(to_js_error)?;
 
     // Run event loop
+    tracing::debug!("Running event loop");
     loop {
         worker.run_event_loop(false).await.map_err(to_js_error)?;
 
@@ -78,7 +82,9 @@ pub async fn run_js(
     // Dispatch unload event
     worker.dispatch_unload_event().map_err(to_js_error)?;
 
-    Ok(worker.exit_code())
+    let exit_code = worker.exit_code();
+    tracing::info!(exit_code = exit_code, "Script execution completed");
+    Ok(exit_code)
 }
 
 /// Executes JavaScript code that defines `entrypoint` and then calls `entrypoint(string) -> string`.
@@ -86,11 +92,13 @@ pub async fn run_js(
 /// `script` must define `globalThis.entrypoint` (or a global `function entrypoint(...) {}`)
 /// that returns a string (or `String` object). If it returns a Promise, the worker event loop
 /// is driven until the Promise resolves.
+#[tracing::instrument(skip(script, arg), fields(script_len = script.len(), arg_len = arg.len()))]
 pub async fn run_js_with_string_arg(
     script: &str,
     arg: &str,
     permissions_options: &Option<PermissionsOptions>,
 ) -> JsResult<String> {
+    tracing::debug!("Starting JavaScript execution with string argument");
     let mut worker = create_main_worker(permissions_options).map_err(to_js_error)?;
 
     // 1) Execute the script so it can define `globalThis.entrypoint`.
@@ -103,6 +111,7 @@ pub async fn run_js_with_string_arg(
 
     // 3) Resolve `globalThis.entrypoint` and convert it into a `v8::Function` handle.
     //    We promote locals to `v8::Global` so they remain valid outside this V8 scope.
+    tracing::debug!("Resolving entrypoint function");
     let function_global = {
         deno_runtime::deno_core::scope!(scope, &mut worker.js_runtime);
         v8::tc_scope!(tc_scope, scope);
@@ -141,6 +150,7 @@ pub async fn run_js_with_string_arg(
     //    - If it returns a normal value, this completes quickly.
     //    - If it returns a Promise (e.g. async function), we must drive Deno's event loop until
     //      the Promise settles.
+    tracing::debug!("Calling entrypoint function");
     let call_fut = worker
         .js_runtime
         .call_with_args(&function_global, &[arg_global]);
@@ -170,6 +180,8 @@ pub async fn run_js_with_string_arg(
         v8_str.to_rust_string_lossy(tc_scope)
     };
 
+    tracing::debug!(result_len = result_string.len(), "Function returned result");
+
     // 7) Drain pending tasks and run unload lifecycle hooks, like `run_js`.
     loop {
         worker.run_event_loop(false).await.map_err(to_js_error)?;
@@ -180,6 +192,7 @@ pub async fn run_js_with_string_arg(
     }
     worker.dispatch_unload_event().map_err(to_js_error)?;
 
+    tracing::info!("JavaScript execution with string argument completed");
     Ok(result_string)
 }
 
@@ -205,6 +218,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_js_console_log() {
+        crate::init_test_logging();
         let result = run_js("console.log('Hello from Deno MainWorker!')", &None).await;
         assert!(result.is_ok(), "Should be able to run console.log");
         assert_eq!(result.unwrap(), 0, "Exit code should be 0");
@@ -212,6 +226,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_js_simple_calculation() {
+        crate::init_test_logging();
         let result = run_js("const x = 1 + 1; console.log('1 + 1 =', x);", &None).await;
         assert!(result.is_ok(), "Should be able to run simple calculations");
         assert_eq!(result.unwrap(), 0, "Exit code should be 0");
@@ -219,6 +234,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_js_fetch() {
+        crate::init_test_logging();
         use httpmock::{Method::GET, MockServer};
 
         let server = MockServer::start_async().await;
@@ -265,6 +281,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_js_with_string_arg_sync() {
+        crate::init_test_logging();
         let script = r#"
             function entrypoint(s) {
                 return s.toUpperCase();
@@ -277,6 +294,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_js_with_string_arg_async() {
+        crate::init_test_logging();
         let script = r#"
             globalThis.entrypoint = async (s) => {
                 await new Promise((r) => setTimeout(r, 10));
@@ -294,6 +312,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_permissions_fs_read_denied_by_default() {
+        crate::init_test_logging();
         let dir = tempdir().expect("create temp dir");
         let file_path = dir.path().join("readme.txt");
         std::fs::write(&file_path, "secret").expect("write temp file");
@@ -311,6 +330,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_permissions_fs_read_allowed_for_specific_path() {
+        crate::init_test_logging();
         let dir = tempdir().expect("create temp dir");
         let file_path = dir.path().join("allowed.txt");
         std::fs::write(&file_path, "ok").expect("write temp file");
@@ -339,6 +359,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_permissions_fs_write_denied_by_default() {
+        crate::init_test_logging();
         let dir = tempdir().expect("create temp dir");
         let file_path = dir.path().join("out.txt");
         let file_path = file_path.to_string_lossy();
@@ -358,6 +379,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_permissions_fs_write_allowed_for_directory() {
+        crate::init_test_logging();
         let dir = tempdir().expect("create temp dir");
         let dir_str = dir.path().to_string_lossy().to_string();
         let file_path = dir.path().join("out.txt");
@@ -385,6 +407,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_permissions_net_denied_by_default() {
+        crate::init_test_logging();
         use httpmock::{Method::GET, MockServer};
 
         let server = MockServer::start_async().await;
@@ -410,6 +433,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_permissions_env_denied_by_default() {
+        crate::init_test_logging();
         // Use a commonly present variable to avoid relying on test-time env mutation.
         let result = run_js("Deno.env.get('PATH');", &None).await;
         let err = result.expect_err("env access should be denied without allow_env");
@@ -418,6 +442,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_permissions_env_allowed_for_specific_var() {
+        crate::init_test_logging();
         let permissions = PermissionsOptions {
             allow_env: Some(vec!["PATH".to_string()]),
             ..Default::default()
@@ -440,6 +465,7 @@ mod tests {
     #[cfg(not(windows))]
     #[tokio::test]
     async fn test_permissions_run_denied_by_default() {
+        crate::init_test_logging();
         let result = run_js(
             r#"
                 const cmd = new Deno.Command('/bin/sh', { args: ['-c', 'echo ok'], clearEnv: true });
@@ -456,6 +482,7 @@ mod tests {
     #[cfg(not(windows))]
     #[tokio::test]
     async fn test_permissions_run_allowed_for_command() {
+        crate::init_test_logging();
         let permissions = PermissionsOptions {
             allow_run: Some(vec!["/bin/sh".to_string()]),
             ..Default::default()

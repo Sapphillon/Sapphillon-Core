@@ -41,7 +41,7 @@ fn load_root_cert_store() -> Result<RootCertStore> {
 
     // Log that there were certificate loading errors without exposing sensitive details
     for _error in result.errors {
-        eprintln!("Failed to load one or more system certificates");
+        tracing::warn!("Failed to load one or more system certificates");
     }
 
     Ok(store)

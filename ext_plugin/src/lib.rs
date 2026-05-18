@@ -219,3 +219,20 @@ pub use extplugin_runner_process::{
     ExternalPluginRunRequest, ExternalPluginRunResponse, IpcPermission, extplugin_client,
     extplugin_server,
 };
+
+/// Initialize tracing subscriber for tests.
+/// Call this at the beginning of each test to enable log output.
+/// Controlled via RUST_LOG env var (e.g., RUST_LOG=debug cargo test).
+#[cfg(test)]
+fn init_test_logging() {
+    use std::sync::Once;
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        let filter = tracing_subscriber::EnvFilter::try_from_default_env()
+            .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn"));
+        tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .with_test_writer()
+            .init();
+    });
+}

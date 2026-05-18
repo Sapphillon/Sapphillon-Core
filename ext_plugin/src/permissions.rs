@@ -46,6 +46,7 @@ pub(crate) fn create_permissions(
 pub(crate) fn permissions_options_from_sapphillon_permissions(
     permissions: &[SapphillonPermission],
 ) -> PermissionsOptions {
+    tracing::debug!(permission_count = permissions.len(), "Converting Sapphillon permissions to Deno PermissionsOptions");
     fn merge_allow_list(target: &mut Option<Vec<String>>, resources: &[String]) {
         if matches!(target, Some(v) if v.is_empty()) {
             // Already "allow all".
@@ -80,18 +81,23 @@ pub(crate) fn permissions_options_from_sapphillon_permissions(
 
         match permission_type {
             PermissionType::FilesystemRead => {
+                tracing::debug!(perm_type = ?permission_type, "Processing permission");
                 merge_allow_list(&mut allow_read, &permission.resource);
             }
             PermissionType::FilesystemWrite => {
+                tracing::debug!(perm_type = ?permission_type, "Processing permission");
                 merge_allow_list(&mut allow_write, &permission.resource);
             }
             PermissionType::NetAccess => {
+                tracing::debug!(perm_type = ?permission_type, "Processing permission");
                 merge_allow_list(&mut allow_net, &permission.resource);
             }
             PermissionType::Execute => {
+                tracing::debug!(perm_type = ?permission_type, "Processing permission");
                 merge_allow_list(&mut allow_run, &permission.resource);
             }
             PermissionType::AllowAll => {
+                tracing::debug!(perm_type = ?permission_type, "Processing permission");
                 allow_read = Some(vec![]);
                 allow_write = Some(vec![]);
                 allow_net = Some(vec![]);
@@ -107,6 +113,7 @@ pub(crate) fn permissions_options_from_sapphillon_permissions(
     options.allow_write = allow_write;
     options.allow_net = allow_net;
     options.allow_run = allow_run;
+    tracing::debug!("Permissions converted successfully");
     options
 }
 
@@ -128,6 +135,7 @@ mod tests {
 
     #[test]
     fn empty_list_is_default() {
+        crate::init_test_logging();
         let options = permissions_options_from_sapphillon_permissions(&[]);
         assert!(options.allow_read.is_none());
         assert!(options.allow_write.is_none());
@@ -137,6 +145,7 @@ mod tests {
 
     #[test]
     fn filesystem_read_maps_to_allow_read_and_dedupes() {
+        crate::init_test_logging();
         let options = permissions_options_from_sapphillon_permissions(&[perm(
             PermissionType::FilesystemRead,
             vec!["/a", "/b", "/a"],
@@ -153,6 +162,7 @@ mod tests {
 
     #[test]
     fn multiple_permission_types_merge() {
+        crate::init_test_logging();
         let options = permissions_options_from_sapphillon_permissions(&[
             perm(PermissionType::FilesystemRead, vec!["/read"]),
             perm(PermissionType::FilesystemWrite, vec!["/write"]),
@@ -168,6 +178,7 @@ mod tests {
 
     #[test]
     fn empty_resource_means_allow_all_for_that_category() {
+        crate::init_test_logging();
         let options = permissions_options_from_sapphillon_permissions(&[
             perm(PermissionType::NetAccess, vec![]),
             perm(PermissionType::NetAccess, vec!["example.com:443"]),
