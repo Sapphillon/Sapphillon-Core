@@ -27,9 +27,14 @@ async fn run(server_name: &str) -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn"));
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::TRACE)
+        .with_env_filter(filter)
         .with_target(false)
+        .with_level(true)
+        .without_time()
+        .with_ansi(false)
         .init();
     let args: Vec<String> = env::args().collect();
     tracing::info!("Starting Test Extplugin Execution Server");

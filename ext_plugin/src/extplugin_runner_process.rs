@@ -8,6 +8,7 @@ use crate::{RsJsBridgeArgs, RsJsBridgeReturns, SapphillonPackage};
 use ipc_channel::ipc::{self, IpcOneShotServer, IpcSender};
 use proto::sapphillon::v1::Permission;
 use serde::{Deserialize, Serialize};
+use std::io::{BufRead, BufReader};
 use std::process::Command;
 
 /// Serializable permission for IPC transfer.
@@ -76,7 +77,43 @@ pub fn extplugin_client(
     command.arg(&server_name);
 
     tracing::debug!("Spawning external process");
-    let mut child = command.stderr(std::process::Stdio::inherit()).spawn()?;
+    let mut child = command
+        .stderr(std::process::Stdio::piped())
+        .spawn()?;
+
+    // Capture stderr from child process and forward through library's tracing subscriber
+    let stderr = child.stderr.take();
+    let _stderr_thread = std::thread::spawn(move || {
+        if let Some(stderr) = stderr {
+            let reader = BufReader::new(stderr);
+            for line in BufRead::lines(reader) {
+                let line = match line {
+                    Ok(l) => l,
+                    Err(_) => continue,
+                };
+                // Parse level prefix from server output.
+                // The server uses tracing-subscriber fmt with .with_level(true)
+                // Levels are right-aligned to 5 chars + separator space.
+                // Use trim_start + split for robustness against format changes.
+                let (level, message) = match line.trim_start().split_once(' ') {
+                    Some(("TRACE", rest)) => (tracing::Level::TRACE, rest),
+                    Some(("DEBUG", rest)) => (tracing::Level::DEBUG, rest),
+                    Some(("INFO", rest)) => (tracing::Level::INFO, rest),
+                    Some(("WARN", rest)) => (tracing::Level::WARN, rest),
+                    Some(("ERROR", rest)) => (tracing::Level::ERROR, rest),
+                    _ => (tracing::Level::INFO, line.as_str()),
+                };
+
+                match level {
+                    tracing::Level::TRACE => tracing::trace!(target: "ext_plugin::server", "{}", message),
+                    tracing::Level::DEBUG => tracing::debug!(target: "ext_plugin::server", "{}", message),
+                    tracing::Level::INFO => tracing::info!(target: "ext_plugin::server", "{}", message),
+                    tracing::Level::WARN => tracing::warn!(target: "ext_plugin::server", "{}", message),
+                    tracing::Level::ERROR => tracing::error!(target: "ext_plugin::server", "{}", message),
+                }
+            }
+        }
+    });
 
     let (_rx_bootstrap, tx_req) = server.accept()?;
 
