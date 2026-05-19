@@ -2,17 +2,7 @@ use ext_plugin::{ExternalPluginRunRequest, ExternalPluginRunResponse, extplugin_
 use ipc_channel::ipc::{self, IpcSender};
 use std::env;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::TRACE)
-        .with_target(false)
-        .init();
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        anyhow::bail!("Usage: extplugin_test_server <server_name>");
-    }
-    let server_name = &args[1];
+async fn run(server_name: &str) -> anyhow::Result<()> {
 
     if env::var("SAPPHILLON_TEST_SERVER_ABORT").is_ok() {
         let (tx_req, rx_req) = ipc::channel()?;
@@ -33,5 +23,29 @@ async fn main() -> anyhow::Result<()> {
     }
 
     extplugin_server(server_name).await?;
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::TRACE)
+        .with_target(false)
+        .init();
+    let args: Vec<String> = env::args().collect();
+    tracing::info!("Starting Test Extplugin Execution Server");
+    if args.len() < 2 {
+        anyhow::bail!("Usage: extplugin_test_server <server_name>");
+    }
+    let server_name = &args[1];
+    tracing::info!("Server name: {server_name}");
+    
+    match run(server_name).await {
+        Ok(()) => {}
+        Err(e) => {
+            tracing::error!("error occured: {e:#?}")
+        }
+    }
+
     Ok(())
 }
