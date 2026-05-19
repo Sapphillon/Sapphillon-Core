@@ -77,9 +77,7 @@ pub fn extplugin_client(
     command.arg(&server_name);
 
     tracing::debug!("Spawning external process");
-    let mut child = command
-        .stderr(std::process::Stdio::piped())
-        .spawn()?;
+    let mut child = command.stderr(std::process::Stdio::piped()).spawn()?;
 
     // Capture stderr from child process and forward through library's tracing subscriber
     let stderr = child.stderr.take();
@@ -105,11 +103,21 @@ pub fn extplugin_client(
                 };
 
                 match level {
-                    tracing::Level::TRACE => tracing::trace!(target: "ext_plugin::server", "{}", message),
-                    tracing::Level::DEBUG => tracing::debug!(target: "ext_plugin::server", "{}", message),
-                    tracing::Level::INFO => tracing::info!(target: "ext_plugin::server", "{}", message),
-                    tracing::Level::WARN => tracing::warn!(target: "ext_plugin::server", "{}", message),
-                    tracing::Level::ERROR => tracing::error!(target: "ext_plugin::server", "{}", message),
+                    tracing::Level::TRACE => {
+                        tracing::trace!(target: "ext_plugin::server", "{}", message)
+                    }
+                    tracing::Level::DEBUG => {
+                        tracing::debug!(target: "ext_plugin::server", "{}", message)
+                    }
+                    tracing::Level::INFO => {
+                        tracing::info!(target: "ext_plugin::server", "{}", message)
+                    }
+                    tracing::Level::WARN => {
+                        tracing::warn!(target: "ext_plugin::server", "{}", message)
+                    }
+                    tracing::Level::ERROR => {
+                        tracing::error!(target: "ext_plugin::server", "{}", message)
+                    }
                 }
             }
         }
