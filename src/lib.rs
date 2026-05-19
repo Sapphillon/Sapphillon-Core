@@ -30,7 +30,7 @@ pub mod workflow;
 
 /// Initialize tracing subscriber for tests.
 /// Uses `Once` to ensure single initialization across all tests.
-/// Respects `RUST_LOG` environment variable, defaults to `warn` level.
+/// Respects `RUST_LOG` environment variable, defaults to `trace` level.
 #[cfg(test)]
 fn init_test_logging() {
     use std::sync::Once;

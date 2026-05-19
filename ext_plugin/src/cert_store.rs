@@ -41,7 +41,7 @@ fn load_root_cert_store() -> Result<RootCertStore> {
 
     // Log that there were certificate loading errors without exposing sensitive details
     for error in result.errors {
-        tracing::warn!("Failed to load system certificates: {error:#?}");
+        tracing::warn!(error = ?error, "Failed to load system certificates");
     }
 
     Ok(store)
