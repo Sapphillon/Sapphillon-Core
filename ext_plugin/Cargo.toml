@@ -54,6 +54,3 @@ deno_runtime.workspace = true
 # Testing
 httpmock = "0.8"
 tempfile = "3"
-
-# Logging (test only)
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }

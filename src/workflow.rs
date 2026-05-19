@@ -77,9 +77,16 @@ impl CoreWorkflowCode {
         required_permissions: Vec<PluginFunctionPermissions>,
     ) -> Self {
         tracing::debug!(id = %id, code_revision = code_revision, "Creating CoreWorkflowCode");
+        let unescaped_code = match unescaper::unescape(&code) {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to unescape workflow code, using raw code");
+                code.clone()
+            }
+        };
         let this = Self {
             id,
-            code: unescaper::unescape(&code).unwrap(),
+            code: unescaped_code,
             plugin_packages,
             code_revision,
             result: Vec::new(),
@@ -109,7 +116,7 @@ impl CoreWorkflowCode {
     /// - Conditionally launches the external plugin runner if `external_plugin_runner_path` is provided;
     ///   omitting that path skips external package execution (or falls back to the test stub runner when
     ///   the workflow is exercised via the tests).
-    #[tracing::instrument(level = "debug", skip(self, handle, external_plugin_runner_path, external_plugin_runner_args), fields(id = %self.id))]
+    #[tracing::instrument(level = "info", skip(self, handle, external_plugin_runner_path, external_plugin_runner_args), fields(id = %self.id))]
     pub fn run(
         &mut self,
         handle: Handle,
@@ -378,7 +385,6 @@ pub fn extract_used_plugins_from_code(
         valid_count = valid_plugin_calls.len(),
         "Built valid plugin call set"
     );
-
     let mut seen = HashSet::new();
     let mut result = Vec::new();
 

@@ -44,12 +44,5 @@ async fn main() -> anyhow::Result<()> {
     let server_name = &args[1];
     tracing::info!("Server name: {server_name}");
 
-    match run(server_name).await {
-        Ok(()) => {}
-        Err(e) => {
-            tracing::error!("error occured: {e:#?}")
-        }
-    }
-
-    Ok(())
+    run(server_name).await
 }

@@ -19,7 +19,8 @@ fn normalize_segments<I>(segments: I) -> Vec<String>
 where
     I: IntoIterator<Item = String>,
 {
-    tracing::trace!("Normalizing URL segments");
+    let segments: Vec<String> = segments.into_iter().collect();
+    tracing::trace!(segments_count = segments.len(), "Normalizing URL segments");
     let mut out: Vec<String> = Vec::new();
     for s in segments {
         match s.as_str() {

@@ -130,12 +130,12 @@ pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B])
     }
 
     // Check every target is covered by at least one minimal base
-    let result = b
+    let covered = b
         .iter()
         .map(|p| normalize_forgiving(p.as_ref()))
         .all(|t| minimal.iter().any(|base| t.starts_with(base)));
-    tracing::debug!(covered = result, "Path coverage check completed");
-    result
+    tracing::debug!(covered, "Path coverage check completed");
+    covered
 }
 
 /// Return true if every normalized path in b appears exactly (after forgiving

@@ -44,7 +44,7 @@ pub(crate) fn op_print_wrapper(
         if data.is_capture_stdout() {
             // data.add_result(WorkflowStdout::Stderr(msg.to_string()));
             data.add_result(WorkflowStdout::Stdout(msg.to_string()));
-            tracing::debug!("Captured stderr output to workflow state");
+            tracing::debug!("Captured stderr output as stdout to workflow state");
         } else {
             stderr().write_all(msg.as_bytes())?;
             stderr().flush().unwrap();

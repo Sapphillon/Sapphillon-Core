@@ -7,6 +7,6 @@
     //    "--nocapture"
     //],
     "rust-analyzer.runnables.extraEnv": {
-        "RUST_LOG": "trace"
+        "RUST_LOG": "sapphillon_core=debug,ext_plugin=debug"
     }
 }
