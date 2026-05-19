@@ -109,7 +109,7 @@ impl CoreWorkflowCode {
     /// - Conditionally launches the external plugin runner if `external_plugin_runner_path` is provided;
     ///   omitting that path skips external package execution (or falls back to the test stub runner when
     ///   the workflow is exercised via the tests).
-    #[tracing::instrument(skip(self, handle, external_plugin_runner_path, external_plugin_runner_args), fields(id = %self.id))]
+    #[tracing::instrument(level = "debug", skip(self, handle, external_plugin_runner_path, external_plugin_runner_args), fields(id = %self.id))]
     pub fn run(
         &mut self,
         handle: Handle,
@@ -339,7 +339,7 @@ impl CoreWorkflowCode {
 /// let plugins = extract_used_plugins_from_code(code, &available_plugins);
 /// // plugins will contain only com.example.filePlugin.read
 /// ```
-#[tracing::instrument(skip(code, available_plugins), fields(code_len = code.len()))]
+#[tracing::instrument(level = "debug", skip(code, available_plugins), fields(code_len = code.len()))]
 pub fn extract_used_plugins_from_code(
     code: &str,
     available_plugins: &[CorePluginPackage],

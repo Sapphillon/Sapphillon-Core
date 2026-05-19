@@ -39,7 +39,7 @@ use proto::sapphillon::v1::Permission;
 /// let package_id = "com.test.test-plugin";
 /// let result = rsjs_bridge_core(&mut state, args_json, package_id)?;
 /// ```
-#[tracing::instrument(skip(state, args_json), fields(package_id = %package_id))]
+#[tracing::instrument(level = "debug", skip(state, args_json), fields(package_id = %package_id))]
 pub fn rsjs_bridge_core(
     state: &mut OpState,
     args_json: &str,

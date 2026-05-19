@@ -171,7 +171,7 @@ pub enum CheckPermissionResult {
 ///     CheckPermissionResult::Ok => { /* allowed */ }
 ///     CheckPermissionResult::MissingPermission(m) => { /* handle missing */ }
 /// }
-#[tracing::instrument(skip(permissions, required))]
+#[tracing::instrument(level = "debug", skip(permissions, required))]
 pub fn check_permission(
     permissions: &Permissions,
     required: &Permissions,

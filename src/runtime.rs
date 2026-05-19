@@ -177,7 +177,7 @@ impl OpStateWorkflowData {
 ///   workflow data.
 /// * `Err(Box<JsError>)` - If any JavaScript error occurs during execution.
 #[allow(unused)]
-#[tracing::instrument(skip(script, ext_func, workflow_data, pre_script), fields(script_len = script.len()))]
+#[tracing::instrument(level = "debug", skip(script, ext_func, workflow_data, pre_script), fields(script_len = script.len()))]
 pub(crate) fn run_script(
     script: &str,
     ext_func: Vec<OpDecl>,
