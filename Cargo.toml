@@ -45,6 +45,7 @@ deno_error = "0.7.0"
 
 # Logging
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Utilities
 url = "^2.5.8"
@@ -88,6 +89,9 @@ deno_runtime.workspace = true
 deno_semver.workspace = true
 node_resolver.workspace = true
 sys_traits.workspace = true
+
+# Logging
+tracing.workspace = true
 
 # Utilities
 url.workspace = true

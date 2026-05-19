@@ -39,6 +39,7 @@ use proto::sapphillon::v1::Permission;
 /// let package_id = "com.test.test-plugin";
 /// let result = rsjs_bridge_core(&mut state, args_json, package_id)?;
 /// ```
+#[tracing::instrument(skip(state, args_json), fields(package_id = %package_id))]
 pub fn rsjs_bridge_core(
     state: &mut OpState,
     args_json: &str,
@@ -48,17 +49,26 @@ pub fn rsjs_bridge_core(
     use ext_plugin::extplugin_client;
     use std::sync::{Arc, Mutex};
 
+    tracing::info!(package_id = %package_id, "Starting external plugin bridge");
+
     // Step 1: Retrieve the external package from OpState
     let workflow_data = state
         .borrow::<Arc<Mutex<OpStateWorkflowData>>>()
         .lock()
         .map_err(|e| anyhow::anyhow!("Failed to lock OpStateWorkflowData: {e}"))?;
 
+    tracing::debug!("Retrieved workflow data from OpState");
+
     let package = workflow_data
         .external_package
         .iter()
         .find(|pkg| pkg.id == package_id)
-        .ok_or_else(|| anyhow::anyhow!("Package not found: {package_id}"))?;
+        .ok_or_else(|| {
+            tracing::error!(package_id = %package_id, "Package not found");
+            anyhow::anyhow!("Package not found: {package_id}")
+        })?;
+
+    tracing::debug!("Found external package");
 
     // Clone the data we need before dropping the lock
     // We need the SapphillonPackage itself, but it's wrapped in Arc<CorePluginExternalPackage>.
@@ -72,6 +82,7 @@ pub fn rsjs_bridge_core(
 
     // Step 2: Parse RsJsBridgeArgs from JSON to get the function name
     let args = RsJsBridgeArgs::new_from_str(args_json)?;
+    tracing::debug!(func_name = %args.func_name, "Parsed bridge arguments");
 
     // Step 3: Get allowed permissions for this function
     // Build the plugin_function_id from package_id and func_name
@@ -89,6 +100,7 @@ pub fn rsjs_bridge_core(
                 .map(|pf| pf.permissions.permissions.clone())
         })
         .unwrap_or_default();
+    tracing::debug!(perm_count = sapphillon_permissions.len(), "Retrieved permissions for function");
 
     // Step 4: Get external package runner path and args from OpStateWorkflowData
     // If provided, use them; otherwise use default values
@@ -102,6 +114,7 @@ pub fn rsjs_bridge_core(
     // We need this because extplugin_client expects it.
     // Note: SapphillonPackage::new parses the JS.
     let sapphillon_package = SapphillonPackage::new(&package_js)?;
+    tracing::debug!("Created SapphillonPackage");
 
     // Step 6: Locate the runner process
     // If external_package_runner_path is set in OpStateWorkflowData, use it.
@@ -129,6 +142,7 @@ pub fn rsjs_bridge_core(
     let server_args_refs: Vec<&str> = server_args.iter().map(|s| s.as_str()).collect();
 
     // Step 7: Execute via IPC
+    tracing::debug!("Executing plugin via IPC");
     let returns = extplugin_client(
         &sapphillon_package,
         &args.func_name,
@@ -139,6 +153,7 @@ pub fn rsjs_bridge_core(
     )?;
 
     // Step 6: Serialize RsJsBridgeReturns to JSON
+    tracing::info!(package_id = %package_id, "External plugin bridge completed successfully");
     returns.to_string()
 }
 
@@ -165,14 +180,22 @@ pub fn rsjs_bridge_opdecl(
     #[serde] args_json_val: serde_json::Value,
     #[serde] package_id_val: serde_json::Value,
 ) -> Result<String, deno_error::JsErrorBox> {
+    tracing::debug!("Rs-Js bridge op called from JavaScript");
+
     // Use serde_json::Value and manual string conversion to avoid issues with #[string]
     // attribute on arguments in reentrant ops, which can cause serde_v8 errors.
     let args_json = args_json_val
         .as_str()
-        .ok_or_else(|| deno_error::JsErrorBox::type_error("Expected string for args_json"))?;
+        .ok_or_else(|| {
+            tracing::warn!("Invalid argument type in bridge op");
+            deno_error::JsErrorBox::type_error("Expected string for args_json")
+        })?;
     let package_id = package_id_val
         .as_str()
-        .ok_or_else(|| deno_error::JsErrorBox::type_error("Expected string for package_id"))?;
+        .ok_or_else(|| {
+            tracing::warn!("Invalid argument type in bridge op");
+            deno_error::JsErrorBox::type_error("Expected string for package_id")
+        })?;
 
     rsjs_bridge_core(state, args_json, package_id)
         .map_err(|e| deno_error::JsErrorBox::generic(format!("Rs-Js Bridge Error: {e}")))
@@ -272,6 +295,7 @@ mod tests {
 
     #[test]
     fn test_rsjs_bridge_core_greet() {
+        crate::init_test_logging();
         let (mut op_state, _tokio_rt) = create_opstate_with_package();
 
         let args = RsJsBridgeArgs {
@@ -292,6 +316,7 @@ mod tests {
 
     #[test]
     fn test_rsjs_bridge_core_add() {
+        crate::init_test_logging();
         let (mut op_state, _tokio_rt) = create_opstate_with_package();
 
         let args = RsJsBridgeArgs {
@@ -315,6 +340,7 @@ mod tests {
 
     #[test]
     fn test_rsjs_bridge_core_invalid_json() {
+        crate::init_test_logging();
         let (mut op_state, _tokio_rt) = create_opstate_with_package();
 
         let result = rsjs_bridge_core(&mut op_state, "invalid json", "com.test.test-plugin");
@@ -323,6 +349,7 @@ mod tests {
 
     #[test]
     fn test_rsjs_bridge_core_invalid_package() {
+        crate::init_test_logging();
         let (mut op_state, _tokio_rt) = create_opstate_with_package();
 
         let args = RsJsBridgeArgs {

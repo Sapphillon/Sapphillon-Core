@@ -19,8 +19,11 @@ use std::path::{Component, Path, PathBuf};
 ///
 /// Original (JA): 可能なら canonicalize、失敗したらレキシカルに . と .. を畳み込む簡易正規化
 fn normalize_forgiving(p: &Path) -> PathBuf {
+    tracing::trace!(path = %p.display(), "Normalizing path");
+
     // Prefer real canonicalization when possible (resolves symlinks).
     if let Ok(abs) = std::fs::canonicalize(p) {
+        tracing::trace!(normalized = %abs.display(), "Path normalized");
         return abs;
     }
 
@@ -79,6 +82,7 @@ fn normalize_forgiving(p: &Path) -> PathBuf {
             Seg::Normal(s) => out.push(s),
         }
     }
+    tracing::trace!(normalized = %out.display(), "Path normalized");
     out
 }
 
@@ -100,6 +104,8 @@ fn normalize_forgiving(p: &Path) -> PathBuf {
 ///
 /// Original (JA): a のどれかが b の各要素の祖先（ディレクトリ包含）か
 pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> bool {
+    tracing::debug!(base_count = a.len(), target_count = b.len(), "Checking path coverage by ancestor");
+
     if a.len() == 1 && a[0].as_ref() == Path::new("*") {
         return true;
     }
@@ -120,9 +126,12 @@ pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B])
     }
 
     // Check every target is covered by at least one minimal base
-    b.iter()
+    let result = b
+        .iter()
         .map(|p| normalize_forgiving(p.as_ref()))
-        .all(|t| minimal.iter().any(|base| t.starts_with(base)))
+        .all(|t| minimal.iter().any(|base| t.starts_with(base)));
+    tracing::debug!(covered = result, "Path coverage check completed");
+    result
 }
 
 /// Return true if every normalized path in b appears exactly (after forgiving
@@ -143,6 +152,8 @@ pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B])
 ///
 /// Original (JA intent): 集合として a が b を（正規化後に）包含するか
 pub fn paths_cover_as_set<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> bool {
+    tracing::debug!(base_count = a.len(), target_count = b.len(), "Checking path coverage as set");
+
     if a.len() == 1 && a[0].as_ref() == Path::new("*") {
         return true;
     }

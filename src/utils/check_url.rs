@@ -19,6 +19,7 @@ fn normalize_segments<I>(segments: I) -> Vec<String>
 where
     I: IntoIterator<Item = String>,
 {
+    tracing::trace!("Normalizing URL segments");
     let mut out: Vec<String> = Vec::new();
     for s in segments {
         match s.as_str() {
@@ -69,6 +70,7 @@ fn parse_with_default_scheme(s: &str) -> Result<Url, url::ParseError> {
 /// the sentinel port 0; other explicit ports remain distinct. Returns None if
 /// host or default port is unavailable (opaque URLs).
 fn origin_key(u: &Url) -> Option<(String, u16)> {
+    tracing::trace!(url = %u, "Computing origin key for URL");
     let host = u.host_str()?.to_ascii_lowercase();
     let port = u.port_or_known_default()?;
     Some((host, canonical_port(port)))
@@ -86,6 +88,7 @@ fn origin_key(u: &Url) -> Option<(String, u16)> {
 ///
 /// JA: URL の正規化済みパスセグメントを取得（cannot-be-a-base は None）
 fn url_segments(u: &Url) -> Option<Vec<String>> {
+    tracing::trace!(url = %u, "Extracting URL path segments");
     let segs = u
         .path_segments()?
         .map(|s| s.to_string())
@@ -119,6 +122,8 @@ fn url_segments(u: &Url) -> Option<Vec<String>> {
 ///
 /// JA: a のどれかのベース URL が b の各 URL を「同一オリジンかつパスの前方一致」で包含しているか
 pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
+    tracing::debug!(base_count = a.len(), target_count = b.len(), "Checking URL coverage by ancestor");
+
     if a.len() == 1 && a[0].as_ref() == "*" {
         return true;
     }
@@ -161,9 +166,11 @@ pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) ->
             return false;
         };
         if !entry.iter().any(|base| segs.starts_with(base)) {
+            tracing::debug!(covered = false, "URL coverage check completed");
             return false;
         }
     }
+    tracing::debug!(covered = true, "URL coverage check completed");
     true
 }
 

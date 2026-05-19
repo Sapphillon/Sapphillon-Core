@@ -105,6 +105,7 @@ impl Permissions {
     ///
     /// Complexity: O(n) time and O(n) additional memory in the general case.
     pub fn merge(self) -> Self {
+        tracing::debug!(count = self.permissions.len(), "Merging permissions by type");
         let mut perm_map: HashMap<i32, sapphillon_v1::Permission> = HashMap::new();
 
         self.permissions
@@ -124,7 +125,9 @@ impl Permissions {
                     perm_map.insert(p.permission_type, p.clone());
                 }
             });
-        Permissions::new(perm_map.into_values().collect())
+        let result = Permissions::new(perm_map.into_values().collect());
+        tracing::debug!(merged_count = result.permissions.len(), "Permissions merged");
+        result
     }
 }
 
@@ -168,10 +171,12 @@ pub enum CheckPermissionResult {
 ///     CheckPermissionResult::Ok => { /* allowed */ }
 ///     CheckPermissionResult::MissingPermission(m) => { /* handle missing */ }
 /// }
+#[tracing::instrument(skip(permissions, required))]
 pub fn check_permission(
     permissions: &Permissions,
     required: &Permissions,
 ) -> CheckPermissionResult {
+    tracing::debug!("Checking permissions");
     let merged_permissions = permissions.clone().merge();
     let merged_required = required.clone().merge();
     let mut missing_permissions = Permissions::new(vec![]);
@@ -180,6 +185,7 @@ pub fn check_permission(
     'req_loop: for req in &merged_required.permissions {
         for perm in &merged_permissions.permissions {
             if perm.permission_type == sapphillon_v1::PermissionType::AllowAll as i32 {
+                tracing::debug!("AllowAll permission found, granting all");
                 return CheckPermissionResult::Ok;
             }
 
@@ -217,12 +223,15 @@ pub fn check_permission(
         }
 
         // No granting permission covered this required permission
+        tracing::debug!(perm_type = req.permission_type, "Permission not covered");
         missing_permissions.permissions.push(req.clone());
     }
 
     if missing_permissions.permissions.is_empty() {
+        tracing::debug!("All permissions satisfied");
         CheckPermissionResult::Ok
     } else {
+        tracing::warn!(missing_count = missing_permissions.permissions.len(), "Some required permissions are missing");
         CheckPermissionResult::MissingPermission(missing_permissions)
     }
 }
@@ -240,6 +249,7 @@ pub fn find_allowed_permissions(
     allowed: &[PluginFunctionPermissions],
     target_function_ids: &[&str],
 ) -> Permissions {
+    tracing::debug!(target_ids = ?target_function_ids, "Finding allowed permissions");
     allowed
         .iter()
         .find(|p| {
@@ -267,6 +277,7 @@ pub fn find_and_check_permission(
     target_function_ids: &[&str],
     required_permissions: &Permissions,
 ) -> CheckPermissionResult {
+    tracing::debug!(target_ids = ?target_function_ids, "Finding and checking permissions");
     let allowed_permissions = find_allowed_permissions(allowed, target_function_ids);
     check_permission(&allowed_permissions, required_permissions)
 }
@@ -288,6 +299,7 @@ pub fn check_plugin_permission_with_resource(
     mut base_permissions: Vec<Permission>,
     resource: String,
 ) -> CheckPermissionResult {
+    tracing::debug!(resource = %resource, "Checking plugin permission with resource");
     if let Some(perm) = base_permissions.first_mut() {
         perm.resource = vec![resource];
     }
@@ -305,6 +317,7 @@ mod tests {
 
     #[test]
     fn test_display_for_permission() {
+        crate::init_test_logging();
         let p1 = sapphillon_v1::Permission {
             permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
             resource: vec!["/tmp/test.txt".to_string()],
@@ -337,6 +350,7 @@ mod tests {
     }
     #[test]
     fn test_display_for_permissions() {
+        crate::init_test_logging();
         let p1 = sapphillon_v1::Permission {
             permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
             resource: vec!["/tmp/a".to_string()],
@@ -370,6 +384,7 @@ mod tests {
     // -----------------------------
     #[test]
     fn test_permissions_new_empty_and_single() {
+        crate::init_test_logging();
         // empty
         let empty = Permissions::new(vec![]);
         assert!(
@@ -389,6 +404,7 @@ mod tests {
 
     #[test]
     fn test_permissions_merge_same_type() {
+        crate::init_test_logging();
         let p1 = sapphillon_v1::Permission {
             display_name: "A".to_string(),
             description: "d1".to_string(),
@@ -425,6 +441,7 @@ mod tests {
     // -----------------------------
     #[test]
     fn test_check_permission_filesystem_ok() {
+        crate::init_test_logging();
         let granted = sapphillon_v1::Permission {
             permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
             resource: vec!["/project".to_string()],
@@ -445,6 +462,7 @@ mod tests {
 
     #[test]
     fn test_check_permission_filesystem_missing() {
+        crate::init_test_logging();
         let granted = sapphillon_v1::Permission {
             permission_type: sapphillon_v1::PermissionType::FilesystemRead as i32,
             resource: vec!["/other".to_string()],
@@ -474,6 +492,7 @@ mod tests {
 
     #[test]
     fn test_check_permission_url_ok() {
+        crate::init_test_logging();
         let granted = sapphillon_v1::Permission {
             permission_type: sapphillon_v1::PermissionType::NetAccess as i32,
             resource: vec!["https://example.com/api".to_string()],
@@ -494,6 +513,7 @@ mod tests {
 
     #[test]
     fn test_check_permission_url_missing() {
+        crate::init_test_logging();
         let granted = sapphillon_v1::Permission {
             permission_type: sapphillon_v1::PermissionType::NetAccess as i32,
             resource: vec!["https://api.example.com/".to_string()],
@@ -514,6 +534,7 @@ mod tests {
 
     #[test]
     fn test_check_permission_other_type_presence() {
+        crate::init_test_logging();
         let granted = sapphillon_v1::Permission {
             permission_type: sapphillon_v1::PermissionType::Execute as i32,
             resource: vec![],
@@ -534,12 +555,14 @@ mod tests {
 
     #[test]
     fn test_check_permission_none() {
+        crate::init_test_logging();
         let res = check_permission(&Permissions::new(vec![]), &Permissions::new(vec![]));
         assert!(matches!(res, CheckPermissionResult::Ok));
     }
 
     #[test]
     fn test_check_permission_allow_all() {
+        crate::init_test_logging();
         let granted = sapphillon_v1::Permission {
             permission_type: sapphillon_v1::PermissionType::AllowAll as i32,
             ..Default::default()
@@ -559,6 +582,7 @@ mod tests {
 
     #[test]
     fn test_find_allowed_permissions_exact_match() {
+        crate::init_test_logging();
         let allowed = vec![
             PluginFunctionPermissions {
                 plugin_function_id: "test.func1".to_string(),
@@ -583,6 +607,7 @@ mod tests {
 
     #[test]
     fn test_find_allowed_permissions_wildcard_match() {
+        crate::init_test_logging();
         let allowed = vec![
             PluginFunctionPermissions {
                 plugin_function_id: "*".to_string(),
@@ -607,6 +632,7 @@ mod tests {
 
     #[test]
     fn test_find_allowed_permissions_no_match() {
+        crate::init_test_logging();
         let allowed = vec![PluginFunctionPermissions {
             plugin_function_id: "test.func1".to_string(),
             permissions: Permissions::new(vec![sapphillon_v1::Permission {
@@ -621,6 +647,7 @@ mod tests {
 
     #[test]
     fn test_find_allowed_permissions_multiple_function_ids() {
+        crate::init_test_logging();
         let allowed = vec![PluginFunctionPermissions {
             plugin_function_id: "fetch.post".to_string(),
             permissions: Permissions::new(vec![sapphillon_v1::Permission {
@@ -636,6 +663,7 @@ mod tests {
 
     #[test]
     fn test_find_and_check_permission_ok() {
+        crate::init_test_logging();
         let allowed = vec![PluginFunctionPermissions {
             plugin_function_id: "filesystem.read".to_string(),
             permissions: Permissions::new(vec![sapphillon_v1::Permission {
@@ -656,6 +684,7 @@ mod tests {
 
     #[test]
     fn test_find_and_check_permission_denied() {
+        crate::init_test_logging();
         let allowed = vec![PluginFunctionPermissions {
             plugin_function_id: "filesystem.read".to_string(),
             permissions: Permissions::new(vec![sapphillon_v1::Permission {
@@ -679,6 +708,7 @@ mod tests {
 
     #[test]
     fn test_check_plugin_permission_with_resource() {
+        crate::init_test_logging();
         let allowed = vec![PluginFunctionPermissions {
             plugin_function_id: "filesystem.write".to_string(),
             permissions: Permissions::new(vec![sapphillon_v1::Permission {

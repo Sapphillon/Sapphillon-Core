@@ -79,6 +79,11 @@ impl OpStateWorkflowData {
         external_package_runner_path: Option<String>,
         external_package_runner_args: Option<Vec<String>>,
     ) -> Self {
+        tracing::debug!(
+            workflow_id = workflow_id,
+            capture_stdout = capture_stdout,
+            "Creating OpStateWorkflowData"
+        );
         Self {
             workflow_id: workflow_id.to_string(),
             result: Vec::new(),
@@ -172,12 +177,14 @@ impl OpStateWorkflowData {
 ///   workflow data.
 /// * `Err(Box<JsError>)` - If any JavaScript error occurs during execution.
 #[allow(unused)]
+#[tracing::instrument(skip(script, ext_func, workflow_data, pre_script), fields(script_len = script.len()))]
 pub(crate) fn run_script(
     script: &str,
     ext_func: Vec<OpDecl>,
     workflow_data: Option<Arc<Mutex<OpStateWorkflowData>>>,
     pre_script: Option<Vec<String>>,
 ) -> Result<Arc<Mutex<OpStateWorkflowData>>, Box<SapphillonError>> {
+    tracing::debug!("Setting up JavaScript runtime");
     // Register the extension with the provided operations
     // Deduplicate operations by name to prevent registration errors when multiple
     // external plugins use the same bridge op.
@@ -188,6 +195,7 @@ pub(crate) fn run_script(
     }
     let deduped_ops: Vec<OpDecl> = unique_ops.into_values().collect();
 
+    tracing::debug!(op_count = deduped_ops.len(), "Registered deduplicated operations");
     let extension = Extension {
         name: "ext",
         ops: deduped_ops.into(),
@@ -205,6 +213,7 @@ pub(crate) fn run_script(
         extensions,
         ..Default::default()
     });
+    tracing::debug!("Created JsRuntime with extension");
 
     let mut data: Arc<Mutex<OpStateWorkflowData>>;
     let mut tokio_runtime_option: Option<tokio::runtime::Runtime> = None;
@@ -228,6 +237,7 @@ pub(crate) fn run_script(
         }
     }
     runtime.op_state().borrow_mut().put(data.clone());
+    tracing::debug!("Workflow data initialized");
 
     // Check Permission
     // Use the workflow data that was placed into `op_state` above (`data`) to determine
@@ -256,6 +266,7 @@ pub(crate) fn run_script(
             .collect();
 
         if matched_allowed.is_empty() {
+            tracing::warn!(plugin_function_id = %req.plugin_function_id, "No allowed permissions found for required plugin function");
             return Err(Box::new(SapphillonError::PermissionDeniedError(
                 PermissionDeniedError {
                     requested: req.permissions.clone(),
@@ -275,6 +286,7 @@ pub(crate) fn run_script(
         match perm_check_result {
             CheckPermissionResult::Ok => {}
             CheckPermissionResult::MissingPermission(_missing) => {
+                tracing::error!(plugin_function_id = %req.plugin_function_id, "Permission denied");
                 return Err(Box::new(SapphillonError::PermissionDeniedError(
                     PermissionDeniedError {
                         requested: req.permissions.clone(),
@@ -287,6 +299,7 @@ pub(crate) fn run_script(
 
     // Execute pre-run scripts if provided from core plugins
     if let Some(scripts) = pre_script {
+        tracing::debug!(script_count = scripts.len(), "Executing pre-run scripts");
         let pre_run_script = scripts.join("\n");
         runtime
             .execute_script("pre_script.js", pre_run_script)
@@ -302,6 +315,7 @@ pub(crate) fn run_script(
     }
 
     // Execute the provided script in the runtime
+    tracing::debug!("Executing main workflow script");
     runtime
         .execute_script("workflow.js", script.to_string())
         .map_err(|e: Box<JsError>| {
@@ -314,6 +328,7 @@ pub(crate) fn run_script(
             ))
         })?;
 
+    tracing::info!("Workflow script executed successfully");
     Ok(data)
 }
 
@@ -327,6 +342,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_extension() {
+        crate::init_test_logging();
         #[op2]
         fn test_op(#[serde] a: Vec<i32>) -> i32 {
             a.iter().sum()
@@ -344,6 +360,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_script() {
+        crate::init_test_logging();
         let script = "1 + 1;";
 
         let result = run_script(script, vec![], None, None);
@@ -352,6 +369,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_script_hello() {
+        crate::init_test_logging();
         let script = "a = 1 + 1; console.log('Hello, world!');console.log(a);";
 
         let result = run_script(script, vec![], None, None);
@@ -361,6 +379,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_script_opstate_workflow_data() {
+        crate::init_test_logging();
         // テスト用op: opstateからworkflow_idを取得
         #[op2]
         #[string]
@@ -412,6 +431,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_script_change_opstate_workflow_data() {
+        crate::init_test_logging();
         // テスト用op: opstateからworkflow_idを取得
         #[op2]
         #[string]
@@ -473,6 +493,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_script_capture_stdout() {
+        crate::init_test_logging();
         use std::sync::{Arc, Mutex};
 
         // テスト用workflow_dataを生成
@@ -520,6 +541,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_stdout_to_string_empty() {
+        crate::init_test_logging();
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let data = OpStateWorkflowData {
             workflow_id: "w".to_string(),
@@ -538,6 +560,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_stdout_to_string_single() {
+        crate::init_test_logging();
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let data = OpStateWorkflowData {
             workflow_id: "w".to_string(),
@@ -556,6 +579,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_stdout_to_string_multiple() {
+        crate::init_test_logging();
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let data = OpStateWorkflowData {
             workflow_id: "w".to_string(),
@@ -577,6 +601,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_script_capture_stdout_from_return() {
+        crate::init_test_logging();
         use std::sync::{Arc, Mutex};
 
         // テスト用workflow_dataを生成
@@ -621,6 +646,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_pre_script() {
+        crate::init_test_logging();
         use std::sync::{Arc, Mutex};
 
         // テスト用workflow_dataを生成
@@ -678,6 +704,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_script_with_pre_and_workflow_success_simple() {
+        crate::init_test_logging();
         use std::sync::{Arc, Mutex};
 
         // Prepare workflow_data that captures stdout
@@ -724,6 +751,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_script_no_pre_script_simple() {
+        crate::init_test_logging();
         use std::sync::{Arc, Mutex};
 
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
@@ -758,6 +786,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_script_pre_script_failure_maps_error() {
+        crate::init_test_logging();
         // Invalid JS in pre_script to force a JsError (syntax error)
         let bad_pre = "function() {".to_string();
         let script = r#"console.log('should not run');"#;
@@ -790,6 +819,7 @@ mod tests {
     #[serial]
     #[test]
     fn test_run_script_workflow_failure_maps_error() {
+        crate::init_test_logging();
         // Valid pre-script
         let pre = "console.log('pre ok');".to_string();
         // Invalid workflow script (syntax error)
@@ -892,6 +922,7 @@ mod tokio_runtime_tests {
     #[test]
     #[serial]
     fn test_op_with_tokio_runtime() {
+        crate::init_test_logging();
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData::new(
             "tokio_test",
@@ -922,6 +953,7 @@ mod tokio_runtime_tests {
     #[test]
     #[serial]
     fn test_op_block_on_future_result() {
+        crate::init_test_logging();
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData::new(
             "tokio_block_on",
@@ -957,6 +989,7 @@ mod tokio_runtime_tests {
     #[test]
     #[serial]
     fn test_op_spawn_async_on_tokio_runtime() {
+        crate::init_test_logging();
         let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
         let workflow_data = OpStateWorkflowData::new(
             "tokio_spawn",
@@ -999,6 +1032,7 @@ mod per_plugin_permission_tests {
     #[serial]
     #[test]
     fn test_run_script_per_plugin_merge_allowed_success() {
+        crate::init_test_logging();
         use crate::permission::{Permissions, PluginFunctionPermissions};
         use crate::proto::sapphillon::v1 as sapphillon_v1;
 
@@ -1058,6 +1092,7 @@ mod per_plugin_permission_tests {
     #[serial]
     #[test]
     fn test_run_script_per_plugin_allowed_missing() {
+        crate::init_test_logging();
         use crate::permission::{Permissions, PluginFunctionPermissions};
         use crate::proto::sapphillon::v1 as sapphillon_v1;
 
@@ -1107,6 +1142,7 @@ mod per_plugin_permission_tests {
     #[serial]
     #[test]
     fn test_run_script_duplicate_ops_handled() {
+        crate::init_test_logging();
         use deno_core::op2;
 
         #[op2(fast)]
