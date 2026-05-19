@@ -8,6 +8,7 @@ use crate::{RsJsBridgeArgs, RsJsBridgeReturns, SapphillonPackage};
 use ipc_channel::ipc::{self, IpcOneShotServer, IpcSender};
 use proto::sapphillon::v1::Permission;
 use serde::{Deserialize, Serialize};
+use std::io::{BufRead, BufReader};
 use std::process::Command;
 
 /// Serializable permission for IPC transfer.
@@ -62,6 +63,8 @@ pub fn extplugin_client(
     server_args: Vec<&str>,
     sapphillon_permissions: Vec<Permission>,
 ) -> Result<RsJsBridgeReturns> {
+    tracing::info!(func_name = %func_name, "Starting external plugin client");
+    tracing::debug!("Creating IPC OneShot server");
     let (server, server_name) = IpcOneShotServer::<
         IpcSender<(
             IpcSender<ExternalPluginRunResponse>,
@@ -73,7 +76,52 @@ pub fn extplugin_client(
     command.args(server_args);
     command.arg(&server_name);
 
-    let mut child = command.stderr(std::process::Stdio::inherit()).spawn()?;
+    tracing::debug!("Spawning external process");
+    let mut child = command.stderr(std::process::Stdio::piped()).spawn()?;
+
+    // Capture stderr from child process and forward through library's tracing subscriber
+    let stderr = child.stderr.take();
+    let _stderr_thread = std::thread::spawn(move || {
+        if let Some(stderr) = stderr {
+            let reader = BufReader::new(stderr);
+            for line in BufRead::lines(reader) {
+                let line = match line {
+                    Ok(l) => l,
+                    Err(_) => continue,
+                };
+                // Parse level prefix from server output.
+                // The server uses tracing-subscriber fmt with .with_level(true)
+                // Levels are right-aligned to 5 chars + separator space.
+                // Use trim_start + split for robustness against format changes.
+                let (level, message) = match line.trim_start().split_once(' ') {
+                    Some(("TRACE", rest)) => (tracing::Level::TRACE, rest),
+                    Some(("DEBUG", rest)) => (tracing::Level::DEBUG, rest),
+                    Some(("INFO", rest)) => (tracing::Level::INFO, rest),
+                    Some(("WARN", rest)) => (tracing::Level::WARN, rest),
+                    Some(("ERROR", rest)) => (tracing::Level::ERROR, rest),
+                    _ => (tracing::Level::INFO, line.as_str()),
+                };
+
+                match level {
+                    tracing::Level::TRACE => {
+                        tracing::trace!(target: "ext_plugin::server", "{}", message)
+                    }
+                    tracing::Level::DEBUG => {
+                        tracing::debug!(target: "ext_plugin::server", "{}", message)
+                    }
+                    tracing::Level::INFO => {
+                        tracing::info!(target: "ext_plugin::server", "{}", message)
+                    }
+                    tracing::Level::WARN => {
+                        tracing::warn!(target: "ext_plugin::server", "{}", message)
+                    }
+                    tracing::Level::ERROR => {
+                        tracing::error!(target: "ext_plugin::server", "{}", message)
+                    }
+                }
+            }
+        }
+    });
 
     let (_rx_bootstrap, tx_req) = server.accept()?;
 
@@ -92,12 +140,15 @@ pub fn extplugin_client(
         sapphillon_permissions: ipc_permissions,
     };
 
+    tracing::debug!("Sending request to server");
     tx_req.send((tx_res.clone(), request))?;
 
     // Wait for either the response or the server process termination
+    tracing::debug!("Waiting for response");
     let response = loop {
         if let Some(status) = child.try_wait()? {
             if !status.success() {
+                tracing::warn!("Server process terminated abnormally");
                 anyhow::bail!("Server process terminated abnormally");
             } else {
                 // サーバーは応答を送信せずに正常に終了しました。
@@ -109,7 +160,10 @@ pub fn extplugin_client(
         match rx_res.try_recv_timeout(std::time::Duration::from_millis(100)) {
             Ok(resp) => break resp,
             Err(ipc::TryRecvError::Empty) => continue,
-            Err(ipc::TryRecvError::IpcError(err)) => anyhow::bail!(err),
+            Err(ipc::TryRecvError::IpcError(err)) => {
+                tracing::error!(error = %err, "External plugin client error");
+                anyhow::bail!(err);
+            }
         }
     };
 
@@ -121,21 +175,26 @@ pub fn extplugin_client(
     // TODO: Improve error handling for server process termination
     let exit_status = child.wait()?;
     if !exit_status.success() && !killed {
+        tracing::error!(exit_status = ?exit_status, "External plugin client error");
         anyhow::bail!("Server process terminated abnormally: {exit_status:?}");
     }
 
     if let Some(err) = response.error_message {
+        tracing::error!(error = %err, "External plugin client error");
         anyhow::bail!(err);
     }
 
+    tracing::info!("External plugin client completed successfully");
     RsJsBridgeReturns::new_from_str(&response.returns_json)
 }
 
 pub async fn extplugin_server(server_name: &str) -> Result<()> {
+    tracing::info!("Starting external plugin server");
     use crate::permissions::permissions_options_from_sapphillon_permissions;
 
     let (tx_req, rx_req) = ipc::channel()?;
     {
+        tracing::debug!("Connecting to bootstrap IPC");
         let tx_bootstrap: IpcSender<
             IpcSender<(
                 IpcSender<ExternalPluginRunResponse>,
@@ -148,6 +207,7 @@ pub async fn extplugin_server(server_name: &str) -> Result<()> {
     std::mem::forget(tx_req);
 
     if let Ok((tx_res, request)) = rx_req.recv() {
+        tracing::debug!("Received request, executing plugin");
         // Convert IpcPermission back to proto::Permission
         let sapphillon_permissions: Vec<proto::sapphillon::v1::Permission> = request
             .sapphillon_permissions
@@ -184,6 +244,7 @@ pub async fn extplugin_server(server_name: &str) -> Result<()> {
         let _ = tx_res.send(response);
     }
 
+    tracing::info!("External plugin server completed");
     Ok(())
 }
 
@@ -204,6 +265,7 @@ mod tests {
 
     #[test]
     fn test_extplugin_runner_process() -> Result<()> {
+        crate::init_test_logging();
         let _guard = test_server_lock();
         let package_script = r#"
             globalThis.Sapphillon = {
@@ -295,6 +357,7 @@ mod tests {
 
     #[test]
     fn test_extplugin_runner_process_abnormal_exit_returns_error() -> Result<()> {
+        crate::init_test_logging();
         let _guard = test_server_lock();
         let package_script = r#"
             globalThis.Sapphillon = {

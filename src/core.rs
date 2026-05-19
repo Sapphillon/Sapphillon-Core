@@ -29,6 +29,12 @@ pub(crate) fn op_print_wrapper(
     #[string] msg: &str,
     is_err: bool,
 ) -> Result<(), std::io::Error> {
+    tracing::trace!(
+        is_err = is_err,
+        msg_len = msg.len(),
+        "Intercepted console output"
+    );
+
     let mut data = state
         .borrow_mut::<Arc<Mutex<OpStateWorkflowData>>>()
         .lock()
@@ -38,12 +44,14 @@ pub(crate) fn op_print_wrapper(
         if data.is_capture_stdout() {
             // data.add_result(WorkflowStdout::Stderr(msg.to_string()));
             data.add_result(WorkflowStdout::Stdout(msg.to_string()));
+            tracing::debug!("Captured stderr output as stdout to workflow state");
         } else {
             stderr().write_all(msg.as_bytes())?;
             stderr().flush().unwrap();
         }
     } else if data.is_capture_stdout() {
         data.add_result(WorkflowStdout::Stdout(msg.to_string()));
+        tracing::debug!("Captured stdout output to workflow state");
     } else {
         stdout().write_all(msg.as_bytes())?;
         stdout().flush().unwrap();

@@ -82,6 +82,7 @@ impl CorePluginFunction {
         func: OpDecl,
         pre_run_js: Option<String>,
     ) -> Self {
+        tracing::debug!(id = %id, name = %name, external = false, "Creating CorePluginFunction");
         Self {
             id,
             name,
@@ -100,6 +101,7 @@ impl CorePluginFunction {
     /// * `plugin_function` - The protobuf `PluginFunction` message.
     /// * `function` - The `OpDecl` representing the function's implementation.
     pub fn new_from_plugin_function(plugin_function: &PluginFunction, function: OpDecl) -> Self {
+        tracing::debug!(function_id = %plugin_function.function_id, "Creating CorePluginFunction from proto");
         Self {
             id: plugin_function.function_id.clone(),
             name: plugin_function.function_name.clone(),
@@ -158,6 +160,7 @@ impl CorePluginPackage {
     /// * `name` - The name of the package.
     /// * `functions` - A vector of `CorePluginFunction` instances included in this package.
     pub fn new(id: String, name: String, functions: Vec<CorePluginFunction>) -> Self {
+        tracing::debug!(id = %id, name = %name, function_count = functions.len(), "Creating CorePluginPackage");
         Self {
             id,
             name,
@@ -175,6 +178,7 @@ impl CorePluginPackage {
         plugin_package: &PluginPackage,
         functions: Vec<CorePluginFunction>,
     ) -> Self {
+        tracing::debug!(package_id = %plugin_package.package_id, "Creating CorePluginPackage from proto");
         Self {
             id: plugin_package.package_id.clone(),
             name: plugin_package.package_name.clone(),
@@ -259,6 +263,7 @@ impl CorePluginExternalFunction {
         package_js: String,
         author_id: String,
     ) -> Self {
+        tracing::debug!(id = %id, name = %name, package_name = %package_name, "Creating CorePluginExternalFunction");
         Self {
             id,
             name,
@@ -302,6 +307,7 @@ impl CorePluginExternalFunction {
     /// })();
     /// ```
     fn generate_call_script(&self) -> String {
+        tracing::debug!(func_name = %self.name, "Generating call script for external function");
         format!(
             r#"
         (function() {{
@@ -397,6 +403,7 @@ impl CorePluginExternalPackage {
         functions: Vec<CorePluginExternalFunction>,
         package_js: String,
     ) -> Self {
+        tracing::debug!(id = %id, name = %name, "Creating CorePluginExternalPackage");
         Self {
             id,
             name,
@@ -479,6 +486,7 @@ mod tests {
 
     #[test]
     fn test_core_plugin_function_new() {
+        crate::init_test_logging();
         let func = CorePluginFunction::new(
             "id".to_string(),
             "name".to_string(),
@@ -493,6 +501,7 @@ mod tests {
 
     #[test]
     fn test_core_plugin_function_new_from_plugin_function() {
+        crate::init_test_logging();
         let pf = dummy_plugin_function();
         let func = CorePluginFunction::new_from_plugin_function(&pf, dummy_op());
         assert_eq!(func.id, pf.function_id);
@@ -501,6 +510,7 @@ mod tests {
 
     #[test]
     fn test_core_plugin_package_new() {
+        crate::init_test_logging();
         let f = CorePluginFunction::new(
             "id".to_string(),
             "name".to_string(),
@@ -516,6 +526,7 @@ mod tests {
 
     #[test]
     fn test_core_plugin_package_new_from_plugin_package() {
+        crate::init_test_logging();
         let pf = dummy_plugin_function();
         let f = CorePluginFunction::new_from_plugin_function(&pf, dummy_op());
         let pp = dummy_plugin_package();
@@ -527,6 +538,7 @@ mod tests {
 
     #[test]
     fn test_core_plugin_external_function_new() {
+        crate::init_test_logging();
         let func = CorePluginExternalFunction::new(
             "ext_id".to_string(),
             "ext_name".to_string(),
@@ -545,6 +557,7 @@ mod tests {
 
     #[test]
     fn test_core_plugin_external_package_new() {
+        crate::init_test_logging();
         let f1 = CorePluginExternalFunction::new(
             "ext_id1".to_string(),
             "ext_name1".to_string(),
@@ -576,6 +589,7 @@ mod tests {
 
     #[test]
     fn test_plugin_function_trait_is_external() {
+        crate::init_test_logging();
         // Test internal plugin function
         let internal_func = CorePluginFunction::new(
             "internal_id".to_string(),
@@ -589,6 +603,7 @@ mod tests {
 
     #[test]
     fn test_plugin_function_trait_get_function_id() {
+        crate::init_test_logging();
         let func = CorePluginFunction::new(
             "test_id".to_string(),
             "test_name".to_string(),
@@ -601,6 +616,7 @@ mod tests {
 
     #[test]
     fn test_plugin_function_trait_get_function_name() {
+        crate::init_test_logging();
         let func = CorePluginFunction::new(
             "test_id".to_string(),
             "test_name".to_string(),
@@ -613,6 +629,7 @@ mod tests {
 
     #[test]
     fn test_plugin_function_trait_get_opdecl() {
+        crate::init_test_logging();
         let func = CorePluginFunction::new(
             "test_id".to_string(),
             "test_name".to_string(),
@@ -627,6 +644,7 @@ mod tests {
 
     #[test]
     fn test_plugin_function_trait_get_pre_run_js() {
+        crate::init_test_logging();
         // Test with Some pre_run_js
         let func_with_js = CorePluginFunction::new(
             "test_id".to_string(),
@@ -653,6 +671,7 @@ mod tests {
 
     #[test]
     fn test_plugin_function_trait_all_methods() {
+        crate::init_test_logging();
         // Comprehensive test of all trait methods together
         let func = CorePluginFunction::new(
             "comprehensive_id".to_string(),
@@ -673,6 +692,7 @@ mod tests {
 
     #[test]
     fn test_plugin_package_trait_is_external_with_internal_functions() {
+        crate::init_test_logging();
         let func = CorePluginFunction::new(
             "internal_id".to_string(),
             "internal_name".to_string(),
@@ -687,6 +707,7 @@ mod tests {
 
     #[test]
     fn test_plugin_package_trait_is_external_with_empty_functions() {
+        crate::init_test_logging();
         let pkg = CorePluginPackage::new(
             "empty_pkg_id".to_string(),
             "empty_pkg_name".to_string(),
@@ -698,6 +719,7 @@ mod tests {
 
     #[test]
     fn test_plugin_package_trait_get_package_id() {
+        crate::init_test_logging();
         let func = CorePluginFunction::new(
             "func_id".to_string(),
             "func_name".to_string(),
@@ -715,6 +737,7 @@ mod tests {
 
     #[test]
     fn test_plugin_package_trait_get_package_name() {
+        crate::init_test_logging();
         let func = CorePluginFunction::new(
             "func_id".to_string(),
             "func_name".to_string(),
@@ -732,6 +755,7 @@ mod tests {
 
     #[test]
     fn test_plugin_package_trait_get_functions() {
+        crate::init_test_logging();
         let func1 = CorePluginFunction::new(
             "func1_id".to_string(),
             "func1_name".to_string(),
@@ -760,6 +784,7 @@ mod tests {
 
     #[test]
     fn test_plugin_package_trait_all_methods() {
+        crate::init_test_logging();
         // Comprehensive test of all trait methods together
         let func1 = CorePluginFunction::new(
             "comprehensive_func1_id".to_string(),
@@ -793,6 +818,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_function_trait_is_external() {
+        crate::init_test_logging();
         let ext_func = CorePluginExternalFunction::new(
             "ext_id".to_string(),
             "ext_name".to_string(),
@@ -807,6 +833,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_function_trait_get_function_id() {
+        crate::init_test_logging();
         let ext_func = CorePluginExternalFunction::new(
             "external_test_id".to_string(),
             "external_test_name".to_string(),
@@ -820,6 +847,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_function_trait_get_function_name() {
+        crate::init_test_logging();
         let ext_func = CorePluginExternalFunction::new(
             "external_test_id".to_string(),
             "external_test_name".to_string(),
@@ -833,6 +861,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_function_trait_get_opdecl() {
+        crate::init_test_logging();
         let ext_func = CorePluginExternalFunction::new(
             "external_test_id".to_string(),
             "external_test_name".to_string(),
@@ -848,6 +877,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_function_trait_get_pre_run_js() {
+        crate::init_test_logging();
         let ext_func = CorePluginExternalFunction::new(
             "external_test_id".to_string(),
             "external_test_name".to_string(),
@@ -867,6 +897,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_function_trait_all_methods() {
+        crate::init_test_logging();
         // Comprehensive test of all trait methods for external function
         let ext_func = CorePluginExternalFunction::new(
             "comprehensive_ext_id".to_string(),
@@ -893,6 +924,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_package_trait_is_external() {
+        crate::init_test_logging();
         let func = CorePluginExternalFunction::new(
             "ext_func_id".to_string(),
             "ext_func_name".to_string(),
@@ -913,6 +945,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_package_trait_is_external_with_empty_functions() {
+        crate::init_test_logging();
         let pkg = CorePluginExternalPackage::new(
             "empty_ext_pkg_id".to_string(),
             "empty_ext_pkg_name".to_string(),
@@ -925,6 +958,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_package_trait_get_package_id() {
+        crate::init_test_logging();
         let func = CorePluginExternalFunction::new(
             "ext_func_id".to_string(),
             "ext_func_name".to_string(),
@@ -944,6 +978,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_package_trait_get_package_name() {
+        crate::init_test_logging();
         let func = CorePluginExternalFunction::new(
             "ext_func_id".to_string(),
             "ext_func_name".to_string(),
@@ -963,6 +998,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_package_trait_get_functions() {
+        crate::init_test_logging();
         let func1 = CorePluginExternalFunction::new(
             "ext_func1_id".to_string(),
             "ext_func1_name".to_string(),
@@ -994,6 +1030,7 @@ mod tests {
 
     #[test]
     fn test_external_plugin_package_trait_all_methods() {
+        crate::init_test_logging();
         // Comprehensive test of all trait methods for external package
         let func1 = CorePluginExternalFunction::new(
             "comprehensive_ext_func1_id".to_string(),

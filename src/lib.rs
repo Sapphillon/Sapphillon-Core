@@ -27,3 +27,20 @@ pub mod extplugin_rsjs_bridge;
 pub mod runtime;
 pub mod utils;
 pub mod workflow;
+
+/// Initialize tracing subscriber for tests.
+/// Uses `Once` to ensure single initialization across all tests.
+/// Respects `RUST_LOG` environment variable, defaults to `trace` level.
+#[cfg(test)]
+fn init_test_logging() {
+    use std::sync::Once;
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        let filter = tracing_subscriber::EnvFilter::try_from_default_env()
+            .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("trace"));
+        tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .with_test_writer()
+            .init();
+    });
+}

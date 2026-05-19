@@ -76,15 +76,25 @@ impl CoreWorkflowCode {
         allowed_permissions: Vec<PluginFunctionPermissions>,
         required_permissions: Vec<PluginFunctionPermissions>,
     ) -> Self {
-        Self {
+        tracing::debug!(id = %id, code_revision = code_revision, "Creating CoreWorkflowCode");
+        let unescaped_code = match unescaper::unescape(&code) {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to unescape workflow code, using raw code");
+                code.clone()
+            }
+        };
+        let this = Self {
             id,
-            code: unescaper::unescape(&code).unwrap(),
+            code: unescaped_code,
             plugin_packages,
             code_revision,
             result: Vec::new(),
             allowed_permissions,
             required_permissions,
-        }
+        };
+        tracing::info!(id = %this.id, "CoreWorkflowCode created successfully");
+        this
     }
 
     /// Executes the workflow code and appends a WorkflowResult to the result list.
@@ -106,12 +116,14 @@ impl CoreWorkflowCode {
     /// - Conditionally launches the external plugin runner if `external_plugin_runner_path` is provided;
     ///   omitting that path skips external package execution (or falls back to the test stub runner when
     ///   the workflow is exercised via the tests).
+    #[tracing::instrument(level = "info", skip(self, handle, external_plugin_runner_path, external_plugin_runner_args), fields(id = %self.id))]
     pub fn run(
         &mut self,
         handle: Handle,
         external_plugin_runner_path: Option<String>,
         external_plugin_runner_args: Option<Vec<String>>,
     ) {
+        tracing::info!(id = %self.id, "Starting workflow execution");
         // Collect OpDecls from plugin packages
         let mut ops = Vec::new();
         for pkg in &self.plugin_packages {
@@ -119,6 +131,10 @@ impl CoreWorkflowCode {
                 ops.push(func.get_opdecl().into_owned());
             }
         }
+        tracing::debug!(
+            op_count = ops.len(),
+            "Collected operations from plugin packages"
+        );
 
         // Execute the workflow code and record the result
         let now = SystemTime::now();
@@ -180,6 +196,7 @@ impl CoreWorkflowCode {
             external_plugin_runner_path, // external_package_runner_path
             external_plugin_runner_args, // external_package_runner_args
         );
+        tracing::debug!("Created workflow state data");
         let result = run_script(
             &self.code,
             ops,
@@ -188,18 +205,25 @@ impl CoreWorkflowCode {
         );
 
         let (description, result, result_type, exit_code) = match result {
-            Ok(data) => (
-                "Success".to_string(),
-                data.lock().unwrap().stdout_to_string(),
-                WorkflowResultType::SuccessUnspecified as i32,
-                0,
-            ),
-            Err(e) => (
-                format!("Error: {e}"),
-                format!("{e}"),
-                WorkflowResultType::Failure as i32,
-                1,
-            ),
+            Ok(data) => {
+                let exit_code = 0;
+                tracing::info!(exit_code = exit_code, "Workflow executed successfully");
+                (
+                    "Success".to_string(),
+                    data.lock().unwrap().stdout_to_string(),
+                    WorkflowResultType::SuccessUnspecified as i32,
+                    exit_code,
+                )
+            }
+            Err(e) => {
+                tracing::error!(error = %e, "Workflow execution failed");
+                (
+                    format!("Error: {e}"),
+                    format!("{e}"),
+                    WorkflowResultType::Failure as i32,
+                    1,
+                )
+            }
         };
 
         let result_obj = WorkflowResult {
@@ -213,6 +237,7 @@ impl CoreWorkflowCode {
             workflow_result_revision,
         };
         self.result.push(result_obj);
+        tracing::debug!(result_type = result_type, "Workflow result recorded");
     }
 
     /// Creates a `CoreWorkflowCode` from a protobuf `WorkflowCode` message.
@@ -227,6 +252,7 @@ impl CoreWorkflowCode {
         required_permissions: Vec<PluginFunctionPermissions>,
         allowed_permissions: Vec<PluginFunctionPermissions>,
     ) -> Self {
+        tracing::debug!(id = %workflow_code.id, "Creating CoreWorkflowCode from proto");
         Self {
             id: workflow_code.id.clone(),
             code: workflow_code.code.clone(),
@@ -323,10 +349,12 @@ impl CoreWorkflowCode {
 /// let plugins = extract_used_plugins_from_code(code, &available_plugins);
 /// // plugins will contain only com.example.filePlugin.read
 /// ```
+#[tracing::instrument(level = "debug", skip(code, available_plugins), fields(code_len = code.len()))]
 pub fn extract_used_plugins_from_code(
     code: &str,
     available_plugins: &[CorePluginPackage],
 ) -> Vec<PluginIdentifier> {
+    tracing::debug!("Extracting used plugins from code");
     // Build a HashSet of valid "package_id.function_name" combinations
     let valid_plugin_calls: HashSet<(String, String)> = available_plugins
         .iter()
@@ -353,6 +381,10 @@ pub fn extract_used_plugins_from_code(
         })
     });
 
+    tracing::debug!(
+        valid_count = valid_plugin_calls.len(),
+        "Built valid plugin call set"
+    );
     let mut seen = HashSet::new();
     let mut result = Vec::new();
 
@@ -374,6 +406,7 @@ pub fn extract_used_plugins_from_code(
         }
     }
 
+    tracing::info!(found_count = result.len(), "Plugin extraction completed");
     result
 }
 
@@ -461,6 +494,7 @@ mod tests {
     #[test]
     #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_run_success() {
+        crate::init_test_logging();
         let pkg = dummy_plugin_package();
         let mut code = CoreWorkflowCode::new(
             "wid".to_string(),
@@ -485,6 +519,7 @@ mod tests {
     #[test]
     #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_run_with_pre_script() {
+        crate::init_test_logging();
         let pkg = dummy_plugin_package_with_pre_script();
         let mut code = CoreWorkflowCode::new(
             "wid".to_string(),
@@ -509,6 +544,7 @@ mod tests {
     #[test]
     #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_run_failure() {
+        crate::init_test_logging();
         let pkg = dummy_plugin_package();
         let mut code = CoreWorkflowCode::new(
             "wid".to_string(),
@@ -542,6 +578,7 @@ mod tests {
     #[test]
     #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_new() {
+        crate::init_test_logging();
         let pkg = dummy_plugin_package();
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
@@ -561,6 +598,7 @@ mod tests {
     #[test]
     #[allow(clippy::arc_with_non_send_sync)]
     fn test_core_workflow_code_new_from_proto() {
+        crate::init_test_logging();
         let proto = dummy_proto_workflow_code();
         let pkg = dummy_plugin_package();
         let code = CoreWorkflowCode::new_from_proto(&proto, vec![Arc::new(pkg)], vec![], vec![]);
@@ -574,6 +612,7 @@ mod tests {
     #[test]
     #[allow(clippy::arc_with_non_send_sync)]
     fn test_workflow_result_initial_state() {
+        crate::init_test_logging();
         let pkg = dummy_plugin_package();
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
@@ -617,6 +656,7 @@ mod tests {
 
     #[test]
     fn test_extract_used_plugins_basic() {
+        crate::init_test_logging();
         let available_plugins = vec![
             make_test_plugin_package("myPlugin", &["doSomething"]),
             make_test_plugin_package("anotherPlugin", &["run"]),
@@ -648,6 +688,7 @@ mod tests {
 
     #[test]
     fn test_extract_used_plugins_duplicates_removed() {
+        crate::init_test_logging();
         let available_plugins = vec![make_test_plugin_package("plugin", &["func", "other"])];
 
         let code = CoreWorkflowCode::new(
@@ -676,6 +717,7 @@ mod tests {
 
     #[test]
     fn test_extract_used_plugins_filters_non_plugins() {
+        crate::init_test_logging();
         // Only myPlugin.action is a registered plugin
         let available_plugins = vec![make_test_plugin_package("myPlugin", &["action"])];
 
@@ -698,6 +740,7 @@ mod tests {
 
     #[test]
     fn test_extract_used_plugins_empty_code() {
+        crate::init_test_logging();
         let available_plugins = vec![make_test_plugin_package("plugin", &["func"])];
 
         let code =
@@ -709,6 +752,7 @@ mod tests {
 
     #[test]
     fn test_extract_used_plugins_no_available_plugins() {
+        crate::init_test_logging();
         // No plugins are registered, so nothing should be detected
         let available_plugins: Vec<CorePluginPackage> = vec![];
 
@@ -727,6 +771,7 @@ mod tests {
 
     #[test]
     fn test_extract_used_plugins_complex_code() {
+        crate::init_test_logging();
         let available_plugins = vec![
             make_test_plugin_package("filePlugin", &["read"]),
             make_test_plugin_package("networkPlugin", &["send"]),
@@ -772,6 +817,7 @@ mod tests {
 
     #[test]
     fn test_extract_used_plugins_function_not_registered() {
+        crate::init_test_logging();
         // Plugin package exists but function is not registered
         let available_plugins = vec![make_test_plugin_package("myPlugin", &["registeredFunc"])];
 
@@ -794,6 +840,7 @@ mod tests {
 
     #[test]
     fn test_plugin_identifier_full_name() {
+        crate::init_test_logging();
         let plugin = PluginIdentifier::new(
             "com.example.myPackage".to_string(),
             "myFunction".to_string(),
@@ -803,6 +850,7 @@ mod tests {
 
     #[test]
     fn test_extract_used_plugins_optional_chaining() {
+        crate::init_test_logging();
         let available_plugins = vec![make_test_plugin_package("plugin", &["func"])];
         let code = CoreWorkflowCode::new(
             "wid".to_string(),
@@ -820,6 +868,7 @@ mod tests {
 
     #[test]
     fn test_extract_used_plugins_namespaced() {
+        crate::init_test_logging();
         let available_plugins = vec![CorePluginPackage::new(
             "sapphillon.core.exec".to_string(),
             "exec".to_string(),
@@ -930,6 +979,7 @@ mod permission_tests {
     // ---------------
     #[test]
     fn test_workflow_permissions_fs_read_success() {
+        crate::init_test_logging();
         let allowed = vec![perm(PermissionType::FilesystemRead, &["/project"])];
         let required = vec![perm(
             PermissionType::FilesystemRead,
@@ -947,6 +997,7 @@ mod permission_tests {
 
     #[test]
     fn test_workflow_permissions_fs_write_success() {
+        crate::init_test_logging();
         let allowed = vec![perm(PermissionType::FilesystemWrite, &["/data"])];
         let required = vec![perm(
             PermissionType::FilesystemWrite,
@@ -959,6 +1010,7 @@ mod permission_tests {
 
     #[test]
     fn test_workflow_permissions_net_access_success() {
+        crate::init_test_logging();
         let allowed = vec![perm(
             PermissionType::NetAccess,
             &["https://example.com/api"],
@@ -974,6 +1026,7 @@ mod permission_tests {
 
     #[test]
     fn test_workflow_permissions_execute_success() {
+        crate::init_test_logging();
         let allowed = vec![perm(PermissionType::Execute, &[])];
         let required = vec![perm(PermissionType::Execute, &[])];
         let code = run_with_permissions(allowed, required, "console.log('exec');");
@@ -986,6 +1039,7 @@ mod permission_tests {
     // ---------------
     #[test]
     fn test_workflow_permissions_fs_read_failure() {
+        crate::init_test_logging();
         let allowed = vec![perm(PermissionType::FilesystemRead, &["/other"])];
         let required = vec![perm(
             PermissionType::FilesystemRead,
@@ -1004,6 +1058,7 @@ mod permission_tests {
 
     #[test]
     fn test_workflow_permissions_fs_write_failure() {
+        crate::init_test_logging();
         let allowed = vec![perm(PermissionType::FilesystemWrite, &["/base"])];
         let required = vec![perm(
             PermissionType::FilesystemWrite,
@@ -1017,6 +1072,7 @@ mod permission_tests {
 
     #[test]
     fn test_workflow_permissions_net_access_failure() {
+        crate::init_test_logging();
         let allowed = vec![perm(
             PermissionType::NetAccess,
             &["https://api.example.com/"],
@@ -1033,6 +1089,7 @@ mod permission_tests {
 
     #[test]
     fn test_workflow_permissions_execute_failure() {
+        crate::init_test_logging();
         let allowed = vec![];
         let required = vec![perm(PermissionType::Execute, &[])];
         let code = run_with_permissions(allowed, required, "console.log('exec');");
@@ -1046,6 +1103,7 @@ mod permission_tests {
     // ---------------
     #[test]
     fn test_workflow_permissions_composite_success() {
+        crate::init_test_logging();
         let allowed = vec![
             perm(PermissionType::FilesystemRead, &["/workspace"]),
             perm(PermissionType::FilesystemWrite, &["/workspace/tmp"]),
@@ -1071,6 +1129,7 @@ mod permission_tests {
     // ---------------
     #[test]
     fn test_workflow_permissions_composite_multiple_missing() {
+        crate::init_test_logging();
         let allowed = vec![perm(PermissionType::FilesystemRead, &["/workspace"])];
         let required = vec![
             perm(PermissionType::FilesystemWrite, &["/workspace/tmp/out.txt"]),
@@ -1088,6 +1147,7 @@ mod permission_tests {
     // ---------------
     #[test]
     fn test_workflow_permissions_merge_duplicate_allowed() {
+        crate::init_test_logging();
         // Two read bases; required path covered by second
         let allowed = vec![
             perm(PermissionType::FilesystemRead, &["/data/common"]),
@@ -1107,6 +1167,7 @@ mod permission_tests {
     // ---------------
     #[test]
     fn test_workflow_permissions_failure_message_detail() {
+        crate::init_test_logging();
         let allowed = vec![perm(PermissionType::FilesystemRead, &["/a"])];
         let required = vec![
             perm(PermissionType::FilesystemRead, &["/b/file.txt"]),
@@ -1129,6 +1190,7 @@ mod permission_tests {
     // ---------------
     #[test]
     fn test_workflow_multiple_plugin_functions_all_satisfied() {
+        crate::init_test_logging();
         // Test with two different plugin function IDs, both with permissions satisfied
         let allowed = vec![
             PluginFunctionPermissions {
@@ -1167,6 +1229,7 @@ mod permission_tests {
 
     #[test]
     fn test_workflow_multiple_plugin_functions_one_missing() {
+        crate::init_test_logging();
         // Test with two plugin function IDs, one has missing permissions
         let allowed = vec![
             PluginFunctionPermissions {
@@ -1207,6 +1270,7 @@ mod permission_tests {
 
     #[test]
     fn test_workflow_multiple_plugin_functions_id_not_in_allowed() {
+        crate::init_test_logging();
         // Test where required has a plugin_function_id not present in allowed list
         let allowed = vec![PluginFunctionPermissions {
             plugin_function_id: "plugin.funcA".to_string(),
@@ -1237,6 +1301,7 @@ mod permission_tests {
 
     #[test]
     fn test_workflow_multiple_plugin_functions_same_id_merge() {
+        crate::init_test_logging();
         // Test with multiple allowed entries for the same plugin_function_id (merging behavior)
         let allowed = vec![
             PluginFunctionPermissions {
@@ -1272,6 +1337,7 @@ mod permission_tests {
 
     #[test]
     fn test_workflow_multiple_plugin_functions_composite() {
+        crate::init_test_logging();
         // Test with three different plugin functions with various permission types
         let allowed = vec![
             PluginFunctionPermissions {

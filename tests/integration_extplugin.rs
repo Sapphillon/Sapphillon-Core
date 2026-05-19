@@ -10,6 +10,20 @@ use serial_test::serial;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+/// Initialize tracing subscriber for integration tests.
+fn init_integration_test_logging() {
+    use std::sync::Once;
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        let filter = tracing_subscriber::EnvFilter::try_from_default_env()
+            .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("trace"));
+        tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .with_test_writer()
+            .init();
+    });
+}
+
 fn get_fixture_path(filename: &str) -> PathBuf {
     let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     d.push("tests");
@@ -81,6 +95,7 @@ fn create_opstate_with_fixture(
 /// 4. Parse the result and assert that the returned "result" is `30`.
 #[test]
 fn test_integration_math_plugin_add() {
+    init_integration_test_logging();
     // 1. Create runtime with the plugin package
     let (mut op_state, _tokio_rt) =
         create_opstate_with_fixture("plugin_package.js", "math-plugin", "com.sapphillon.test");
@@ -127,6 +142,7 @@ fn test_integration_math_plugin_add() {
 /// 4. Verify that the returned object contains the expected fields ("original", "result", "timestamp").
 #[test]
 fn test_integration_math_plugin_process_data() {
+    init_integration_test_logging();
     // 1. Create runtime with the plugin package
     let (mut op_state, _tokio_rt) =
         create_opstate_with_fixture("plugin_package.js", "math-plugin", "com.sapphillon.test");
@@ -189,6 +205,7 @@ fn test_integration_math_plugin_process_data() {
 /// Run with `cargo test -- --ignored` to execute.
 #[test]
 fn test_integration_workflow_with_external_plugin_add() {
+    init_integration_test_logging();
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
 
@@ -270,6 +287,7 @@ fn test_integration_workflow_with_external_plugin_add() {
 /// Run with `cargo test -- --ignored` to execute.
 #[test]
 fn test_integration_workflow_with_external_plugin_process_data() {
+    init_integration_test_logging();
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
 
@@ -359,6 +377,7 @@ fn test_integration_workflow_with_external_plugin_process_data() {
 #[test]
 #[serial]
 fn test_integration_workflow_with_permission_granted() {
+    init_integration_test_logging();
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
     use tempfile::tempdir;
@@ -469,6 +488,7 @@ fn test_integration_workflow_with_permission_granted() {
 #[test]
 #[serial]
 fn test_integration_workflow_with_permission_denied() {
+    init_integration_test_logging();
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
     use tempfile::tempdir;
@@ -562,6 +582,7 @@ fn test_integration_workflow_with_permission_denied() {
 /// 5. Verify that the workflow result succeeds with exit_code 0.
 #[test]
 fn test_integration_workflow_without_permission_requirement() {
+    init_integration_test_logging();
     use sapphillon_core::plugin::{CorePluginExternalFunction, CorePluginExternalPackage};
     use sapphillon_core::workflow::CoreWorkflowCode;
 
@@ -640,6 +661,7 @@ fn test_integration_workflow_without_permission_requirement() {
 /// 3. Call `throw_async` and verify the error message.
 #[test]
 fn test_integration_plugin_throws_error() {
+    init_integration_test_logging();
     use std::collections::HashMap;
 
     // 1. Create runtime with the error plugin package
@@ -709,6 +731,7 @@ fn test_integration_plugin_throws_error() {
 /// 3. Verify that the result is an `Err` and the message indicates the function is unknown.
 #[test]
 fn test_integration_plugin_unknown_function() {
+    init_integration_test_logging();
     use std::collections::HashMap;
 
     let (mut op_state, _tokio_rt) =
@@ -755,6 +778,7 @@ fn test_integration_plugin_unknown_function() {
 /// 3. Verify the result is "1020" (string concatenation), demonstrating loose typing.
 #[test]
 fn test_integration_plugin_loose_type_handling() {
+    init_integration_test_logging();
     let (mut op_state, _tokio_rt) =
         create_opstate_with_fixture("plugin_package.js", "math-plugin", "com.sapphillon.test");
 
@@ -809,6 +833,7 @@ fn test_integration_plugin_loose_type_handling() {
 /// 3. Verify the async result is correctly returned.
 #[test]
 fn test_integration_plugin_async_success() {
+    init_integration_test_logging();
     let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
         "plugin_package_errors.js",
         "error-plugin",
@@ -861,6 +886,7 @@ fn test_integration_plugin_async_success() {
 /// 3. Document the observed behavior.
 #[test]
 fn test_integration_plugin_null_undefined_return() {
+    init_integration_test_logging();
     let (mut op_state, _tokio_rt) = create_opstate_with_fixture(
         "plugin_package_errors.js",
         "error-plugin",
@@ -945,6 +971,7 @@ fn test_integration_plugin_null_undefined_return() {
 /// 4. Verify success.
 #[test]
 fn test_integration_repro_serde_v8_error() {
+    init_integration_test_logging();
     use sapphillon_core::plugin::{
         CorePluginExternalFunction, CorePluginExternalPackage, PluginPackageTrait,
     };

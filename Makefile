@@ -30,6 +30,16 @@ test:
 	cargo test --workspace --all-features --all-targets
 	@echo "----------------------------------------------------------"
 
+test_debug:
+	@echo "Build extplugin_test_server binary"
+	@echo "----------------------------------------------------------"
+	cargo build --package ext_plugin --bin extplugin_test_server
+	@echo "----------------------------------------------------------"
+	@echo "Run Rust Tests"
+	@echo "----------------------------------------------------------"
+	RUST_LOG=trace cargo test --workspace --all-features --all-targets -- --nocapture
+	@echo "----------------------------------------------------------"
+
 build:
 	@echo "Build Rust Project"
 	@echo "----------------------------------------------------------"

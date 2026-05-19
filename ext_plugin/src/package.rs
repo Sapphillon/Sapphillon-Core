@@ -129,15 +129,19 @@ impl fmt::Display for SapphillonPackage {
 
 impl SapphillonPackage {
     pub async fn new_async(package_script: &str) -> Result<SapphillonPackage> {
+        tracing::debug!("Creating new SapphillonPackage");
         let mut package = crate::parse_package::parse_package_info(package_script).await?;
         package.package_script = package_script.to_string();
+        tracing::info!(name = %package.meta.name, version = %package.meta.version, function_count = package.functions.len(), "Package parsed successfully");
         Ok(package)
     }
 
     pub fn new(package_script: &str) -> Result<SapphillonPackage> {
+        tracing::debug!("Creating new SapphillonPackage");
         let rt = tokio::runtime::Runtime::new()?;
         let mut package = rt.block_on(crate::parse_package::parse_package_info(package_script))?;
         package.package_script = package_script.to_string();
+        tracing::info!(name = %package.meta.name, version = %package.meta.version, function_count = package.functions.len(), "Package parsed successfully");
         Ok(package)
     }
 
@@ -254,16 +258,21 @@ impl SapphillonPackage {
     /// let result = package.execute(args, &None).await?;
     /// ```
     #[allow(dead_code)]
+    #[tracing::instrument(skip(self, args), fields(func_name = %args.func_name, package = %self.meta.name))]
     pub async fn execute(
         &self,
         args: crate::rust_js_bridge::RsJsBridgeArgs,
         permissions_options: &Option<deno_runtime::deno_permissions::PermissionsOptions>,
     ) -> Result<crate::rust_js_bridge::RsJsBridgeReturns> {
+        tracing::info!(func_name = %args.func_name, "Executing package function");
+
         // Combine package script with entrypoint
+        tracing::debug!("Combining package script with entrypoint");
         let entry_script = self.entrypoint_script()?;
         let script = format!("{}\n{}", self.package_script, entry_script);
 
         // Serialize arguments
+        tracing::debug!("Serializing bridge arguments");
         let input = args.to_string()?;
 
         // Execute and get output
@@ -271,8 +280,11 @@ impl SapphillonPackage {
             .await
             .map_err(|e| anyhow::anyhow!("JavaScript execution failed: {e}"))?;
 
+        tracing::debug!(output_len = output.len(), "Function execution completed");
+
         // Deserialize return values
         let returns = crate::rust_js_bridge::RsJsBridgeReturns::new_from_str(&output)?;
+        tracing::info!("Package function executed successfully");
         Ok(returns)
     }
 }
@@ -357,6 +369,7 @@ mod tests {
 
     #[tokio::test]
     async fn execute_invokes_handler_and_round_trips_json() {
+        crate::init_test_logging();
         let package_script = test_package_script();
         let package = SapphillonPackage::new_async(&package_script)
             .await
@@ -379,6 +392,7 @@ mod tests {
 
     #[tokio::test]
     async fn package_script_is_stored() {
+        crate::init_test_logging();
         let package_script = test_package_script();
         let package = SapphillonPackage::new_async(&package_script)
             .await
@@ -390,6 +404,7 @@ mod tests {
 
     #[tokio::test]
     async fn execute_permission_denied_without_fs_read() {
+        crate::init_test_logging();
         use tempfile::tempdir;
 
         let dir = tempdir().expect("create temp dir");
@@ -422,6 +437,7 @@ mod tests {
 
     #[tokio::test]
     async fn execute_permission_granted_with_fs_read() {
+        crate::init_test_logging();
         use deno_runtime::deno_permissions::PermissionsOptions;
         use tempfile::tempdir;
 
@@ -465,6 +481,7 @@ mod tests {
 
     #[tokio::test]
     async fn execute_multiple_returns_handled_correctly() {
+        crate::init_test_logging();
         let package_script = test_package_script();
         let package = SapphillonPackage::new_async(&package_script)
             .await
