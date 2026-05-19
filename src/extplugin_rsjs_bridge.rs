@@ -100,7 +100,10 @@ pub fn rsjs_bridge_core(
                 .map(|pf| pf.permissions.permissions.clone())
         })
         .unwrap_or_default();
-    tracing::debug!(perm_count = sapphillon_permissions.len(), "Retrieved permissions for function");
+    tracing::debug!(
+        perm_count = sapphillon_permissions.len(),
+        "Retrieved permissions for function"
+    );
 
     // Step 4: Get external package runner path and args from OpStateWorkflowData
     // If provided, use them; otherwise use default values
@@ -184,18 +187,14 @@ pub fn rsjs_bridge_opdecl(
 
     // Use serde_json::Value and manual string conversion to avoid issues with #[string]
     // attribute on arguments in reentrant ops, which can cause serde_v8 errors.
-    let args_json = args_json_val
-        .as_str()
-        .ok_or_else(|| {
-            tracing::warn!("Invalid argument type in bridge op");
-            deno_error::JsErrorBox::type_error("Expected string for args_json")
-        })?;
-    let package_id = package_id_val
-        .as_str()
-        .ok_or_else(|| {
-            tracing::warn!("Invalid argument type in bridge op");
-            deno_error::JsErrorBox::type_error("Expected string for package_id")
-        })?;
+    let args_json = args_json_val.as_str().ok_or_else(|| {
+        tracing::warn!("Invalid argument type in bridge op");
+        deno_error::JsErrorBox::type_error("Expected string for args_json")
+    })?;
+    let package_id = package_id_val.as_str().ok_or_else(|| {
+        tracing::warn!("Invalid argument type in bridge op");
+        deno_error::JsErrorBox::type_error("Expected string for package_id")
+    })?;
 
     rsjs_bridge_core(state, args_json, package_id)
         .map_err(|e| deno_error::JsErrorBox::generic(format!("Rs-Js Bridge Error: {e}")))

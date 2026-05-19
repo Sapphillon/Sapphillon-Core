@@ -195,7 +195,10 @@ pub(crate) fn run_script(
     }
     let deduped_ops: Vec<OpDecl> = unique_ops.into_values().collect();
 
-    tracing::debug!(op_count = deduped_ops.len(), "Registered deduplicated operations");
+    tracing::debug!(
+        op_count = deduped_ops.len(),
+        "Registered deduplicated operations"
+    );
     let extension = Extension {
         name: "ext",
         ops: deduped_ops.into(),

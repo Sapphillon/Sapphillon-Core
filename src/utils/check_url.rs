@@ -122,7 +122,11 @@ fn url_segments(u: &Url) -> Option<Vec<String>> {
 ///
 /// JA: a のどれかのベース URL が b の各 URL を「同一オリジンかつパスの前方一致」で包含しているか
 pub fn urls_cover_by_ancestor<A: AsRef<str>, B: AsRef<str>>(a: &[A], b: &[B]) -> bool {
-    tracing::debug!(base_count = a.len(), target_count = b.len(), "Checking URL coverage by ancestor");
+    tracing::debug!(
+        base_count = a.len(),
+        target_count = b.len(),
+        "Checking URL coverage by ancestor"
+    );
 
     if a.len() == 1 && a[0].as_ref() == "*" {
         return true;

@@ -3,7 +3,6 @@ use ipc_channel::ipc::{self, IpcSender};
 use std::env;
 
 async fn run(server_name: &str) -> anyhow::Result<()> {
-
     if env::var("SAPPHILLON_TEST_SERVER_ABORT").is_ok() {
         let (tx_req, rx_req) = ipc::channel()?;
         let tx_bootstrap: IpcSender<
@@ -39,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
     }
     let server_name = &args[1];
     tracing::info!("Server name: {server_name}");
-    
+
     match run(server_name).await {
         Ok(()) => {}
         Err(e) => {

@@ -46,7 +46,10 @@ pub(crate) fn create_permissions(
 pub(crate) fn permissions_options_from_sapphillon_permissions(
     permissions: &[SapphillonPermission],
 ) -> PermissionsOptions {
-    tracing::debug!(permission_count = permissions.len(), "Converting Sapphillon permissions to Deno PermissionsOptions");
+    tracing::debug!(
+        permission_count = permissions.len(),
+        "Converting Sapphillon permissions to Deno PermissionsOptions"
+    );
     fn merge_allow_list(target: &mut Option<Vec<String>>, resources: &[String]) {
         if matches!(target, Some(v) if v.is_empty()) {
             // Already "allow all".

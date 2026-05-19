@@ -29,7 +29,11 @@ pub(crate) fn op_print_wrapper(
     #[string] msg: &str,
     is_err: bool,
 ) -> Result<(), std::io::Error> {
-    tracing::trace!(is_err = is_err, msg_len = msg.len(), "Intercepted console output");
+    tracing::trace!(
+        is_err = is_err,
+        msg_len = msg.len(),
+        "Intercepted console output"
+    );
 
     let mut data = state
         .borrow_mut::<Arc<Mutex<OpStateWorkflowData>>>()

@@ -124,7 +124,10 @@ impl CoreWorkflowCode {
                 ops.push(func.get_opdecl().into_owned());
             }
         }
-        tracing::debug!(op_count = ops.len(), "Collected operations from plugin packages");
+        tracing::debug!(
+            op_count = ops.len(),
+            "Collected operations from plugin packages"
+        );
 
         // Execute the workflow code and record the result
         let now = SystemTime::now();
@@ -371,7 +374,10 @@ pub fn extract_used_plugins_from_code(
         })
     });
 
-    tracing::debug!(valid_count = valid_plugin_calls.len(), "Built valid plugin call set");
+    tracing::debug!(
+        valid_count = valid_plugin_calls.len(),
+        "Built valid plugin call set"
+    );
 
     let mut seen = HashSet::new();
     let mut result = Vec::new();

@@ -104,7 +104,11 @@ fn normalize_forgiving(p: &Path) -> PathBuf {
 ///
 /// Original (JA): a のどれかが b の各要素の祖先（ディレクトリ包含）か
 pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> bool {
-    tracing::debug!(base_count = a.len(), target_count = b.len(), "Checking path coverage by ancestor");
+    tracing::debug!(
+        base_count = a.len(),
+        target_count = b.len(),
+        "Checking path coverage by ancestor"
+    );
 
     if a.len() == 1 && a[0].as_ref() == Path::new("*") {
         return true;
@@ -152,7 +156,11 @@ pub fn paths_cover_by_ancestor<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B])
 ///
 /// Original (JA intent): 集合として a が b を（正規化後に）包含するか
 pub fn paths_cover_as_set<A: AsRef<Path>, B: AsRef<Path>>(a: &[A], b: &[B]) -> bool {
-    tracing::debug!(base_count = a.len(), target_count = b.len(), "Checking path coverage as set");
+    tracing::debug!(
+        base_count = a.len(),
+        target_count = b.len(),
+        "Checking path coverage as set"
+    );
 
     if a.len() == 1 && a[0].as_ref() == Path::new("*") {
         return true;

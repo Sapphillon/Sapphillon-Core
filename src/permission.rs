@@ -105,7 +105,10 @@ impl Permissions {
     ///
     /// Complexity: O(n) time and O(n) additional memory in the general case.
     pub fn merge(self) -> Self {
-        tracing::debug!(count = self.permissions.len(), "Merging permissions by type");
+        tracing::debug!(
+            count = self.permissions.len(),
+            "Merging permissions by type"
+        );
         let mut perm_map: HashMap<i32, sapphillon_v1::Permission> = HashMap::new();
 
         self.permissions
@@ -126,7 +129,10 @@ impl Permissions {
                 }
             });
         let result = Permissions::new(perm_map.into_values().collect());
-        tracing::debug!(merged_count = result.permissions.len(), "Permissions merged");
+        tracing::debug!(
+            merged_count = result.permissions.len(),
+            "Permissions merged"
+        );
         result
     }
 }
@@ -231,7 +237,10 @@ pub fn check_permission(
         tracing::debug!("All permissions satisfied");
         CheckPermissionResult::Ok
     } else {
-        tracing::warn!(missing_count = missing_permissions.permissions.len(), "Some required permissions are missing");
+        tracing::warn!(
+            missing_count = missing_permissions.permissions.len(),
+            "Some required permissions are missing"
+        );
         CheckPermissionResult::MissingPermission(missing_permissions)
     }
 }

@@ -93,7 +93,10 @@ pub fn create_main_worker(permissions_options: &Option<PermissionsOptions>) -> R
     };
 
     // Create worker options with the pre-generated snapshot
-    tracing::debug!(snapshot_size = RUNTIME_SNAPSHOT.len(), "Loaded runtime snapshot");
+    tracing::debug!(
+        snapshot_size = RUNTIME_SNAPSHOT.len(),
+        "Loaded runtime snapshot"
+    );
     let options = WorkerOptions {
         startup_snapshot: Some(RUNTIME_SNAPSHOT),
         ..Default::default()
