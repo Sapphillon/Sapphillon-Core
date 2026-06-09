@@ -31,8 +31,8 @@ serde_json = "^1.0.150"
 # Protobuf / gRPC
 tonic = { version = "0.14.6", default-features = false, features = ["codegen", "transport"] }
 tonic-prost = "0.14.6"
-prost = { version = "0.14.1", default-features = false, features = ["std"] }
-prost-types = { version = "0.14.1", default-features = false }
+prost = { version = "0.14.4", default-features = false, features = ["std"] }
+prost-types = { version = "0.14.4", default-features = false }
 pbjson = "0.9.0"
 
 # Deno Dependencies
